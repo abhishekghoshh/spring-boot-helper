@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="ISO-8859-1">
+  <title>Employee Records</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+  <script src="index.js"></script>
+</head>
+<body>
+<p style="display: none" id="token"></p>
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="">Employee Records</a>
+    </div>
+    <div id="loggedIn">
+    	<ul class="nav navbar-nav navbar-right">
+      		<li><a href="" id="logout"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+      		<li><a href="" id="showEmployee"><span class="glyphicon"></span> All Employee</a></li>
+      		<li><a href="" id="updateEmployee"><span class="glyphicon"></span> Update your info</a></li>
+  	  	</ul>
+  	  	<form class="navbar-form navbar-right" action="" id="searchEmployee">
+   	   		<div class="form-group">
+        		<input type="text" class="form-control" placeholder="Search" id="searchKey">
+    	  	</div>
+    	  <button type="submit" class="btn btn-default">Submit</button>
+   		</form>
+    </div>
+    <div id="loggedOut">
+    	<ul class="nav navbar-nav navbar-right">
+      		<li><a href="#signupForm" data-toggle="collapse"><span class="glyphicon glyphicon-user"></span> Sign Up</a></li>
+      		<li><a href="#loginForm" data-toggle="collapse"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
+    	</ul>
+    </div>
+  </div>
+</nav>
+
+<div class="row" id="loginSignup">
+    <div class="col-sm-1"></div>
+    <div class="col-sm-1"></div>
+    <div class="col-sm-4" style="background-color:lavenderblush;">
+    <div id="signupForm" class="collapse">
+  <h2>Registration Form</h2>
+  <form action="" id="formSignup">
+    <div class="form-group">
+      <label for="email">Email:</label>
+      <input type="email" class="form-control" id="signupEmail" placeholder="Enter email" name="email" required>
+    </div>
+    <div class="form-group">
+      <label for="pwd">Password:</label>
+      <input type="password" class="form-control" id="signupPassword" placeholder="Enter password" name="pwd" required>
+    </div>
+    <div class="form-group">
+      <label for="signupAns1">Security question 1:</label>
+      <input type="text" class="form-control" id="signupAns1" placeholder="What is your current city" name="signupAns1" required>
+    </div><div class="form-group">
+      <label for="signupAns2">Security question 2:</label>
+      <input type="text" class="form-control" id="signupAns2" placeholder="What is your pet name" name="signupAns2" required>
+    </div>
+    <div id="alertDiv"></div>
+
+    <button type="submit" class="btn btn-default" id="signupButton">Submit</button>
+  </form>
+</div>
+    
+    
+    </div>
+    <div class="col-sm-4" style="background-color:lavender;">
+    <div class="collapse" id="loginForm">
+  <h2>Login form</h2>
+  <form action="" id="formLogin">
+    <div class="form-group">
+      <label for="loginId">User id or email:</label>
+      <input type="text" class="form-control" id="loginId" placeholder="Enter email or Id" name="email">
+    </div>
+    <div class="form-group">
+      <label for="loginPassword">Password:</label>
+      <input type="password" class="form-control" id="loginPassword" placeholder="Enter password" name="loginPassword">
+    </div>
+    <div id="alertDivLogin"></div>
+    <button type="submit" class="btn btn-default" id="loginButton">Submit</button>
+  </form>
+</div>
+    </div>
+    <div class="col-sm-1"></div>
+    <div class="col-sm-1"></div>
+  </div>
+<div class='row' id="updateEmployeeDiv" style="display:none">
+<div class="col-lg-4"></div>
+<div class="col-lg-4">
+<h1>Update your information</h1>
+<form action="" id="updateForm">
+<div class="form-group">
+    <label for="UpdateId">Your id:</label>
+    <input type="number" class="form-control" id="updateId" readonly>
+  </div>
+  <div class="form-group">
+    <label for="UpdateEmail">Email address:</label>
+    <input type="email" class="form-control" id="updateEmail" readonly>
+  </div>
+   <div class="form-group">
+    <label for="UpdateDesignation">Your designation:</label>
+    <input type="text" class="form-control" id="updateDesignation">
+  </div>
+   <div class="form-group">
+    <label for="UpdateFirstname">Your first name:</label>
+    <input type="text" class="form-control" id="updateFirstname">
+  </div>
+   <div class="form-group">
+    <label for="UpdateLastname">Your last name:</label>
+    <input type="text" class="form-control" id="updateLastname">
+  </div>
+   <div class="form-group">
+    <label for="UpdatePhone">Your phone no:</label>
+    <input type="number" class="form-control" id="updatePhone">
+  </div>
+ <div id="alertDivUpdate"></div>
+  <button type="submit" class="btn btn-default">Submit</button>
+</form>
+
+</div>
+<div class="col-lg-4"></div>
+</div>
+<div id="EmployeeDetails" class="container" style="display:none">
+<table class="table table-bordered">
+<thead>
+      <tr>
+        <th>Id</th>
+        <th>Email</th>
+        <th>First Name</th>
+        <th>Last Name</th>
+        <th>Designation</th>
+        <th>Phone</th>
+      </tr>
+    </thead>
+    <tbody id='data'>
+    </tbody>
+</table>
+</div>
+
+
+</body>
+</html>

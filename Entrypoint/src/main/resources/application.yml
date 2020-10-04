@@ -1,0 +1,12 @@
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
+server:
+  port: 8079
+zuul:
+  routes:
+    db:
+      url: db-operation
+    dashboard:
+      url: dashboard
