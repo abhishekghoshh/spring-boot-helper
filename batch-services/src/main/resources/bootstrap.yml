@@ -1,0 +1,7 @@
+server.port: 8001
+spring.application.name: SPRING_BATCH_DEMO
+spring.config.name: SPRING_BATCH_DEMO
+spring.config.use-legacy-processing: true
+spring.profiles.active: batch_configuration,mysql,postgres
+
+#spring.batch.job.enabled: false

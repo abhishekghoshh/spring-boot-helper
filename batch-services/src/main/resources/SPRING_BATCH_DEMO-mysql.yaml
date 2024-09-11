@@ -1,0 +1,6 @@
+spring:
+  mysql:
+    datasource:
+      jdbc-url: jdbc:mysql://localhost:3306/university
+      username: root
+      password: Abhishek@1009

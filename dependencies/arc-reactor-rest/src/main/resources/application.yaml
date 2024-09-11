@@ -1,0 +1,18 @@
+logging:
+    level:
+        root: INFO
+        com.ag.in.rest: DEBUG
+resilience4J.timelimiter:
+    instances:
+        default:
+            timeoutDuration: 10000ms
+            cancelRunningFuture: true
+
+rest-template:
+    strategy:
+        certificate-chain: false
+        verifyHostName: true
+    properties:
+        connectionRequestTimeout: 1000
+        connectTimeout: 1000
+        readTimeout: 1000
