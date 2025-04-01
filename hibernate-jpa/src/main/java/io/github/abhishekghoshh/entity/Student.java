@@ -1,4 +1,4 @@
-package com.ag.in.entity;
+package io.github.abhishekghoshh.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -9,8 +9,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "student")
 @NamedQuery(name = "find_all_students", query = "select st from Student st")
 @NamedQueries(value = {})
-//@Data for JPA entities is not recommended, I can cause performance and memory consumtion issues
-@Data
+@Data //@Data for JPA entities are not recommended, I can cause performance and memory consumption issues
 @NoArgsConstructor
 @AllArgsConstructor
 public class Student {

@@ -1,10 +1,10 @@
-package com.ag.in;
+package io.github.abhishekghoshh;
 
-import com.ag.in.entity.Passport;
-import com.ag.in.entity.Student;
-import com.ag.in.entity.StudentInformation;
-import com.ag.in.repository.StudentEntityManager;
-import com.ag.in.repository.StudentJdbcTemplate;
+import io.github.abhishekghoshh.entity.Passport;
+import io.github.abhishekghoshh.entity.Student;
+import io.github.abhishekghoshh.entity.StudentInformation;
+import io.github.abhishekghoshh.repository.StudentEntityManager;
+import io.github.abhishekghoshh.repository.StudentJdbcTemplate;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;

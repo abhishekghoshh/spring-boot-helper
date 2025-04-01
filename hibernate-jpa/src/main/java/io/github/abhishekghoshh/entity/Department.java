@@ -1,4 +1,4 @@
-package com.ag.in.entity;
+package io.github.abhishekghoshh.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

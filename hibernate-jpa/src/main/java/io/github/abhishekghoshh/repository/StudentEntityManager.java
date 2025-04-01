@@ -1,6 +1,6 @@
-package com.ag.in.repository;
+package io.github.abhishekghoshh.repository;
 
-import com.ag.in.entity.Student;
+import io.github.abhishekghoshh.entity.Student;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;

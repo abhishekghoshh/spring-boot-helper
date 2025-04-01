@@ -1,9 +1,9 @@
-package com.ag.in.repository;
+package io.github.abhishekghoshh.repository;
 
-import com.ag.in.SpringHibernateJpaApplication;
-import com.ag.in.entity.Passport;
-import com.ag.in.entity.Student;
-import com.ag.in.entity.StudentInformation;
+import io.github.abhishekghoshh.SpringHibernateJpaApplication;
+import io.github.abhishekghoshh.entity.Passport;
+import io.github.abhishekghoshh.entity.Student;
+import io.github.abhishekghoshh.entity.StudentInformation;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;

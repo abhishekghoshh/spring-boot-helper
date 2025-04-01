@@ -1,1 +1,2 @@
-Hibernate, JPA, Spring Data JPA
+# Hibernate, JPA, Spring Data JPA tutorial
+
