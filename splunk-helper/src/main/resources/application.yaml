@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: SPLUNK-HELPER
+  data:
+    mongodb:
+      uri: ${MONGO_URI:mongodb://mongodb:27017/jenkins-helper}
+  threads:
+    virtual:
+      enabled: true
+
+
+server:
+  port: 8080
+
+
+logging:
+  pattern:
+    console: "%d{dd-MM-yyyy HH:mm:ss.SSS}|%X{appName}|%level|%logger.%M|%X{uid}|%X{uri}|%X{method}|%msg%n"
+  level:
+    root: INFO
+    io.github.abhishekghosh: ${APPLICATION_LOGGING_LEVEL:debug}
