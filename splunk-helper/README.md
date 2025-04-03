@@ -2,7 +2,8 @@
 
 
 > Swagger Url : http://localhost:8080/swagger-ui/index.html
-
+> Splunk has no official image for linux arm64, this project is currently incomplete.
+> Once Splunk has an official image for linux arm64, this project will be updated.
 
 ## Websites
 
@@ -17,3 +18,4 @@
 - [Spring Boot With Splunk Integration | Realtime logs analysis using Splunk | HEC | JavaTechie](https://www.youtube.com/watch?v=VO20SgiTTOU)
     - [Java-Techie-jt/splunk-logging](https://github.com/Java-Techie-jt/splunk-logging)
 - [Spring Boot - Splunk Alerts ! 🚨 | Creating and Scheduling Alerts | JavaTechie](https://www.youtube.com/watch?v=eCAabhr5UNA)
+- [Spring Boot 3.2 With Virtual Threads Explained | Benchmarking Insights | JavaTechie](https://www.youtube.com/watch?v=9dUPPHREF7w)

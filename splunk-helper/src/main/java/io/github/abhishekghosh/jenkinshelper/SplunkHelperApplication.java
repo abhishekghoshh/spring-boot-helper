@@ -10,4 +10,10 @@ public class SplunkHelperApplication {
         SpringApplication.run(SplunkHelperApplication.class, args);
     }
 
+//    @Bean
+//    public TomcatProtocolHandlerCustomizer<?> tomcatProtocolHandlerCustomizer() {
+//        return protocolHandler -> {
+//            protocolHandler.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
+//        };
+//    }
 }

@@ -17,7 +17,6 @@ services:
       - splunk-network
     depends_on:
       - mongodb
-      - splunk
   mongodb:
     image: mongo:latest
     container_name: mongodb
@@ -34,25 +33,24 @@ services:
       - "27017:27017"
     networks:
       - splunk-network
-  splunk:
-    image: splunk/splunk:9.4
-    container_name: splunk
-    environment:
-      - SPLUNK_START_ARGS=--accept-license
-      - SPLUNK_HEC_TOKEN=your-secret-token
-      - SPLUNK_PASSWORD=yourpassword
-    ports:
-      - "8000:8000"  # Splunk Web UI
-      - "8088:8088"  # HTTP Event Collector (HEC)
-      - "8089:8089"  # Splunk management port
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    restart: unless-stopped
-    volumes:
-      - splunk-data:/opt/splunk/var
+#  splunk:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile-splunk
+#    container_name: splunk-arm
+#    ports:
+#      - "8000:8000"  # Splunk Web UI
+#      - "8088:8088"  # HTTP Event Collector (HEC)
+#      - "9997:9997"  # Forwarding port
+#    environment:
+#      SPLUNK_START_ARGS: "--accept-license"
+#      SPLUNK_PASSWORD: "changeme"
+#      SPLUNK_HEC_TOKEN: "your-hec-token"
+#    restart: unless-stopped
+#    networks:
+#      - splunk-network
+#    volumes:
+#      - splunk-data:/opt/splunk/var
 
 
 volumes:
