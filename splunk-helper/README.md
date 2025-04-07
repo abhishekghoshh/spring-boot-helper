@@ -7,11 +7,14 @@
 
 ## Websites
 
+- [Streaming Real-Time Log to Splunk From Spring Boot](https://www.baeldung.com/spring-boot-streaming-real-time-log-splunk)
+
 ### Medium
 
 - [Integrating Spring Boot Logs with Splunk for Enhanced Microservices Monitoring](https://medium.com/@ksaquib/integrating-spring-boot-logs-with-splunk-for-enhanced-microservices-monitoring-ecb9adaa6a4c)
 - [Building a Spring Boot Application with MongoDB](https://medium.com/@dulanjayasandaruwan1998/building-a-spring-boot-application-with-mongodb-391751c52d20)
 - [Swagger UI Integration with SpringBoot Web Application](https://medium.com/@DilipItAcademy/swagger-ui-integration-with-springboot-web-application-e78a01565343)
+- [Virtual Threads in Springboot 3.2](https://medium.com/nerd-for-tech/virtual-threads-in-springboot-3-2-9a7250429809)
 
 ### Youtube
 
@@ -19,3 +22,4 @@
     - [Java-Techie-jt/splunk-logging](https://github.com/Java-Techie-jt/splunk-logging)
 - [Spring Boot - Splunk Alerts ! 🚨 | Creating and Scheduling Alerts | JavaTechie](https://www.youtube.com/watch?v=eCAabhr5UNA)
 - [Spring Boot 3.2 With Virtual Threads Explained | Benchmarking Insights | JavaTechie](https://www.youtube.com/watch?v=9dUPPHREF7w)
+  - [Java-Techie-jt/spring-virtual-thread](https://github.com/Java-Techie-jt/spring-virtual-thread)
