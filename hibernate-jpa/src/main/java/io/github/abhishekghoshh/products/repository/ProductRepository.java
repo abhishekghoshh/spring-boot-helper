@@ -12,5 +12,8 @@ public interface ProductRepository  {
 
     Product save(Product product);
 
+    Product update(Product product) throws Exception;
+
     void delete(Product product);
+
 }

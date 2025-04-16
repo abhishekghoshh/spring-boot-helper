@@ -20,7 +20,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository repository;
 
     public ProductServiceImpl(
-            @Qualifier("ProductDataJpaRepositoryWrapper") ProductRepository repository
+            @Qualifier("ProductJDBCRepository") ProductRepository repository
     ) {
         this.repository = repository;
     }
@@ -47,13 +47,13 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductDTO updateById(Long id, ProductDTO productDTO) throws ApiException {
+    public ProductDTO updateById(Long id, ProductDTO productDTO) throws Exception {
         Product product = repository.findById(id)
                 .orElseThrow(() -> new ApiException("Product not found", HttpStatus.NOT_FOUND.value()));
         product.setName(productDTO.name());
         product.setDescription(productDTO.description());
         product.setPrice(productDTO.price());
-        Product updatedProduct = repository.save(product);
+        Product updatedProduct = repository.update(product);
         return convertToDTO(updatedProduct);
     }
 

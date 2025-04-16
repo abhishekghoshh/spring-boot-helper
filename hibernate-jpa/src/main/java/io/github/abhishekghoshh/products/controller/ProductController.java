@@ -27,7 +27,7 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProductDTO> getProductById(@PathVariable Long id) throws ApiException {
+    public ResponseEntity<ProductDTO> getProductById(@PathVariable Long id) throws Exception {
         Optional<ProductDTO> product = productService.getById(id);
         return product.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -38,13 +38,13 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ProductDTO> updateProduct(@PathVariable Long id, @RequestBody ProductDTO productDTO) throws ApiException {
+    public ResponseEntity<ProductDTO> updateProduct(@PathVariable Long id, @RequestBody ProductDTO productDTO) throws Exception {
         ProductDTO updatedProduct = productService.updateById(id, productDTO);
         return ResponseEntity.ok(updatedProduct);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<SuccessDTO> deleteProduct(@PathVariable Long id) throws ApiException {
+    public ResponseEntity<SuccessDTO> deleteProduct(@PathVariable Long id) throws Exception {
         productService.deleteById(id);
         return ResponseEntity.accepted()
                 .body(new SuccessDTO("Successfully deleted"));

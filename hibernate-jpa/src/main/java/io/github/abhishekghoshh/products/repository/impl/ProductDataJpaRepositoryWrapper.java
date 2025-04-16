@@ -19,7 +19,6 @@ public class ProductDataJpaRepositoryWrapper implements ProductRepository {
 
     @Override
     public List<Product> findAll() {
-
         return productDataJpaRepository.findAll();
     }
 
@@ -31,6 +30,14 @@ public class ProductDataJpaRepositoryWrapper implements ProductRepository {
     @Override
     public Product save(Product product) {
         return productDataJpaRepository.save(product);
+    }
+
+    @Override
+    public Product update(Product product) {
+        if (!productDataJpaRepository.existsById(product.getId())) {
+            throw new IllegalArgumentException("Product with ID " + product.getId() + " does not exist");
+        }
+        return save(product);
     }
 
     @Override

@@ -39,6 +39,15 @@ public class ProductHibernateRepository implements ProductRepository {
 
     @Override
     @Transactional
+    public Product update(Product product) {
+        if (entityManager.find(Product.class, product.getId()) == null) {
+            throw new IllegalArgumentException("Product with ID " + product.getId() + " does not exist");
+        }
+        return entityManager.merge(product);
+    }
+
+    @Override
+    @Transactional
     public void delete(Product product) {
         entityManager.remove(product);
     }

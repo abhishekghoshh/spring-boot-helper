@@ -2,7 +2,6 @@ package io.github.abhishekghoshh.products.service;
 
 import io.github.abhishekghoshh.products.dto.ProductDTO;
 import io.github.abhishekghoshh.products.entity.Product;
-import io.github.abhishekghoshh.products.exception.ApiException;
 
 import java.util.List;
 import java.util.Optional;
@@ -10,13 +9,13 @@ import java.util.Optional;
 public interface ProductService {
     List<ProductDTO> getAll();
 
-    Optional<ProductDTO> getById(Long id) throws ApiException;
+    Optional<ProductDTO> getById(Long id) throws Exception;
 
     ProductDTO save(ProductDTO productDTO);
 
-    ProductDTO updateById(Long id, ProductDTO productDTO) throws ApiException;
+    ProductDTO updateById(Long id, ProductDTO productDTO) throws Exception;
 
-    void deleteById(Long id) throws ApiException;
+    void deleteById(Long id) throws Exception;
 
     // Convert Product Entity to ProductDTO
     default ProductDTO convertToDTO(Product product) {

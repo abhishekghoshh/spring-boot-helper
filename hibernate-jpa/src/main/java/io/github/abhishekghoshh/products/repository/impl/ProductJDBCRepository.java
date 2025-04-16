@@ -26,7 +26,7 @@ public class ProductJDBCRepository implements ProductRepository {
     @Override
     public List<Product> findAll() {
         List<Product> products = new ArrayList<>();
-        String query = "SELECT * FROM products";
+        String query = "SELECT * FROM product";
 
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query);
@@ -44,7 +44,7 @@ public class ProductJDBCRepository implements ProductRepository {
 
     @Override
     public Optional<Product> findById(Long id) {
-        String query = "SELECT * FROM products WHERE id = ?";
+        String query = "SELECT * FROM product WHERE id = ?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
 
@@ -63,7 +63,7 @@ public class ProductJDBCRepository implements ProductRepository {
 
     @Override
     public Product save(Product product) {
-        String query = "INSERT INTO products (name, description, price) VALUES (?, ?, ?)";
+        String query = "INSERT INTO product (name, description, price) VALUES (?, ?, ?)";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
 
@@ -85,8 +85,32 @@ public class ProductJDBCRepository implements ProductRepository {
     }
 
     @Override
+    public Product update(Product product) throws Exception {
+        String query = "UPDATE product SET name = ?, description = ?, price = ? WHERE id = ?";
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+
+            statement.setString(1, product.getName());
+            statement.setString(2, product.getDescription());
+            statement.setDouble(3, product.getPrice());
+            statement.setLong(4, product.getId());
+
+            int rowsUpdated = statement.executeUpdate();
+            if (rowsUpdated > 0) {
+                return product;
+            } else {
+                logger.warn("No product found with id: {}", product.getId());
+                throw new SQLException("No product found with id: " + product.getId());
+            }
+        } catch (SQLException e) {
+            logger.error("Error updating product", e);
+            throw new SQLException("Error updating product", e);
+        }
+    }
+
+    @Override
     public void delete(Product product) {
-        String query = "DELETE FROM products WHERE id = ?";
+        String query = "DELETE FROM product WHERE id = ?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
 
