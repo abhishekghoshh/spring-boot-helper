@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DATABASE:postgres}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    driver-class-name: "org.postgresql.Driver"
+  jpa:
+    hibernate.ddl-auto: update
+    show-sql: true

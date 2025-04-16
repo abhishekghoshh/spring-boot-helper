@@ -52,6 +52,17 @@
 - [Essential Interview Questions and Answers on Background Processing in Spring Boot](https://medium.com/@psdevraye/essential-interview-questions-and-answers-on-background-processing-in-spring-boot-1a2f7e489eeb)
 
 
+
+## Basic concepts
+
+- [Understanding Spring IoC and Dependency Injection](https://medium.com/@satyendra.jaiswal/understanding-spring-ioc-and-dependency-injection-97f18cb0c617)
+- [Spring @Component Annotation](https://www.baeldung.com/spring-component-annotation)
+- [When should you use @Configuration instead of @Service/@Controller/@Component for defining beans](https://stackoverflow.com/questions/67691575/when-should-you-use-configuration-instead-of-service-controller-component-fo)
+- [Using the @Configuration annotation](https://docs.spring.io/spring-framework/reference/core/beans/java/configuration-annotation.html)
+- [Understanding @Configuration , @ComponentScan and @SpringBootApplication Annotations in Spring Boot](https://medium.com/@satyendra.jaiswal/understanding-configuration-componentscan-and-springbootapplication-annotations-in-spring-boot-d70a1320dcd0)
+- [Spring Boot Annotations in RESTful Web Services](https://medium.com/@satyendra.jaiswal/spring-boot-annotations-in-restful-web-services-57cfde61c150)
+- [@Component vs @Repository and @Service in Spring](https://www.baeldung.com/spring-component-repository-service)
+
 ### Youtube
 
 - [Spring Boot | Exploring Asynchronous 🚀 Calls with @Async Annotation | JavaTechie](https://www.youtube.com/watch?v=R_gejlOXR7g)
@@ -121,3 +132,9 @@
 
 ## Coursera
 [Building Scalable Java Microservices with Spring Boot and Spring Cloud](https://www.coursera.org/learn/google-cloud-java-spring)
+
+
+
+
+
+

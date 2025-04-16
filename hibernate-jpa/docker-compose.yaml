@@ -1,43 +1,42 @@
 version: '3.8'
 
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: mysql
+  postgres:
+    image: postgres:15
+    container_name: postgres
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: university
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: jpa-helper
     ports:
-      - "3306:3306"
+      - "5432:5432"
     networks:
-      - jpa-tutorial_network
+      - jpa-helper
     volumes:
-      - jpa-tutorial-mysql_data:/var/lib/mysql
+      - jpa-helper:/var/lib/postgresql/data
 
   jpa-tutorial-app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: jpa-tutorial-app
-    image: abhishek1009/jpa-tutorial-app
+    container_name: jpa-helper
+    image: abhishek1009/jpa-tutorial
     depends_on:
-      - mysql
+      - postgres
     ports:
       - "8080:8080"
     networks:
-      - jpa-tutorial_network
+      - jpa-helper
     environment:
-      MYSQL_HOST: mysql
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-      MYSQL_DATABASE: university
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DATABASE: jpa-helper
 
 
 
 volumes:
-  jpa-tutorial-mysql_data:
+  jpa-helper:
 
 networks:
-  jpa-tutorial_network:
+  jpa-helper:
