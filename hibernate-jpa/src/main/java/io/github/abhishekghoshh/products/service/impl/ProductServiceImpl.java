@@ -6,6 +6,8 @@ import io.github.abhishekghoshh.products.exception.ApiException;
 import io.github.abhishekghoshh.products.repository.ProductRepository;
 import io.github.abhishekghoshh.products.service.ProductService;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +22,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository repository;
 
     public ProductServiceImpl(
-            @Qualifier("ProductJDBCRepository") ProductRepository repository
+            @Qualifier("ProductDataJpaRepositoryWrapper") ProductRepository repository
     ) {
         this.repository = repository;
     }
@@ -62,5 +64,12 @@ public class ProductServiceImpl implements ProductService {
         Product product = repository.findById(id)
                 .orElseThrow(() -> new ApiException("Product not found", HttpStatus.NOT_FOUND.value()));
         repository.delete(product);
+    }
+
+    @Override
+    public Page<ProductDTO> getAll(int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+        Page<Product> products = this.repository.findAll(pageRequest);
+        return products.map(this::convertToDTO);
     }
 }

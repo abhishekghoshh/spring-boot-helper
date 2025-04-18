@@ -6,6 +6,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -22,6 +24,11 @@ public class ProductHibernateRepository implements ProductRepository {
     public List<Product> findAll() {
         return entityManager.createQuery("SELECT p FROM Product p", Product.class)
                 .getResultList();
+    }
+
+    @Override
+    public Page<Product> findAll(PageRequest pageRequest) {
+        return null;
     }
 
     @Override

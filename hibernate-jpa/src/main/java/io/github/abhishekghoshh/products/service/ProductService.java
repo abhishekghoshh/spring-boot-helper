@@ -2,6 +2,7 @@ package io.github.abhishekghoshh.products.service;
 
 import io.github.abhishekghoshh.products.dto.ProductDTO;
 import io.github.abhishekghoshh.products.entity.Product;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,4 +36,6 @@ public interface ProductService {
         product.setPrice(productDTO.price());
         return product;
     }
+
+    Page<ProductDTO> getAll(int page, int size);
 }

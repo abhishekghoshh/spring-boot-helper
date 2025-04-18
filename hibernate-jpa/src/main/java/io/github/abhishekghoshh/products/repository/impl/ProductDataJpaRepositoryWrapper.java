@@ -5,6 +5,8 @@ import io.github.abhishekghoshh.products.repository.ProductDataJpaRepository;
 import io.github.abhishekghoshh.products.repository.ProductRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -20,6 +22,11 @@ public class ProductDataJpaRepositoryWrapper implements ProductRepository {
     @Override
     public List<Product> findAll() {
         return productDataJpaRepository.findAll();
+    }
+
+    @Override
+    public Page<Product> findAll(PageRequest pageRequest) {
+        return productDataJpaRepository.findAll(pageRequest);
     }
 
     @Override

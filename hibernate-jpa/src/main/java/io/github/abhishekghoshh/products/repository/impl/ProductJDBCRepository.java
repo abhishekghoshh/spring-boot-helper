@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -40,6 +42,11 @@ public class ProductJDBCRepository implements ProductRepository {
         }
 
         return products;
+    }
+
+    @Override
+    public Page<Product> findAll(PageRequest pageRequest) {
+        return null;
     }
 
     @Override

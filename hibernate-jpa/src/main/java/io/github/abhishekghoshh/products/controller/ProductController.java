@@ -2,10 +2,9 @@ package io.github.abhishekghoshh.products.controller;
 
 import io.github.abhishekghoshh.products.dto.ProductDTO;
 import io.github.abhishekghoshh.products.dto.SuccessDTO;
-import io.github.abhishekghoshh.products.exception.ApiException;
 import io.github.abhishekghoshh.products.service.ProductService;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +23,14 @@ public class ProductController {
     @GetMapping
     public List<ProductDTO> getAllProducts() {
         return productService.getAll();
+    }
+
+    @GetMapping("/pageable")
+    public Page<ProductDTO> getAllPageableProducts(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size
+    ) {
+        return productService.getAll(page, size);
     }
 
     @GetMapping("/{id}")
