@@ -1,0 +1,72 @@
+services:
+  mongo-helper:
+    container_name: mongo-helper
+    image: abhishek1009/mongo-helper:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    develop:
+      watch:
+        - action: rebuild
+          path: src
+    environment:
+      - MONGO_URI=mongodb://root:password@mongodb:27017/sample?authSource=admin
+      - REDIS_URI=redis://redis:6379
+    ports:
+      - "8080:8080"
+    networks:
+      - mongo-helper
+    depends_on:
+      - mongodb
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - mongo-helper:/data/db
+    command:
+      - --storageEngine
+      - wiredTiger
+      - --auth
+    ports:
+      - "27017:27017"
+    networks:
+      - mongo-helper
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express
+    restart: always
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=root
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+    ports:
+      - "8081:8081"
+    networks:
+      - mongo-helper
+    depends_on:
+      - mongodb
+    deploy:
+      replicas: 0
+  redis:
+    image: redis/redis-stack
+    container_name: redis
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+    networks:
+      - mongo-helper
+    volumes:
+      - mongo-helper:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+
+volumes:
+  mongo-helper:
+    driver: local
+
+networks:
+  mongo-helper:
+    driver: bridge

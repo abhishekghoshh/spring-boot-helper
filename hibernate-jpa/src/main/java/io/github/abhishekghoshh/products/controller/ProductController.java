@@ -1,7 +1,7 @@
 package io.github.abhishekghoshh.products.controller;
 
+import io.github.abhishekghoshh.core.dto.SuccessDTO;
 import io.github.abhishekghoshh.products.dto.ProductDTO;
-import io.github.abhishekghoshh.products.dto.SuccessDTO;
 import io.github.abhishekghoshh.products.service.ProductService;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;

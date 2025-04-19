@@ -1,8 +1,8 @@
 package io.github.abhishekghoshh.products.service.impl;
 
+import io.github.abhishekghoshh.core.exception.ApiException;
 import io.github.abhishekghoshh.products.dto.ProductDTO;
 import io.github.abhishekghoshh.products.entity.Product;
-import io.github.abhishekghoshh.products.exception.ApiException;
 import io.github.abhishekghoshh.products.repository.ProductRepository;
 import io.github.abhishekghoshh.products.service.ProductService;
 import org.springframework.beans.factory.annotation.Qualifier;

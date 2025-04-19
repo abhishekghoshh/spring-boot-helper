@@ -20,10 +20,15 @@ mvn wrapper:wrapper
 - [Spring Boot CRUD Example with PostgreSQL](https://rameshfadatare.medium.com/spring-boot-crud-example-with-postgresql-926c87f0129a)
 - [Spring Boot CRUD REST API with MySQL and Java Record DTO: Step-by-Step Guide](https://rameshfadatare.medium.com/spring-boot-crud-rest-api-with-mysql-and-java-record-dto-step-by-step-guide-4096b9bd5cfe)
 - [Spring Boot with PostgreSQL: A Step-by-Step Guide](https://talesofdancingcurls.medium.com/spring-boot-with-postgresql-a-step-by-step-guide-c451848f0184)
+
+
 - [Flyway Set-up and Integration with Spring Boot, a simple Hands-On](https://medium.com/@sumanthshastry/flyway-set-up-and-integration-with-spring-boot-a-simple-hands-on-d2844f18cdea)
+- [Flyway Set-up and Integration with Spring Boot, a simple Hands-On Part2](https://medium.com/@sumanthshastry/flyway-set-up-and-integration-with-spring-boot-a-simple-hands-on-part2-e30e5de64d40)
+
 
 - [In Spring Data JPA OneToMany What are These Fields (mappedBy, fetch, cascade and orphanRemoval)](https://medium.com/@burakkocakeu/in-spring-data-jpa-onetomany-what-are-these-fields-mappedby-fetch-cascade-and-orphanremoval-2655f4027c4f)
 - [Spring Boot and JPA: Managing Database Relationships](https://medium.com/@MohamedManbar/spring-boot-and-jpa-managing-database-relationships-b09ea616f5aa)
+
 
 - [Implementing Pagination, Sorting, and Filtering in Spring Boot](https://medium.com/@atharvaja.10/implementing-pagination-sorting-and-filtering-in-spring-boot-42615dbd74a7)
 - [Limit/Offset based Pagination with Spring JPA](https://medium.com/@adarsh2801/limit-offset-based-pagination-with-spring-jpa-76982abbadc1)

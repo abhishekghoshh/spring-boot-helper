@@ -15,11 +15,13 @@
 - [Spring Boot Annotations in RESTful Web Services](https://medium.com/@satyendra.jaiswal/spring-boot-annotations-in-restful-web-services-57cfde61c150)
 - [@Component vs @Repository and @Service in Spring](https://www.baeldung.com/spring-component-repository-service)
 
+
 - [How I Optimized a Spring Boot Application to Handle 1M Requests/Second](https://blog.stackademic.com/how-i-optimized-a-spring-boot-application-to-handle-1m-requests-second-0cbb2f2823ed)
 - [How to Actually Use Modern Java Like a Pro](https://medium.com/javaguides/how-to-actually-use-modern-java-like-a-pro-cbc5aa1646e9)
 - [Spring Boot Red Flags: What You Should Never Do](https://blog.devgenius.io/spring-boot-best-practices-what-not-to-do-in-your-applications-f2f54332f547)
 - [Advanced Spring Boot Concepts Every Java Developer Should Know](https://medium.com/@mohitbajaj1995/advanced-spring-boot-concepts-every-java-developer-should-know-511b054a46cc)
 - [Optimizing Spring Boot for INSANE Traffic: The 1M RPS Guide](https://medium.com/@kanishksinghpujari/optimizing-spring-boot-for-insane-traffic-the-1m-rps-guide-8b2a54cd711d)
+
 
 
 
@@ -39,6 +41,11 @@
     - [Spring Tutorial](https://www.tpointtech.com/spring-tutorial)
     - [Spring Boot Tutorial](https://www.tpointtech.com/spring-boot-tutorial)
 - [Top 22 Spring Boot Interview Questions and Answers for 2 to 5 Years Experienced Developers](https://medium.com/javarevisited/top-22-spring-boot-interview-questions-and-answers-for-2-to-5-years-experienced-developers-38637a36629d)
+
+- [300+ Spring Boot interview questions](https://codefarm0.medium.com/300-spring-boot-interview-questions-43393e1c2bef)
+- [30 Advanced Spring Boot Interview Questions for Experienced Professionals](https://medium.com/@sharmapraveen91/30-advanced-spring-boot-interview-questions-for-experienced-professionals-3574173472c1)
+- [Top 50 Spring Boot Interview Questions and Answer](https://medium.com/@scholarhatblogs/top-50-spring-boot-interview-questions-and-answer-2043d452d213)
+- [30 Toughest Java and Spring Interview Questions with One-Line Answers](https://rishi-preetham.medium.com/30-toughest-java-and-spring-interview-questions-with-one-line-answers-7513404612f3)
 
 
 ## Spring cloud

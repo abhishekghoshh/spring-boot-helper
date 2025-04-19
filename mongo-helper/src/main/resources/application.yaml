@@ -1,19 +1,17 @@
 spring:
   application:
-    name: jpa-helper
-  profiles:
-    active: postgres
+    name: mongo-redis-helper
+  data:
+    mongodb:
+      uri: ${MONGO_URI:mongodb://mongodb:27017/jenkins-helper}
+    redis:
+      url: ${REDIS_URI:redis://localhost:6379}
   jackson:
     property-naming-strategy: SNAKE_CASE
-  flyway:
-    locations: classpath:/db/migration
-    schemas: employees
-    baseline-on-migrate: true
-    validate-on-migrate: true
-    enabled: false # flyway is disabled as postgres of this version is not supported by flyway
   threads:
     virtual:
       enabled: true
+
 
 server:
   port: 8080
