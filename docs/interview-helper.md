@@ -5,6 +5,23 @@
 > 
 > [Spring Boot vs Spring vs the Spring Framework: What's the difference?](https://www.youtube.com/watch?v=S2xyFQlpzIY)
 
+## Basic concepts
+
+- [Understanding Spring IoC and Dependency Injection](https://medium.com/@satyendra.jaiswal/understanding-spring-ioc-and-dependency-injection-97f18cb0c617)
+- [Spring @Component Annotation](https://www.baeldung.com/spring-component-annotation)
+- [When should you use @Configuration instead of @Service/@Controller/@Component for defining beans](https://stackoverflow.com/questions/67691575/when-should-you-use-configuration-instead-of-service-controller-component-fo)
+- [Using the @Configuration annotation](https://docs.spring.io/spring-framework/reference/core/beans/java/configuration-annotation.html)
+- [Understanding @Configuration , @ComponentScan and @SpringBootApplication Annotations in Spring Boot](https://medium.com/@satyendra.jaiswal/understanding-configuration-componentscan-and-springbootapplication-annotations-in-spring-boot-d70a1320dcd0)
+- [Spring Boot Annotations in RESTful Web Services](https://medium.com/@satyendra.jaiswal/spring-boot-annotations-in-restful-web-services-57cfde61c150)
+- [@Component vs @Repository and @Service in Spring](https://www.baeldung.com/spring-component-repository-service)
+
+- [How I Optimized a Spring Boot Application to Handle 1M Requests/Second](https://blog.stackademic.com/how-i-optimized-a-spring-boot-application-to-handle-1m-requests-second-0cbb2f2823ed)
+- [How to Actually Use Modern Java Like a Pro](https://medium.com/javaguides/how-to-actually-use-modern-java-like-a-pro-cbc5aa1646e9)
+- [Spring Boot Red Flags: What You Should Never Do](https://blog.devgenius.io/spring-boot-best-practices-what-not-to-do-in-your-applications-f2f54332f547)
+- [Advanced Spring Boot Concepts Every Java Developer Should Know](https://medium.com/@mohitbajaj1995/advanced-spring-boot-concepts-every-java-developer-should-know-511b054a46cc)
+- [Optimizing Spring Boot for INSANE Traffic: The 1M RPS Guide](https://medium.com/@kanishksinghpujari/optimizing-spring-boot-for-insane-traffic-the-1m-rps-guide-8b2a54cd711d)
+
+
 
 
 ## Spring and spring boot
@@ -36,11 +53,18 @@
 - [Hibernate Interview Questions for 2024](https://www.geeksforgeeks.org/hibernate-interview-questions/)
 - [10 Spring JPA Interview Questions (With Example Answers)](https://in.indeed.com/career-advice/interviewing/spring-jpa-interview-questions)
 - [JPA Interview Questions](https://www.interviewbit.com/jpa-interview-questions/)
-- [Important JPA Interview Questions: A Detailed Guide](https://medium.com/@pratik.941/important-jpa-interview-questions-a-detailed-guide-5c1405e0927b)
-- [Essential Spring Data Questions and Answers for Java Developers](https://medium.com/@psdevraye/essential-spring-data-questions-and-answers-for-java-developers-88646a22b0d6)
 - [JPA Interview Questions](https://www.naukri.com/code360/library/jpa-interview-questions)
 - [JPA Interview Questions and Answers for 7 years experience](https://hellointern.in/blog/jpa-interview-questions-and-answers-for-7-years-experience-87445)
 - [Top 15 Spring Data JPA Interview Questions with Answers](https://www.java67.com/2021/01/spring-data-jpa-interview-questions-answers-java.html#google_vignette)
+- [Pagination and Sorting using Spring Data JPA](https://www.baeldung.com/spring-data-jpa-pagination-sorting)
+
+
+- [Spring Data JPA: Complete Guide and Cheat Sheet](https://medium.com/javarevisited/spring-data-jpa-complete-guide-and-cheat-sheet-c8138577b71a)
+- [Important JPA Interview Questions: A Detailed Guide](https://medium.com/@pratik.941/important-jpa-interview-questions-a-detailed-guide-5c1405e0927b)
+- [Essential Spring Data Questions and Answers for Java Developers](https://medium.com/@psdevraye/essential-spring-data-questions-and-answers-for-java-developers-88646a22b0d6)
+- [Top 10 Spring Data JPA Interview Questions and Answers [Download Notes in PDF]](https://medium.com/javaguides/top-10-spring-data-jpa-interview-questions-and-answers-63f914f3b69d)
+
+
 
 
 
@@ -52,16 +76,6 @@
 - [Essential Interview Questions and Answers on Background Processing in Spring Boot](https://medium.com/@psdevraye/essential-interview-questions-and-answers-on-background-processing-in-spring-boot-1a2f7e489eeb)
 
 
-
-## Basic concepts
-
-- [Understanding Spring IoC and Dependency Injection](https://medium.com/@satyendra.jaiswal/understanding-spring-ioc-and-dependency-injection-97f18cb0c617)
-- [Spring @Component Annotation](https://www.baeldung.com/spring-component-annotation)
-- [When should you use @Configuration instead of @Service/@Controller/@Component for defining beans](https://stackoverflow.com/questions/67691575/when-should-you-use-configuration-instead-of-service-controller-component-fo)
-- [Using the @Configuration annotation](https://docs.spring.io/spring-framework/reference/core/beans/java/configuration-annotation.html)
-- [Understanding @Configuration , @ComponentScan and @SpringBootApplication Annotations in Spring Boot](https://medium.com/@satyendra.jaiswal/understanding-configuration-componentscan-and-springbootapplication-annotations-in-spring-boot-d70a1320dcd0)
-- [Spring Boot Annotations in RESTful Web Services](https://medium.com/@satyendra.jaiswal/spring-boot-annotations-in-restful-web-services-57cfde61c150)
-- [@Component vs @Repository and @Service in Spring](https://www.baeldung.com/spring-component-repository-service)
 
 ### Youtube
 

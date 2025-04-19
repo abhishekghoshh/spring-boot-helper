@@ -3,6 +3,14 @@ spring:
     name: jpa-helper
   profiles:
     active: postgres
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+  flyway:
+    locations: classpath:/db/migration
+    schemas: employees
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    enabled: false # flyway is disabled as postgres of this version is not supported by flyway
   threads:
     virtual:
       enabled: true
