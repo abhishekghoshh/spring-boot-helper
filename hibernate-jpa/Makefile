@@ -1,7 +1,7 @@
 
 
 dev:
-	docker-compose up -d --build
+	docker-compose up --build
 
 dev-detach:
 	docker-compose up -d --build

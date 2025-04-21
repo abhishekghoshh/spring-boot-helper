@@ -22,7 +22,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository repository;
 
     public ProductServiceImpl(
-            @Qualifier("ProductDataJpaRepositoryWrapper") ProductRepository repository
+            @Qualifier("ProductJDBCRepository") ProductRepository repository
     ) {
         this.repository = repository;
     }

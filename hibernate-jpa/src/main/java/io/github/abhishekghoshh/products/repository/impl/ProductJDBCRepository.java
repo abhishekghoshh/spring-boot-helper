@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -28,7 +29,7 @@ public class ProductJDBCRepository implements ProductRepository {
     @Override
     public List<Product> findAll() {
         List<Product> products = new ArrayList<>();
-        String query = "SELECT * FROM product";
+        String query = "SELECT id,name,description,price FROM product";
 
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query);
@@ -46,15 +47,43 @@ public class ProductJDBCRepository implements ProductRepository {
 
     @Override
     public Page<Product> findAll(PageRequest pageRequest) {
-        return null;
+        List<Product> products = new ArrayList<>();
+        String countQuery = "SELECT COUNT(*) FROM product";
+        String query = "SELECT id, name, description, price FROM product LIMIT ? OFFSET ?";
+        long total = 0;
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement countStatement = connection.prepareStatement(countQuery);
+             PreparedStatement statement = connection.prepareStatement(query)) {
+
+            // Get the total count of products
+            try (ResultSet countResultSet = countStatement.executeQuery()) {
+                if (countResultSet.next()) {
+                    total = countResultSet.getLong(1);
+                }
+            }
+
+            // Set pagination parameters
+            statement.setInt(1, pageRequest.getPageSize());
+            statement.setInt(2, pageRequest.getPageNumber() * pageRequest.getPageSize());
+
+            // Fetch paginated products
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    products.add(mapToProduct(resultSet));
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Error fetching paginated products", e);
+        }
+
+        return new PageImpl<>(products, pageRequest, total);
     }
 
     @Override
     public Optional<Product> findById(Long id) {
-        String query = "SELECT * FROM product WHERE id = ?";
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(query)) {
-
+        String query = "SELECT id, name, description, price FROM product WHERE id = ?";
+        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setLong(1, id);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {

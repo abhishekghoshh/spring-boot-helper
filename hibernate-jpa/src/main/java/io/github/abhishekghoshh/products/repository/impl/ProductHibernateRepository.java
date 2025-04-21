@@ -7,6 +7,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -28,7 +29,15 @@ public class ProductHibernateRepository implements ProductRepository {
 
     @Override
     public Page<Product> findAll(PageRequest pageRequest) {
-        return null;
+        List<Product> products = entityManager.createQuery("SELECT p FROM Product p", Product.class)
+                .setFirstResult((int) pageRequest.getOffset())
+                .setMaxResults(pageRequest.getPageSize())
+                .getResultList();
+
+        long total = entityManager.createQuery("SELECT COUNT(p) FROM Product p", Long.class)
+                .getSingleResult();
+
+        return new PageImpl<>(products, pageRequest, total);
     }
 
     @Override
