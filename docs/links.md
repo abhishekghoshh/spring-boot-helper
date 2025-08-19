@@ -11,6 +11,9 @@
 - [Spring Boot from Basics to Advanced](https://www.youtube.com/playlist?list=PL6W8uoQQ2c60g6_fcjDCLHSx1LBeVYqyZ)
 
 
+### Spring I/O
+- [Say Goodbye to Microservices, Say Hello to Self-Contained Systems by Simon Martinelli @ Spring I/O](https://www.youtube.com/watch?v=jdxxgHcAjf8)
+
 
 
 > Refactor the remaining
