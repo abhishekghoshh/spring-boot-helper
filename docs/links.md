@@ -1,8 +1,21 @@
+# Spring boot general links
+
+
 
 ## Youtube
 
 
+
+### Introduction
+
+- [99% Of Devs Don't Understand Spring Boot](https://www.youtube.com/watch?v=HL5XucT21Zg)
+- [Netflix is Built on Java](https://www.youtube.com/watch?v=sMPMiy0NsUs)
+- [How Netflix Uses Java - 2025 Edition](https://www.youtube.com/watch?v=XpunFFS-n8I)
+
+
+
 ### Daily Code Buffer
+
 - [Kubernetes Tutorial with Microservices and Cloud | Kubernetes Course](https://www.youtube.com/watch?v=EY3uDfBG0OY)
 	- [shabbirdwd53/spring-boot-microservices/tree/kubernetes_as_service_registry](https://github.com/shabbirdwd53/spring-boot-microservices/tree/kubernetes_as_service_registry)
 	- [shabbirdwd53/spring-boot-microservices/tree/kubernetes](https://github.com/shabbirdwd53/spring-boot-microservices/tree/kubernetes)
@@ -20,10 +33,12 @@
 
 
 #### Spring basics
+
 - [Spring ultimate basics: What are Spring Beans and what is the Spring Container?](https://www.youtube.com/watch?v=aS9SQITRocc)
 - [How Spring Boot Works Internally? - Complete Working](https://www.youtube.com/watch?v=vKs17-QDi4w)
 
 #### Spring boot 3
+
 - [Spring Boot 3.0 | New Features in Spring Framework 6 and Spring Boot 3](https://www.youtube.com/watch?v=haVMaDiAGSw)
 - [Microservices using SpringBoot 3.0 | Full Example](https://www.youtube.com/watch?v=HFl2dzhVuUo)
 - [Spring Boot 3 Observability with Grafana Stack](https://www.youtube.com/watch?v=PT2yZTBnUwQ)
