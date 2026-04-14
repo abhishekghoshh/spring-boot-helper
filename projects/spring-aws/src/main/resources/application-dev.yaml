@@ -1,0 +1,14 @@
+
+
+cloud:
+  aws:
+    region:
+      static: ${AWS_REGION}
+    s3:
+      bucket:
+        v1: ${AWS_S3_BUCKET_V1}
+        v2: ${AWS_S3_BUCKET_V2}
+        v3: ${AWS_S3_BUCKET_V3}
+      presign-url-timeout: ${AWS_S3_PRESIGN_URL_TIMEOUT:3600}
+    dynamodb:
+      table: ${AWS_DYNAMODB_TABLE:}

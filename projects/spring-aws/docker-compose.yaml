@@ -1,0 +1,68 @@
+volumes:
+    localstack_data:
+services:
+  localstack:
+    image: localstack/localstack
+    container_name: localstack
+    restart: always
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=iam,sqs,sqs-query,s3,dynamodb
+      - DEFAULT_REGION=${AWS_REGION}
+    volumes:
+      - ./localstack.sh:/etc/localstack/init/ready.d/localstack.sh
+    deploy:
+      replicas: 0
+
+  spring-aws-cache:
+    container_name: spring-aws-cache
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      replicas: ${REDIS_REPLICAS:-1}
+
+  spring-aws-cache-insight:
+    container_name: spring-aws-cache-insight
+    image: redislabs/redisinsight:latest
+    ports:
+      - "5540:5540"
+    depends_on:
+      - spring-aws-cache
+    deploy:
+      replicas: 0
+
+
+  spring-aws-tutorial:
+    image: abhishek1009/spring-aws-tutorial:latest
+    container_name: spring-aws-tutorial
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      spring-aws-cache:
+          condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      - JAVA_VIRTUAL_THREADS_ENABLED=true
+      - SERVER_PORT=8080
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-local}
+      - APP_VERSION=1.0.0
+      - APPLICATION_LOGGING_LEVEL=debug
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - AWS_S3_BUCKET_V1=${AWS_S3_BUCKET_V1}
+      - AWS_S3_BUCKET_V2=${AWS_S3_BUCKET_V2}
+      - AWS_S3_BUCKET_V3=${AWS_S3_BUCKET_V3}
+      - AWS_DYNAMODB_TABLE=${AWS_DYNAMODB_TABLE}
+      - REDIS_HOST=spring-aws-cache
+      - REDIS_PORT=6379
+

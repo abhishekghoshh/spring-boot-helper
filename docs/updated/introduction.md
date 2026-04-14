@@ -7,6 +7,15 @@
 
 ### Introduction
 
+
+- [99% Of Devs Don't Understand Spring Boot](https://www.youtube.com/watch?v=HL5XucT21Zg)
+- [Netflix is Built on Java](https://www.youtube.com/watch?v=sMPMiy0NsUs)
+- [How Netflix Uses Java - 2025 Edition](https://www.youtube.com/watch?v=XpunFFS-n8I)
+- [Spring ultimate basics: What are Spring Beans and what is the Spring Container?](https://www.youtube.com/watch?v=aS9SQITRocc)
+- [How Spring Boot Works Internally? - Complete Working](https://www.youtube.com/watch?v=vKs17-QDi4w)
+
+
+
 - [SpringDeveloper](https://www.youtube.com/@SpringSourceDev/playlists)
   - [spring-projects/spring-boot](https://github.com/spring-projects/spring-boot)
   - [spring-projects/spring-framework](https://github.com/spring-projects/spring-framework)
@@ -17,23 +26,13 @@
   - [Spring Cloud Contract (HTTP)](https://www.youtube.com/watch?v=Ki54FB2B25U)
 
 
-
-### Projects
-
-- [I Made a Rate Limiter using Springboot in 1.5 Hours](https://www.youtube.com/watch?v=97YqAtFjWDM)
-- [Java Spring Boot Project | Product Inventory System with MySQL & Postman](https://www.youtube.com/watch?v=EKHoE2TpxPA)
-- [Hospital Management System Project](https://www.youtube.com/playlist?list=PLm4khKImW62HqaieT4HKej1jnkfM3Sw2d)
-- [Spring Boot Microservices Complete Tutorial](https://www.youtube.com/watch?v=ZKQWwCUEABY)
-- [Build & Deploy a Production-Ready Patient Management System with Microservices: Java Spring Boot AWS](https://www.youtube.com/watch?v=tseqdcFfTUY)
-- [PayPal Clone - Full Stack Project Series](https://www.youtube.com/playlist?list=PLaihB5c0gLqZNjSIGHak3Fg_o-Sp1V_IU)
-  - [Paypal Clone - Complete Frontend Project](https://www.youtube.com/playlist?list=PLaihB5c0gLqa7tjSfLJdFzaIcfGR2RHna)
-- [Mastering Microservices: Spring boot, Spring Cloud and Keycloak In 7 Hours](https://www.youtube.com/watch?v=jdeSV0GRvwI)
-
+- [Spring I/O](https://www.youtube.com/@SpringIOConference)
+  - [Say Goodbye to Microservices, Say Hello to Self-Contained Systems by Simon Martinelli @ Spring I/O](https://www.youtube.com/watch?v=jdxxgHcAjf8)
 
 
 ### Channels and playlists
 
-- [Spring Boot from Basics to Advanced (All Videos are in English)](https://www.youtube.com/playlist?list=PL6W8uoQQ2c60g6_fcjDCLHSx1LBeVYqyZ)
+- [Spring Boot from Basics to Advanced](https://www.youtube.com/playlist?list=PL6W8uoQQ2c60g6_fcjDCLHSx1LBeVYqyZ)
 - [Complete Spring Boot Tutorial For Beginners [2025]](https://www.youtube.com/playlist?list=PLUcsbZa0qzu0gVRFlVfscqjD84TqMssOt)
 - [Spring Boot Course](https://www.youtube.com/playlist?list=PL-bgVzzRdaPhNeXyQBtp8hMlUc14J2kRK)
 - [Full Courses [In Depth]](https://www.youtube.com/playlist?list=PL7CBVLpg0zqf_ggig9cOr72oZNGf9RZmZ)
@@ -44,13 +43,6 @@
 - [Complete Java, Spring, and Microservices course](https://www.youtube.com/playlist?list=PLsyeobzWxl7q6oUFts2erdot6jxF_lisP)
 
 
-### Introduction
-
-- [99% Of Devs Don't Understand Spring Boot](https://www.youtube.com/watch?v=HL5XucT21Zg)
-- [Netflix is Built on Java](https://www.youtube.com/watch?v=sMPMiy0NsUs)
-- [How Netflix Uses Java - 2025 Edition](https://www.youtube.com/watch?v=XpunFFS-n8I)
-
-
 
 ### Daily Code Buffer
 
@@ -59,20 +51,6 @@
 	- [shabbirdwd53/spring-boot-microservices/tree/kubernetes](https://github.com/shabbirdwd53/spring-boot-microservices/tree/kubernetes)
 
 
-### Concept && Coding - by Shrayansh
-
-- [Spring Boot from Basics to Advanced](https://www.youtube.com/playlist?list=PL6W8uoQQ2c60g6_fcjDCLHSx1LBeVYqyZ)
-
-
-### Spring I/O
-
-- [Say Goodbye to Microservices, Say Hello to Self-Contained Systems by Simon Martinelli @ Spring I/O](https://www.youtube.com/watch?v=jdxxgHcAjf8)
-
-
-#### Spring basics
-
-- [Spring ultimate basics: What are Spring Beans and what is the Spring Container?](https://www.youtube.com/watch?v=aS9SQITRocc)
-- [How Spring Boot Works Internally? - Complete Working](https://www.youtube.com/watch?v=vKs17-QDi4w)
 
 #### Spring boot 3
 
@@ -101,20 +79,7 @@
 
 
 
-#### Spring with AWS
 
-- [AWS (Amazon Web Services)](https://www.youtube.com/playlist?list=PLVz2XdJiJQxxurKT1Dqz6rmiMuZNdClqv)
-- [Spring Boot, React.js & AWS S3 Full Stack Development](https://www.youtube.com/watch?v=9i1gQ7w2V24)
-- [Daily code buffer](https://www.youtube.com/@DailyCodeBuffer/playlists)
-	- [How to Install and Configure AWS Command Line Interface (CLI) tool](https://www.youtube.com/watch?v=BzzCIsjrE7U)
-	- [Dockerize Spring Boot App using Maven Plugin](https://www.youtube.com/watch?v=F_g44rliu6M)
-	- [Create Docker Image without Dockerfile in Spring Boot](https://www.youtube.com/watch?v=pIei1m323KU)
-	- [Spring Boot CRUD Example using AWS DynamoDB](https://www.youtube.com/watch?v=3ay92ZdCgwQ)
-	- [How to Deploy Spring Boot Application with Docker into AWS EC2](https://www.youtube.com/watch?v=vmbhFZJUTR0)
-	- [How to Deploy SpringBoot Application to AWS Elastic Beanstalk](https://www.youtube.com/watch?v=F9o21ydf6Wk)
-	- [Deploy Spring Boot App in AWS EC2 instance using S3](https://www.youtube.com/watch?v=w7zDItQBo4c)
-	- [Amazon Simple Queue Service (SQS) with SpringBoot | Spring Cloud AWS](https://www.youtube.com/watch?v=vYLlxxD_6LA)
-	- [Amazon Simple Notification Service (SNS) with SpringBoot | Spring Cloud AWS](https://www.youtube.com/watch?v=9kXMLTNaQj8)
 
 #### Spring boot with CI/CD
 - [SpringBoot - Build CI/CD Pipeline Using GitHub Actions | Build & Push Docker Image | JavaTechie](https://www.youtube.com/watch?v=NppkHKvnrqc)
@@ -125,6 +90,7 @@
 
 
 #### GraphQL
+
 - [Master Graphql with Spring Boot](https://www.youtube.com/watch?v=eD-1KTK7fGc)
 
 #### Apache Kafka
@@ -134,6 +100,7 @@
 
 
 #### Redis
+
 - [How to implement Redis in Spring Boot using Spring Data Redis & Jedis](https://www.youtube.com/watch?v=PpkPTviLTLs)
 
 
@@ -231,84 +198,3 @@
 
 
 
-
-## Udemy
-
-### Must courses
-
-- [[NEW] Master Microservices with SpringBoot,Docker,Kubernetes](https://www.udemy.com/course/master-microservices-with-spring-docker-kubernetes/)
-- [Master Microservices with Spring Boot and Spring Cloud](https://www.udemy.com/course/microservices-with-spring-boot-and-spring-cloud/)
-- [[NEW] Master Spring Boot 3 & Spring Framework 6 with Java](https://www.udemy.com/course/spring-boot-and-spring-framework-tutorial-for-beginners)
-- [Spring Boot 4, Spring 7 & Hibernate for Beginners](https://www.udemy.com/course/spring-hibernate-tutorial/)
-
-
-
-#### Microservices with spring
-
-- [Microservices with Spring Boot, Spring Cloud, Docker, K8s](https://www.udemy.com/course/microservices-with-spring-boot/)
-- [Master Microservices with SpringBoot,Docker,Kubernetes](https://udemy.com/course/master-microservices-with-spring-docker-kubernetes)
-- [Master Spring Boot Microservices with CQRS & Event Sourcing](https://udemy.com/course/master-spring-boot-microservices-with-cqrs-event-sourcing)
-- [Event-Driven Microservices, CQRS, SAGA, Axon, Spring Boot](https://udemy.com/course/spring-boot-microservices-cqrs-saga-axon-framework)
-- [Microservices: Clean Architecture, DDD, SAGA, Outbox & Kafka](https://www.udemy.com/course/microservices-clean-architecture-ddd-saga-outbox-kafka-kubernetes/)
-- [Building Real-Time REST APIs with Spring Boot - Blog App](https://udemy.com/course/building-real-time-rest-apis-with-spring-boot)
-- [Master Microservices with SpringBoot,Docker,Kubernetes](https://www.udemy.com/course/master-microservices-with-spring-docker-kubernetes/)
-
-
-#### Spring cloud
-
-- [Spring Cloud Fundamentals](https://udemy.com/course/spring-cloud-fundamentals/)
-- [Master Microservices with Spring Boot and Spring Cloud](https://www.udemy.com/course/microservices-with-spring-boot-and-spring-cloud/)
-- [Spring Boot Microservices and Spring Cloud. Build & Deploy.](https://udemy.com/course/spring-boot-microservices-and-spring-cloud)
-
-
-#### Spring tutorial
-
-- [Master Java Web Services and REST API with Spring Boot](https://www.udemy.com/course/spring-web-services-tutorial)
-- [Spring Framework Master Class - Java Spring the Modern Way](https://udemy.com/course/spring-tutorial-for-beginners)
-- [Master Modern Spring Boot, Spring Web MVC, AOP, Hibernate, Thymeleaf, JPA, Spring Security, RESTful services](https://udemy.com/course/spring-framework-web-development-2020/)
-- [Spring Boot 3, Spring 6 & Hibernate for Beginners](https://udemy.com/course/spring-hibernate-tutorial)
-- [Master Spring 6, Spring Boot 3, REST, JPA, Hibernate](https://udemy.com/course/spring-springboot-jpa-hibernate-zero-to-master)
-
-
-#### Reactive Programming
-
-- [Reactive Programming with Spring Framework 5](https://udemy.com/course/reactive-programming-with-spring-framework-5/)
-- [Build Reactive MicroServices using Spring WebFlux/SpringBoot](https://udemy.com/course/build-reactive-restful-apis-using-spring-boot-webflux)
-- [Spring WebFlux Masterclass: Reactive Microservices](https://udemy.com/course/spring-webflux)
-
-
-#### Kafka
-
-- [Apache Kafka for Developers using Spring Boot](https://udemy.com/course/apache-kafka-for-developers-using-springboot/)
-- [Event-Driven Microservices: Spring Boot, Kafka and Elastic](https://www.udemy.com/course/event-driven-microservices-spring-boot-kafka-and-elasticsearch/)
-
-
-#### Batch processing
-
-- [Batch Processing with Spring Batch & Spring Boot](https://www.udemy.com/course/data-batch-processing-with-spring-batch-spring-boot-spring-framework/)
-
-
-#### GraphQL
-
-- [GraphQL API with Java Spring Boot & Spring Framework](https://www.udemy.com/course/graphql-with-java-spring-boot-query-mutation-schema-resolver-edge-jpa/)
-
-
-#### MongoDB
-
-- [MongoDB with Java Spring Boot & Spring Framework](https://www.udemy.com/course/mongodb-with-spring-boot-spring-data-mongorepository-mlab-cloudfoundry/)
-
-
-#### Spring data JPA
-
-- [Master Hibernate and JPA with Spring Boot in 100 Steps](https://udemy.com/course/hibernate-jpa-tutorial-for-beginners-in-100-steps/)
-- [Spring Data JPA Using Hibernate](https://udemy.com/course/spring-data-jpa-using-hibernate/)
-- [Hibernate and Spring Data JPA: Beginner to Guru](https://udemy.com/course/hibernate-and-spring-data-jpa-beginner-to-guru/)
-
-
-#### Spring security
-
-- [Spring Security 6 Zero to Master along with JWT,OAUTH2](https://udemy.com/course/spring-security-zero-to-master)
-- [Spring Security Fundamentals (OAuth ,JWT,CSRF and more)](https://udemy.com/course/spring-security-fundamentals)
-- [OAuth 2.0 in Spring Boot Applications](https://udemy.com/course/oauth2-in-spring-boot-applications)
-- [Keycloak : Single Sign On with Spring Boot & Spring Security](https://udemy.com/course/keycloak-single-sign-on-sso-with-spring-boot-spring-security-thymeleaf)
-- [Master SAML 2.0 with Okta](https://udemy.com/course/master-saml-with-okta)
