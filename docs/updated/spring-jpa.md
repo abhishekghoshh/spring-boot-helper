@@ -37,10 +37,12 @@
 - [Hibernate & JPA Tutorial - Crash Course](https://www.youtube.com/watch?v=xHminZ9Dxm4)
     - [marcobehlerjetbrains/hibernate-tutorial](https://github.com/marcobehlerjetbrains/hibernate-tutorial)
 
+
+- [Concept && Coding - by Shrayansh](https://www.youtube.com/@ConceptAndCodingByShrayansh)
+    - 
+
 - [Spring Data JPA Tutorial | Full In-depth Course](https://www.youtube.com/watch?v=XszpXoII9Sg)
 - [Master Spring Data JPA In One Video | Hindi](https://www.youtube.com/watch?v=8SxJNqeq_zc)
-
-- [Spring Transactions](https://www.youtube.com/playlist?list=PL-bgVzzRdaPimI4ERQ9gOtUKLEIALmoFL)
 
 
 
@@ -3064,6 +3066,4546 @@ Performance rank     ★★★           ★★★★★           ★★
 
 Recommended?         Simple apps   Production      Last resort
                      MySQL         default
+```
+
+
+
+### OneToOne Unidirectional Mapping
+
+In a unidirectional `@OneToOne` mapping, only the **parent** entity has a reference to the **child** entity. The child has no knowledge of the parent.
+
+```text
+Java Objects:                              Database Tables:
+
+┌───────────────────┐                      ┌───────────────────────────┐
+│  User             │                      │  users                    │
+│                   │                      ├───────────────────────────┤
+│  id: Long         │                      │  id (PK, BIGINT)          │
+│  name: String     │    @OneToOne         │  name (VARCHAR)           │
+│  address: Address ├───────────────>      │  address_id (FK, BIGINT)  │──┐
+│                   │                      │                           │  │
+└───────────────────┘                      └───────────────────────────┘  │
+                                                                          │ references
+┌───────────────────┐                      ┌───────────────────────────┐  │
+│  Address          │                      │  addresses                │  │
+│                   │                      ├───────────────────────────┤  │
+│  id: Long         │                      │  id (PK, BIGINT)          │<─┘
+│  city: String     │                      │  city (VARCHAR)           │
+│  zipCode: String  │                      │  zip_code (VARCHAR)       │
+│                   │  (no ref to User)    │                           │
+└───────────────────┘                      └───────────────────────────┘
+
+Direction: User ──────> Address   (one way only)
+           User knows Address.   Address does NOT know User.
+```
+
+**Code example**
+
+```java
+@Entity
+@Table(name = "addresses")
+public class Address {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String city;
+
+    @Column(name = "zip_code")
+    private String zipCode;
+
+    // constructors, getters, setters
+    // NO reference to User — this is unidirectional
+}
+```
+
+```java
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "address_id", referencedColumnName = "id")
+    private Address address;       // User has a reference to Address
+
+    // constructors, getters, setters
+}
+```
+
+**Usage**
+
+```java
+@Service
+public class UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Transactional
+    public User createUserWithAddress() {
+        Address address = new Address();
+        address.setCity("Bangalore");
+        address.setZipCode("560001");
+
+        User user = new User();
+        user.setName("Alice");
+        user.setAddress(address);   // set the child on parent
+
+        return userRepository.save(user);
+        // CascadeType.ALL → saving User also saves Address automatically
+    }
+}
+```
+
+```text
+SQL executed:
+  INSERT INTO addresses (city, zip_code) VALUES ('Bangalore', '560001');     ← Address saved first (child)
+  INSERT INTO users (name, address_id) VALUES ('Alice', 1);                  ← User saved with FK to Address
+```
+
+---
+
+### What is Cascade Type
+
+Cascade defines how **persistence operations on the parent entity propagate to the child entity**. Without cascading, you would need to explicitly save, update, and delete each entity individually.
+
+```text
+WITHOUT Cascade:                           WITH CascadeType.ALL:
+
+userRepository.save(user);                 userRepository.save(user);
+addressRepository.save(address);           // Address is saved automatically!
+// You must manually save both
+
+userRepository.delete(user);               userRepository.delete(user);
+addressRepository.delete(address);         // Address is deleted automatically!
+// You must manually delete both
+```
+
+**Why cascading is needed**
+
+In a parent-child relationship, the child's lifecycle often depends on the parent:
+
+```text
+┌────────────┐    owns    ┌────────────┐
+│   User     │ ──────────>│  Address   │
+│  (parent)  │            │  (child)   │
+└────────────┘            └────────────┘
+
+Parent created  → Child should also be created  (CASCADE PERSIST)
+Parent updated  → Child should also be updated  (CASCADE MERGE)
+Parent deleted  → Child should also be deleted  (CASCADE REMOVE)
+Parent detached → Child should also be detached (CASCADE DETACH)
+Parent refreshed→ Child should also be refreshed(CASCADE REFRESH)
+```
+
+Without cascade, the child entity is an **orphan** — the parent has a reference to it but JPA does not know to propagate operations to it. You get errors like:
+
+```text
+org.hibernate.TransientObjectException:
+  object references an unsaved transient instance — save the transient instance before flushing
+```
+
+This happens when you `persist(user)` but `address` is still in `NEW` state and was not persisted separately.
+
+---
+
+### All Cascade Types Explained
+
+```text
+┌──────────────────┬──────────────────────────────────────────────────────────────┐
+│ CascadeType      │ What it does                                                │
+├──────────────────┼──────────────────────────────────────────────────────────────┤
+│ PERSIST          │ When parent is persisted, child is also persisted            │
+│ MERGE            │ When parent is merged (updated), child is also merged        │
+│ REMOVE           │ When parent is removed, child is also removed               │
+│ REFRESH          │ When parent is refreshed from DB, child is also refreshed   │
+│ DETACH           │ When parent is detached, child is also detached             │
+│ ALL              │ All of the above combined                                    │
+└──────────────────┴──────────────────────────────────────────────────────────────┘
+```
+
+**CascadeType.PERSIST**
+
+```java
+@OneToOne(cascade = CascadeType.PERSIST)
+@JoinColumn(name = "address_id")
+private Address address;
+```
+
+```java
+Address address = new Address();
+address.setCity("Bangalore");
+
+User user = new User();
+user.setName("Alice");
+user.setAddress(address);
+
+userRepository.save(user);
+// Hibernate executes:
+//   INSERT INTO addresses (city, zip_code) VALUES ('Bangalore', null);
+//   INSERT INTO users (name, address_id) VALUES ('Alice', 1);
+```
+
+**CascadeType.MERGE**
+
+```java
+@OneToOne(cascade = CascadeType.MERGE)
+@JoinColumn(name = "address_id")
+private Address address;
+```
+
+```java
+// user and address were previously saved, now detached
+user.setName("Bob");
+user.getAddress().setCity("Mumbai");      // modify child too
+
+userRepository.save(user);               // save() calls merge() for existing entities
+// Hibernate executes:
+//   UPDATE users SET name = 'Bob' WHERE id = 1;
+//   UPDATE addresses SET city = 'Mumbai' WHERE id = 1;
+```
+
+**CascadeType.REMOVE**
+
+```java
+@OneToOne(cascade = CascadeType.REMOVE)
+@JoinColumn(name = "address_id")
+private Address address;
+```
+
+```java
+userRepository.delete(user);
+// Hibernate executes:
+//   DELETE FROM users WHERE id = 1;          ← parent deleted
+//   DELETE FROM addresses WHERE id = 1;      ← child also deleted automatically
+```
+
+**CascadeType.REFRESH**
+
+```java
+@OneToOne(cascade = CascadeType.REFRESH)
+@JoinColumn(name = "address_id")
+private Address address;
+```
+
+```java
+// Someone updated the address directly in DB
+entityManager.refresh(user);
+// Hibernate re-reads BOTH user AND address from DB
+// Overwrites any in-memory changes with database values
+```
+
+**CascadeType.DETACH**
+
+```java
+@OneToOne(cascade = CascadeType.DETACH)
+@JoinColumn(name = "address_id")
+private Address address;
+```
+
+```java
+entityManager.detach(user);
+// Both user AND address become DETACHED from persistence context
+// Changes to either will NOT be auto-detected by dirty checking
+```
+
+**CascadeType.ALL**
+
+```java
+@OneToOne(cascade = CascadeType.ALL)
+@JoinColumn(name = "address_id")
+private Address address;
+```
+
+Equivalent to `{PERSIST, MERGE, REMOVE, REFRESH, DETACH}`. All operations propagate.
+
+**When to use which Cascade type**
+
+| Cascade Type | When to use |
+|---|---|
+| `PERSIST` | Child should be auto-saved when parent is saved. Use when child cannot exist without parent. |
+| `MERGE` | Child should be auto-updated when parent is updated. Common for parent-child forms. |
+| `REMOVE` | Child should be auto-deleted when parent is deleted. Use for owned entities (address, profile). |
+| `REFRESH` | Need to reload the entire object graph from DB. Rare — used in long conversations or concurrent environments. |
+| `DETACH` | Need to detach the entire graph. Rare. |
+| `ALL` | Child lifecycle is fully owned by parent. **Most common in industry for @OneToOne.** |
+
+**Which Cascade is used most in industry?**
+
+```text
+@OneToOne  →  CascadeType.ALL          (child lifecycle = parent lifecycle)
+@OneToMany →  CascadeType.ALL          (children owned by parent)
+@ManyToOne →  Usually NO cascade       (many children share one parent — don't cascade delete!)
+@ManyToMany→  CascadeType.PERSIST + MERGE (shared entities, never cascade remove)
+```
+
+`CascadeType.ALL` is the most common for `@OneToOne` because the child entity (Address, Profile, Passport) is fully owned by the parent (User). If the User is deleted, the Address should also be deleted. If the User is saved, the Address should be saved too.
+
+---
+
+### How OneToOne Mapping Converts to Table Structure
+
+When Hibernate encounters `@OneToOne` on a field, it creates a **foreign key column** in the **parent table** that points to the **primary key** of the child table.
+
+```text
+@Entity User has:
+    @OneToOne
+    private Address address;
+
+Hibernate generates:
+
+┌──────────────────────────────┐          ┌─────────────────────────┐
+│  users                       │          │  addresses              │
+├──────────────────────────────┤          ├─────────────────────────┤
+│  id          BIGINT (PK)     │          │  id       BIGINT (PK)   │
+│  name        VARCHAR(255)    │          │  city     VARCHAR(255)   │
+│  address_id  BIGINT (FK) ────┼─────────>│  zip_code VARCHAR(255)  │
+│              UNIQUE          │          │                         │
+└──────────────────────────────┘          └─────────────────────────┘
+```
+
+**How Hibernate decides the foreign key column name**
+
+```text
+Default naming convention:
+
+  Field name in Java:   address
+  Separator:            _
+  Referenced PK column: id
+
+  FK column name:       address_id
+```
+
+So `User.address` becomes `address_id` in the `users` table, referencing the `id` column in the `addresses` table.
+
+**How Hibernate automatically chooses the primary key of the referred table**
+
+```text
+@OneToOne
+private Address address;
+
+Hibernate:
+  1. Looks at the type of the field → Address.class
+  2. Finds @Entity Address
+  3. Finds the field marked with @Id in Address → "id"
+  4. Uses that as the referencedColumnName for the FK
+  5. Creates: address_id BIGINT REFERENCES addresses(id)
+```
+
+If `Address` had `@Id private Long addressId`, Hibernate would still reference that field because `@Id` is what matters, not the field name.
+
+Generated DDL:
+```sql
+CREATE TABLE addresses (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    city VARCHAR(255),
+    zip_code VARCHAR(255)
+);
+
+CREATE TABLE users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255),
+    address_id BIGINT UNIQUE,
+    CONSTRAINT fk_users_address FOREIGN KEY (address_id) REFERENCES addresses(id)
+);
+```
+
+The `UNIQUE` constraint on `address_id` enforces the "one-to-one" relationship — no two users can share the same address.
+
+---
+
+### @JoinColumn for More Control
+
+`@JoinColumn` gives you explicit control over the foreign key column name, referenced column, nullability, and constraints.
+
+**Properties of @JoinColumn**
+
+| Property | Purpose | Default |
+|---|---|---|
+| `name` | FK column name in the parent table | `<field>_<referenced_pk>` |
+| `referencedColumnName` | Which column in the child table the FK points to | The `@Id` column |
+| `nullable` | Allow NULL in the FK column | `true` |
+| `unique` | Add UNIQUE constraint on the FK column | `true` for `@OneToOne` |
+| `insertable` | Include in INSERT statements | `true` |
+| `updatable` | Include in UPDATE statements | `true` |
+| `columnDefinition` | Raw DDL for the column | Provider-inferred |
+| `foreignKey` | Customize the FK constraint name | Auto-generated |
+
+**Code example with full control**
+
+```java
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(
+        name = "addr_id",                              // custom FK column name
+        referencedColumnName = "id",                    // points to addresses.id
+        nullable = false,                               // NOT NULL — every user MUST have an address
+        unique = true,                                  // UNIQUE — one address per user
+        foreignKey = @ForeignKey(name = "fk_user_addr") // custom FK constraint name
+    )
+    private Address address;
+}
+```
+
+Generated DDL:
+```sql
+CREATE TABLE users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255),
+    addr_id BIGINT NOT NULL UNIQUE,
+    CONSTRAINT fk_user_addr FOREIGN KEY (addr_id) REFERENCES addresses(id)
+);
+```
+
+**Without @JoinColumn vs with @JoinColumn**
+
+```text
+Without @JoinColumn:
+  @OneToOne
+  private Address address;
+  → FK column: address_id (auto-generated name)
+  → References: addresses.id (auto-detected from @Id)
+  → Nullable: true
+  → Constraint name: auto-generated (random-looking)
+
+With @JoinColumn:
+  @OneToOne
+  @JoinColumn(name = "addr_id", nullable = false, foreignKey = @ForeignKey(name = "fk_user_addr"))
+  private Address address;
+  → FK column: addr_id (you chose it)
+  → References: addresses.id
+  → Nullable: false
+  → Constraint name: fk_user_addr (you chose it)
+```
+
+---
+
+### @JoinColumns for Composite Key References
+
+When the child entity has a **composite primary key** (using `@IdClass`), the parent must reference **all columns** of that composite key. You use `@JoinColumns` (plural) with multiple `@JoinColumn` entries.
+
+**Step 1: Child entity with composite key using @IdClass**
+
+```java
+// ID class
+public class WarehouseLocationId implements Serializable {
+
+    private String warehouseCode;
+    private String zoneCode;
+
+    public WarehouseLocationId() {}
+
+    public WarehouseLocationId(String warehouseCode, String zoneCode) {
+        this.warehouseCode = warehouseCode;
+        this.zoneCode = zoneCode;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        WarehouseLocationId that = (WarehouseLocationId) o;
+        return Objects.equals(warehouseCode, that.warehouseCode)
+            && Objects.equals(zoneCode, that.zoneCode);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(warehouseCode, zoneCode);
+    }
+}
+```
+
+```java
+// Child entity with composite PK
+@Entity
+@Table(name = "warehouse_locations")
+@IdClass(WarehouseLocationId.class)
+public class WarehouseLocation {
+
+    @Id
+    @Column(name = "warehouse_code")
+    private String warehouseCode;           // part of composite PK
+
+    @Id
+    @Column(name = "zone_code")
+    private String zoneCode;                // part of composite PK
+
+    private String description;
+    private Integer capacity;
+
+    // constructors, getters, setters
+}
+```
+
+**Step 2: Parent entity referencing the composite key**
+
+```java
+@Entity
+@Table(name = "inventory_items")
+public class InventoryItem {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String productName;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumns({
+        @JoinColumn(
+            name = "wh_code",                                  // FK column in inventory_items
+            referencedColumnName = "warehouse_code"             // PK column in warehouse_locations
+        ),
+        @JoinColumn(
+            name = "wh_zone",                                  // FK column in inventory_items
+            referencedColumnName = "zone_code"                  // PK column in warehouse_locations
+        )
+    })
+    private WarehouseLocation location;
+
+    // constructors, getters, setters
+}
+```
+
+**Resulting table structure**
+
+```text
+┌─────────────────────────────────┐          ┌──────────────────────────────────┐
+│  inventory_items                │          │  warehouse_locations             │
+├─────────────────────────────────┤          ├──────────────────────────────────┤
+│  id            BIGINT (PK)      │          │  warehouse_code VARCHAR (PK)     │
+│  product_name  VARCHAR(255)     │          │  zone_code      VARCHAR (PK)     │
+│  wh_code       VARCHAR (FK) ────┼──┐       │  description    VARCHAR(255)     │
+│  wh_zone       VARCHAR (FK) ────┼──┼──────>│  capacity       INT              │
+│                                 │  │       │                                  │
+│  UNIQUE(wh_code, wh_zone)       │  │       │  PRIMARY KEY (warehouse_code,    │
+│                                 │  │       │               zone_code)         │
+└─────────────────────────────────┘  │       └──────────────────────────────────┘
+                                     │
+                          Both FK columns together
+                          reference the composite PK
+```
+
+Generated DDL:
+```sql
+CREATE TABLE warehouse_locations (
+    warehouse_code VARCHAR(255) NOT NULL,
+    zone_code VARCHAR(255) NOT NULL,
+    description VARCHAR(255),
+    capacity INT,
+    PRIMARY KEY (warehouse_code, zone_code)
+);
+
+CREATE TABLE inventory_items (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_name VARCHAR(255),
+    wh_code VARCHAR(255),
+    wh_zone VARCHAR(255),
+    CONSTRAINT fk_inventory_location
+        FOREIGN KEY (wh_code, wh_zone)
+        REFERENCES warehouse_locations(warehouse_code, zone_code)
+);
+```
+
+**Usage**
+
+```java
+@Transactional
+public void createInventory() {
+    WarehouseLocation location = new WarehouseLocation();
+    location.setWarehouseCode("WH-BLR-001");
+    location.setZoneCode("ZONE-A");
+    location.setDescription("Electronics Zone");
+    location.setCapacity(500);
+
+    InventoryItem item = new InventoryItem();
+    item.setProductName("Laptop");
+    item.setLocation(location);
+
+    inventoryItemRepository.save(item);
+    // INSERT INTO warehouse_locations (warehouse_code, zone_code, description, capacity)
+    //   VALUES ('WH-BLR-001', 'ZONE-A', 'Electronics Zone', 500);
+    // INSERT INTO inventory_items (product_name, wh_code, wh_zone)
+    //   VALUES ('Laptop', 'WH-BLR-001', 'ZONE-A');
+}
+```
+
+---
+
+### Eager and Lazy Loading
+
+**Does the child entity always load with the parent?**
+
+No — it depends on the **fetch type**. The `@OneToOne` annotation has a `fetch` attribute that controls when the child is loaded.
+
+```java
+@OneToOne(fetch = FetchType.EAGER)   // child loaded immediately WITH parent (DEFAULT for @OneToOne)
+@OneToOne(fetch = FetchType.LAZY)    // child loaded ONLY when accessed
+```
+
+---
+
+### What is Eager Loading
+
+With eager loading, when you load the parent entity, Hibernate **immediately** loads the child entity too, in the **same SQL query** (using a JOIN).
+
+```java
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)   // EAGER = default for @OneToOne
+    @JoinColumn(name = "address_id")
+    private Address address;
+}
+```
+
+```java
+// Load user
+User user = userRepository.findById(1L).orElseThrow();
+// At this point, user.address is ALREADY loaded — no extra query
+System.out.println(user.getAddress().getCity());   // works, no additional SQL
+```
+
+```text
+SQL generated (single query with LEFT JOIN):
+
+SELECT u.id, u.name, u.address_id,
+       a.id, a.city, a.zip_code
+FROM users u
+LEFT JOIN addresses a ON u.address_id = a.id
+WHERE u.id = 1;
+```
+
+---
+
+### What is Lazy Loading
+
+With lazy loading, when you load the parent entity, Hibernate does **NOT** load the child entity. It creates a **proxy object** instead. The real data is fetched from the database **only when you access** the child's fields.
+
+```java
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id")
+    private Address address;       // not loaded until accessed
+}
+```
+
+```java
+@Transactional
+public void lazyLoadingExample() {
+    // SQL: SELECT u.id, u.name, u.address_id FROM users u WHERE u.id = 1
+    // (NO JOIN — address is NOT loaded)
+    User user = userRepository.findById(1L).orElseThrow();
+
+    // user.address is a Hibernate PROXY at this point (not real Address)
+    // Accessing a field on the proxy triggers the second query:
+    // SQL: SELECT a.id, a.city, a.zip_code FROM addresses a WHERE a.id = 1
+    String city = user.getAddress().getCity();
+}
+```
+
+```text
+Eager loading (1 query):
+  SELECT u.*, a.* FROM users u LEFT JOIN addresses a ON u.address_id = a.id WHERE u.id = 1;
+
+Lazy loading (2 queries, second only if accessed):
+  Query 1: SELECT u.id, u.name, u.address_id FROM users u WHERE u.id = 1;
+  Query 2: SELECT a.id, a.city, a.zip_code FROM addresses a WHERE a.id = 1;   ← only when getAddress().getCity() called
+```
+
+---
+
+### Difference Between Eager and Lazy Loading
+
+| | Eager (FetchType.EAGER) | Lazy (FetchType.LAZY) |
+|---|---|---|
+| **When child loads** | Immediately with parent (same query) | Only when child field is accessed |
+| **SQL generated** | JOIN query (1 query) | Separate SELECT for child (2 queries) |
+| **Memory usage** | Higher — always loads full graph | Lower — loads only what you need |
+| **Performance risk** | Loads unnecessary data, especially for large graphs | N+1 problem if iterating over parent list |
+| **Proxy** | No proxy — real object | Hibernate proxy until accessed |
+| **Outside transaction** | Always works (data already loaded) | Fails outside transaction (`LazyInitializationException`) |
+
+**Advantages of Eager**
+
+- Simple — child data always available, no extra queries.
+- No `LazyInitializationException`.
+- Good when you **always** need the child with the parent.
+
+**Disadvantages of Eager**
+
+- Loads child even when you only need the parent.
+- If entity graph is deep (User → Address → Country → Continent), all levels load eagerly.
+- Wastes memory and DB resources for unused data.
+
+**Advantages of Lazy**
+
+- Only loads data you actually use.
+- Better performance for large or complex entity graphs.
+- Reduces memory footprint.
+
+**Disadvantages of Lazy**
+
+- Requires an open persistence context (active transaction) to access the child.
+- `LazyInitializationException` if accessed outside a transaction.
+- N+1 query problem when iterating over a list of parents.
+
+**Use cases**
+
+| Use case | Recommended fetch type |
+|---|---|
+| User → Profile (almost always needed together) | EAGER |
+| User → Address (needed on user detail page only) | LAZY |
+| Order → OrderItems (large collection) | LAZY |
+| Product → Category (small lookup, always displayed) | EAGER |
+
+---
+
+### Why Eager is Default for @OneToOne and Lazy for @ManyToMany
+
+```text
+@OneToOne   → default: FetchType.EAGER
+@ManyToOne  → default: FetchType.EAGER
+@OneToMany  → default: FetchType.LAZY
+@ManyToMany → default: FetchType.LAZY
+```
+
+**Why @OneToOne defaults to EAGER**
+
+- `@OneToOne` loads **exactly one** related entity — very low cost.
+- In most cases, if you load a User, you also need its Address or Profile.
+- One extra JOIN adds negligible overhead.
+
+**Why @ManyToMany defaults to LAZY**
+
+- `@ManyToMany` can load **hundreds or thousands** of related entities.
+- Loading all students for a course, or all courses for a student, eagerly would cause massive data transfer.
+- Lazy loading prevents this by only fetching the collection when explicitly accessed.
+
+**Can we override it?**
+
+Yes — you override the default by specifying `fetch` explicitly:
+
+```java
+// Override @OneToOne EAGER default → make it LAZY
+@OneToOne(fetch = FetchType.LAZY)
+private Address address;
+
+// Override @ManyToMany LAZY default → make it EAGER (not recommended)
+@ManyToMany(fetch = FetchType.EAGER)
+private Set<Course> courses;
+```
+
+---
+
+### Why Hibernate Uses LEFT JOIN for @OneToOne
+
+Hibernate generates a **LEFT JOIN** (not INNER JOIN) to load the parent and child together.
+
+```text
+SELECT u.id, u.name, u.address_id,
+       a.id, a.city, a.zip_code
+FROM users u
+LEFT JOIN addresses a ON u.address_id = a.id
+WHERE u.id = 1;
+```
+
+**Why LEFT JOIN instead of INNER JOIN?**
+
+- A `LEFT JOIN` ensures the parent row is **always returned**, even if the FK column is `NULL` (no child exists).
+- If the `address_id` is `NULL` in the `users` table, an `INNER JOIN` would return **zero rows**, and you could not load the User at all.
+- Since JPA allows `@OneToOne` to be optional (nullable FK), LEFT JOIN is the safe choice.
+
+```text
+INNER JOIN:
+  User(id=1, address_id=NULL)  →  NOT returned (no matching address row)
+  User lost!
+
+LEFT JOIN:
+  User(id=1, address_id=NULL)  →  Returned with address columns as NULL
+  User preserved, address = null in Java
+```
+
+**What LEFT JOIN does in eager vs lazy loading**
+
+```text
+Eager loading (FetchType.EAGER):
+  SELECT u.*, a.* FROM users u LEFT JOIN addresses a ON u.address_id = a.id WHERE u.id = ?
+  → Parent AND child data in ONE query. If address_id is NULL, address columns are NULL → user.address = null.
+
+Lazy loading (FetchType.LAZY):
+  Query 1: SELECT u.id, u.name, u.address_id FROM users u WHERE u.id = ?
+  → Only parent loaded. No JOIN at all.
+
+  Query 2 (triggered on access): SELECT a.* FROM addresses a WHERE a.id = ?
+  → Simple SELECT by PK. No LEFT JOIN needed because the FK value is already known.
+```
+
+If you make the FK `NOT NULL` (`@JoinColumn(nullable = false)`), Hibernate knows the child always exists and **may** optimize to use `INNER JOIN` instead of `LEFT JOIN`:
+
+```java
+@OneToOne(fetch = FetchType.EAGER, optional = false)
+@JoinColumn(name = "address_id", nullable = false)
+private Address address;
+// Hibernate may use INNER JOIN since address is guaranteed to exist
+```
+
+---
+
+### Lazy Loading and Jackson Serialization Exception
+
+When you use lazy loading and return the **entity directly** as a REST response (not a DTO), Jackson encounters the Hibernate **proxy** object and fails to serialize it.
+
+**The problem**
+
+```java
+@RestController
+public class UserController {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @GetMapping("/users/{id}")
+    public User getUser(@PathVariable Long id) {
+        return userRepository.findById(id).orElseThrow();
+        // Returns User entity directly as JSON
+    }
+}
+```
+
+```java
+@Entity
+public class User {
+    @Id
+    private Long id;
+    private String name;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id")
+    private Address address;         // Hibernate proxy — not real Address
+}
+```
+
+```text
+What happens:
+
+1. @Transactional (in repository) loads User from DB
+2. Transaction commits → persistence context closes → EntityManager closed
+3. user.address is still a Hibernate PROXY (not initialized)
+4. Controller returns the User object
+5. Jackson (HttpMessageConverter) tries to serialize the User to JSON
+6. Jackson calls user.getAddress() → triggers proxy initialization
+7. But the persistence context is CLOSED → no active Session
+8. EXCEPTION:
+
+   com.fasterxml.jackson.databind.exc.InvalidDefinitionException:
+   No serializer found for class org.hibernate.proxy.pojo.bytebuddy.ByteBuddyInterceptor
+   
+   OR
+   
+   org.hibernate.LazyInitializationException:
+   could not initialize proxy — no Session
+```
+
+```text
+Timeline:
+
+ @Transactional        Transaction ends       Jackson serializes
+      │                     │                       │
+  findById()            PC closed              user.getAddress()
+  user loaded          address is              proxy init fails!
+  address = proxy      still a proxy           → EXCEPTION
+      │                     │                       │
+  EM open ──────────── EM closed ──────────── no EM available
+```
+
+---
+
+**How @JsonIgnore helps (and its limitation)**
+
+`@JsonIgnore` tells Jackson to **skip** the field entirely during serialization.
+
+```java
+@Entity
+public class User {
+    @Id
+    private Long id;
+    private String name;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id")
+    @JsonIgnore                           // Jackson will skip this field
+    private Address address;
+}
+```
+
+```text
+Response JSON:
+{
+    "id": 1,
+    "name": "Alice"
+    // address is completely absent — @JsonIgnore skipped it
+}
+```
+
+**The limitation**: `@JsonIgnore` **always** ignores the field — even when the address IS loaded (e.g., you explicitly fetched it via a JOIN query or accessed it within the transaction). You can never include the address in the response.
+
+```java
+@Transactional
+public User getUserWithAddress(Long id) {
+    User user = userRepository.findById(id).orElseThrow();
+    user.getAddress().getCity();   // force initialization inside transaction
+    return user;
+}
+// Even though address IS loaded, @JsonIgnore still excludes it from JSON!
+```
+
+---
+
+**Why DTO is the Right Solution (and Recommended)**
+
+A **DTO (Data Transfer Object)** decouples the API response from the JPA entity. You control exactly what data is included.
+
+```java
+public class UserDTO {
+    private Long id;
+    private String name;
+    private String city;        // flat field from Address, only what the API needs
+    private String zipCode;
+
+    // constructors, getters, setters
+}
+```
+
+```java
+@Service
+public class UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Transactional(readOnly = true)
+    public UserDTO getUserById(Long id) {
+        User user = userRepository.findById(id).orElseThrow();
+
+        UserDTO dto = new UserDTO();
+        dto.setId(user.getId());
+        dto.setName(user.getName());
+
+        if (user.getAddress() != null) {
+            dto.setCity(user.getAddress().getCity());       // accessed inside transaction → works
+            dto.setZipCode(user.getAddress().getZipCode());
+        }
+
+        return dto;   // safe to serialize — plain POJO, no proxy
+    }
+}
+```
+
+```java
+@RestController
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/users/{id}")
+    public UserDTO getUser(@PathVariable Long id) {
+        return userService.getUserById(id);   // returns DTO, not entity
+    }
+}
+```
+
+**Why DTO is recommended over returning Entity**
+
+| Concern | Returning Entity | Returning DTO |
+|---|---|---|
+| Lazy loading exceptions | Risk of `LazyInitializationException` | No proxy — plain POJO |
+| API response shape | Coupled to entity structure | Decoupled — API can change independently |
+| Security | May expose sensitive fields (password, internal IDs) | Only expose what you choose |
+| Hibernate proxy in JSON | `ByteBuddyInterceptor` errors | No proxy — clean serialization |
+| Versioning | Entity changes break API | DTO versioned separately |
+| Circular references | Infinite recursion (bidirectional) | No cycles — flat structure |
+
+---
+
+### When Does Lazy Loading Actually Fetch the Child
+
+The child entity is fetched **when you access any field** on the proxy object, and the persistence context must still be open.
+
+```java
+@Transactional
+public void lazyLoadTiming() {
+    User user = userRepository.findById(1L).orElseThrow();
+    // SQL: SELECT u.id, u.name, u.address_id FROM users u WHERE u.id = 1
+    // user.address = Hibernate PROXY (not initialized)
+
+    // This DOES NOT trigger loading — just returns the proxy reference:
+    Address addressProxy = user.getAddress();
+
+    // This TRIGGERS the actual SQL:
+    String city = addressProxy.getCity();
+    // SQL: SELECT a.id, a.city, a.zip_code FROM addresses a WHERE a.id = 1
+    // Now the proxy is "initialized" and has real data
+
+    // Subsequent calls do NOT trigger SQL — proxy is already initialized:
+    String zip = addressProxy.getZipCode();   // no SQL
+}
+```
+
+```text
+Access sequence:
+
+user.getAddress()              → returns PROXY reference (no SQL)
+user.getAddress().getCity()    → TRIGGERS SQL (proxy initialized)
+user.getAddress().getZipCode() → uses initialized proxy (no SQL)
+user.getAddress().getId()      → may NOT trigger SQL (ID is in the FK column, already known)
+```
+
+**Key rules**:
+- Accessing `getAddress()` alone returns the proxy — no SQL.
+- Accessing any **non-ID field** on the proxy (like `getCity()`) triggers the query.
+- Accessing `getId()` on the proxy may **not** trigger a query because the ID is already stored in the parent's FK column.
+- Once initialized, subsequent field accesses use the loaded data — no repeated queries.
+
+---
+
+### Why No Exception When Inserting Parent with Child via Lazy Loading
+
+When you **save** (insert) a parent with its child, even with lazy loading, there is no `LazyInitializationException`. Here is why:
+
+```java
+@Transactional
+public User createUserWithAddress() {
+    Address address = new Address();
+    address.setCity("Bangalore");
+    address.setZipCode("560001");
+
+    User user = new User();
+    user.setName("Alice");
+    user.setAddress(address);       // setting real Address object (not a proxy)
+
+    return userRepository.save(user);
+    // Works fine — no lazy loading exception
+}
+```
+
+**Why it works**
+
+```text
+During INSERT:
+
+1. user.address = actual Address object (you created it with "new")
+   It is NOT a Hibernate proxy — it is a real object you built in Java.
+
+2. The persistence context is OPEN (inside @Transactional).
+
+3. CascadeType.ALL → Hibernate persists Address first, gets its ID,
+   then persists User with the FK pointing to Address.
+
+4. No proxy involved, no lazy loading triggered.
+   The Address object is already in memory — you just created it!
+```
+
+```text
+During SELECT with lazy loading (where the problem occurs):
+
+1. Hibernate loads User from DB.
+2. Hibernate creates a PROXY for Address (does NOT load it).
+3. Transaction ends → persistence context closes.
+4. Later, you access user.getAddress().getCity().
+5. Proxy tries to initialize → NO persistence context → EXCEPTION.
+```
+
+**Does the persistence context help?**
+
+Yes — the persistence context is critical. As long as it is open, lazy proxy initialization works:
+
+```text
+@Transactional method:
+  ├─ Persistence context OPEN
+  ├─ Load user (lazy address = proxy)
+  ├─ user.getAddress().getCity()     ← proxy initializes → SQL executes → WORKS
+  └─ Persistence context CLOSES
+
+Outside @Transactional:
+  ├─ Persistence context CLOSED
+  ├─ user.getAddress().getCity()     ← proxy tries to initialize → FAILS
+  └─ LazyInitializationException
+```
+
+During **insert**, you are always inside a `@Transactional` method, and you are passing real objects (not proxies). During **read**, if you exit the transactional boundary before accessing the lazy proxy, you get the exception.
+
+---
+
+### OneToOne Bidirectional Mapping
+
+In a bidirectional `@OneToOne` mapping, **both** entities have a reference to each other. The parent knows the child, and the child knows the parent.
+
+```text
+Java Objects:                              Database Tables:
+
+┌───────────────────┐                      ┌───────────────────────────┐
+│  User             │                      │  users                    │
+│                   │                      ├───────────────────────────┤
+│  id: Long         │    @OneToOne         │  id (PK, BIGINT)          │
+│  name: String     ├───────────────>      │  name (VARCHAR)           │
+│  address: Address │                      │  address_id (FK, BIGINT)  │──┐
+│                   │<───────────────┐     │                           │  │
+└───────────────────┘                │     └───────────────────────────┘  │
+                                     │                                    │
+┌───────────────────┐                │     ┌───────────────────────────┐  │
+│  Address          │                │     │  addresses                │  │
+│                   │  @OneToOne     │     ├───────────────────────────┤  │
+│  id: Long         │  (mappedBy)   │     │  id (PK, BIGINT)          │<─┘
+│  city: String     ├───────────────┘     │  city (VARCHAR)           │
+│  zipCode: String  │                      │  zip_code (VARCHAR)       │
+│  user: User       │  ← back reference   │                           │
+│                   │                      │  (NO FK column here!)     │
+└───────────────────┘                      └───────────────────────────┘
+
+Direction: User <────────> Address   (both ways)
+           User knows Address.   Address also knows User.
+```
+
+---
+
+### Difference from Unidirectional
+
+| | Unidirectional | Bidirectional |
+|---|---|---|
+| **Parent (User)** | Has `@OneToOne Address address` | Has `@OneToOne Address address` |
+| **Child (Address)** | No reference to User | Has `@OneToOne(mappedBy="address") User user` |
+| **Navigation** | User → Address only | User → Address AND Address → User |
+| **Table structure** | Same — FK in users table | **Same** — FK in users table only |
+| **Extra FK in child table?** | No | **No** — `mappedBy` prevents it |
+| **Java code difference** | Address has no User field | Address has a User field with `mappedBy` |
+
+**Critical point**: Adding bidirectional mapping **does NOT change the table structure**. The foreign key still exists only in the **owner** table (users). The `mappedBy` side (Address) does not add a foreign key column.
+
+```text
+Unidirectional tables:                    Bidirectional tables:
+┌──────────┐    ┌──────────┐             ┌──────────┐    ┌──────────┐
+│ users    │    │ addresses│             │ users    │    │ addresses│
+│ id (PK)  │    │ id (PK)  │             │ id (PK)  │    │ id (PK)  │
+│ name     │    │ city     │             │ name     │    │ city     │
+│ addr_id──┼───>│ zip_code │             │ addr_id──┼───>│ zip_code │
+└──────────┘    └──────────┘             └──────────┘    └──────────┘
+
+IDENTICAL table structure!  The difference is only in Java — Address now has a User field.
+```
+
+---
+
+### Owner Side and Inverse Side
+
+In a bidirectional relationship, JPA requires you to designate:
+
+- **Owner side**: The entity whose table holds the **foreign key column**. This side controls the relationship.
+- **Inverse side**: The entity that mirrors the relationship using `mappedBy`. This side does NOT have a FK column.
+
+```text
+┌──────────────────────┐                    ┌──────────────────────────────┐
+│  User (OWNER)        │                    │  Address (INVERSE)           │
+│                      │                    │                              │
+│  @OneToOne           │                    │  @OneToOne(mappedBy="address")│
+│  @JoinColumn(...)    │                    │  private User user;          │
+│  private Address     │                    │                              │
+│     address;         │                    │  (no @JoinColumn here)       │
+│                      │                    │  (no FK in addresses table)  │
+│  → FK: address_id    │                    │                              │
+│    in users table    │                    │  "I'm just the mirror"       │
+└──────────────────────┘                    └──────────────────────────────┘
+```
+
+**Who is the owner?**
+
+The entity that has `@JoinColumn` (the FK column) is the owner. The entity that has `mappedBy` is the inverse.
+
+**Code example**
+
+```java
+// OWNER SIDE — User holds the FK
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "address_id", referencedColumnName = "id")   // FK here
+    private Address address;
+
+    // constructors, getters, setters
+}
+```
+
+```java
+// INVERSE SIDE — Address mirrors the relationship
+@Entity
+@Table(name = "addresses")
+public class Address {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String city;
+
+    @Column(name = "zip_code")
+    private String zipCode;
+
+    @OneToOne(mappedBy = "address")      // "address" = field name in User class
+    private User user;                    // back reference to User
+
+    // constructors, getters, setters
+}
+```
+
+---
+
+### Why We Need `mappedBy`
+
+Without `mappedBy`, JPA treats both sides as **independent** owner relationships and creates **two FK columns** — one in each table.
+
+```text
+WITHOUT mappedBy (WRONG):
+
+@Entity User:
+    @OneToOne @JoinColumn(name = "address_id")
+    private Address address;
+
+@Entity Address:
+    @OneToOne @JoinColumn(name = "user_id")
+    private User user;
+
+Result — TWO foreign keys:
+┌──────────────────┐         ┌─────────────────────┐
+│ users            │         │ addresses            │
+│ id (PK)          │         │ id (PK)              │
+│ name             │         │ city                 │
+│ address_id (FK) ─┼────────>│ zip_code             │
+│                  │<────────┼─ user_id (FK)        │
+└──────────────────┘         └─────────────────────┘
+
+Two FK columns = data duplication, sync issues, potential inconsistency.
+```
+
+```text
+WITH mappedBy (CORRECT):
+
+@Entity User:
+    @OneToOne @JoinColumn(name = "address_id")
+    private Address address;
+
+@Entity Address:
+    @OneToOne(mappedBy = "address")       // points to User.address field
+    private User user;
+
+Result — ONE foreign key only:
+┌──────────────────┐         ┌─────────────────────┐
+│ users            │         │ addresses            │
+│ id (PK)          │         │ id (PK)              │
+│ name             │         │ city                 │
+│ address_id (FK) ─┼────────>│ zip_code             │
+│                  │         │                      │
+└──────────────────┘         └─────────────────────┘
+
+One FK = clean, no duplication, single source of truth.
+```
+
+`mappedBy = "address"` tells Hibernate: "Don't create a FK here. The relationship is already managed by the `address` field in the `User` entity. I'm just a mirror."
+
+---
+
+### Real-World Example — Getting User from Address
+
+**Use case**: User → Address is the primary mapping. But sometimes you want to know which User lives at a given Address — that requires Address → User navigation.
+
+```java
+// OWNER
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+    private String email;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "address_id")
+    private Address address;
+
+    // getters, setters
+}
+```
+
+```java
+// INVERSE
+@Entity
+@Table(name = "addresses")
+public class Address {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String street;
+    private String city;
+
+    @Column(name = "zip_code")
+    private String zipCode;
+
+    @OneToOne(mappedBy = "address")
+    private User user;              // back reference
+
+    // getters, setters
+}
+```
+
+**Navigate both directions**
+
+```java
+@Service
+public class AddressService {
+
+    @Autowired
+    private AddressRepository addressRepository;
+
+    @Transactional(readOnly = true)
+    public void findUserByAddress(Long addressId) {
+        Address address = addressRepository.findById(addressId).orElseThrow();
+
+        // Navigate from Address → User (bidirectional)
+        User user = address.getUser();
+        System.out.println("User at this address: " + user.getName());
+    }
+}
+```
+
+```java
+@Service
+public class UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Transactional(readOnly = true)
+    public void findAddressByUser(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow();
+
+        // Navigate from User → Address (standard direction)
+        Address address = user.getAddress();
+        System.out.println("User lives at: " + address.getCity());
+    }
+}
+```
+
+**SQL for Address → User navigation**
+
+```text
+addressRepository.findById(1L)
+  → SELECT a.* FROM addresses a WHERE a.id = 1
+  → Then (eager or lazy): SELECT u.* FROM users u WHERE u.address_id = 1
+```
+
+---
+
+### Infinite Recursion Problem in Bidirectional Mapping
+
+When you return a bidirectional entity directly as a REST response, Jackson serializes User → Address → User → Address → ... infinitely.
+
+```text
+Jackson serializes User:
+{
+  "id": 1,
+  "name": "Alice",
+  "address": {                        ← serializes Address
+    "id": 10,
+    "city": "Bangalore",
+    "user": {                          ← serializes User AGAIN
+      "id": 1,
+      "name": "Alice",
+      "address": {                     ← serializes Address AGAIN
+        "id": 10,
+        "city": "Bangalore",
+        "user": {                      ← INFINITE LOOP
+          ...
+        }
+      }
+    }
+  }
+}
+
+Result: StackOverflowError or HttpMessageNotWritableException
+```
+
+```text
+The recursion cycle:
+
+User.address → Address.user → User.address → Address.user → ...
+     │              │              │              │
+     └──────────────┘              └──────────────┘
+         cycle 1                       cycle 2     → StackOverflow
+```
+
+---
+
+### Solution 1: @JsonManagedReference and @JsonBackReference
+
+This pair tells Jackson which side to serialize (managed = forward) and which to skip (back = ignored during serialization).
+
+```text
+@JsonManagedReference  →  "Serialize this side" (included in JSON)
+@JsonBackReference     →  "Do NOT serialize this side" (excluded from JSON)
+```
+
+**Code example**
+
+```java
+// OWNER — User (forward reference, serialized)
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "address_id")
+    @JsonManagedReference                    // ← serialize this side
+    private Address address;
+}
+```
+
+```java
+// INVERSE — Address (back reference, NOT serialized)
+@Entity
+@Table(name = "addresses")
+public class Address {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String city;
+
+    @Column(name = "zip_code")
+    private String zipCode;
+
+    @OneToOne(mappedBy = "address")
+    @JsonBackReference                       // ← do NOT serialize this side
+    private User user;
+}
+```
+
+**JSON response when fetching User**
+
+```json
+{
+    "id": 1,
+    "name": "Alice",
+    "address": {
+        "id": 10,
+        "city": "Bangalore",
+        "zipCode": "560001"
+    }
+}
+```
+
+Address is included in the User response, but `user` field inside Address is **skipped** → no infinite recursion.
+
+**JSON response when fetching Address directly**
+
+```json
+{
+    "id": 10,
+    "city": "Bangalore",
+    "zipCode": "560001"
+}
+```
+
+The `user` field is **not included** because `@JsonBackReference` always omits it. You **cannot** see User from the Address response.
+
+**Where to put which annotation and why**
+
+| Annotation | Put on | Why |
+|---|---|---|
+| `@JsonManagedReference` | Parent side (User.address) | This is the "forward" direction you typically serialize |
+| `@JsonBackReference` | Child side (Address.user) | This is the "back" direction that causes the recursion |
+
+**Limitation**: `@JsonBackReference` **always** hides the annotated field. When you fetch Address, you can never see its User in JSON. If you need both directions visible in the response, use `@JsonIdentityInfo`.
+
+---
+
+### Solution 2: @JsonIdentityInfo
+
+`@JsonIdentityInfo` handles recursion by serializing the **full object the first time** and only its **ID** on subsequent references. This way, both directions are visible.
+
+```java
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+
+@Entity
+@Table(name = "users")
+@JsonIdentityInfo(
+    generator = ObjectIdGenerators.PropertyGenerator.class,
+    property = "id"                          // use the @Id field as the identity
+)
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "address_id")
+    private Address address;                 // no @JsonManagedReference needed
+}
+```
+
+```java
+@Entity
+@Table(name = "addresses")
+@JsonIdentityInfo(
+    generator = ObjectIdGenerators.PropertyGenerator.class,
+    property = "id"                          // use the @Id field as the identity
+)
+public class Address {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String city;
+
+    @Column(name = "zip_code")
+    private String zipCode;
+
+    @OneToOne(mappedBy = "address")
+    private User user;                       // no @JsonBackReference needed
+}
+```
+
+**JSON response when fetching User**
+
+```json
+{
+    "id": 1,
+    "name": "Alice",
+    "address": {
+        "id": 10,
+        "city": "Bangalore",
+        "zipCode": "560001",
+        "user": 1
+    }
+}
+```
+
+When Jackson encounters User for the second time (inside Address.user), it replaces the full object with just its `id` value (`1`). No infinite recursion, and **both directions are visible**.
+
+**JSON response when fetching Address**
+
+```json
+{
+    "id": 10,
+    "city": "Bangalore",
+    "zipCode": "560001",
+    "user": {
+        "id": 1,
+        "name": "Alice",
+        "address": 10
+    }
+}
+```
+
+When Jackson encounters Address for the second time (inside User.address), it replaces it with just `10`.
+
+**How @JsonIdentityInfo works**
+
+```text
+First encounter of User(id=1):
+  → Serialize full object: { "id": 1, "name": "Alice", "address": {...} }
+  → Register: User#1 = already serialized
+
+Inside Address, encounter User(id=1) again:
+  → Already serialized! Output just the id: 1
+  → No recursion!
+```
+
+**Why use it on the @Id field**
+
+The `@Id` field is unique for every entity instance. Using it as the identity marker ensures no collisions. `ObjectIdGenerators.PropertyGenerator.class` tells Jackson "use an existing property of the object (id) as the identity, don't generate a synthetic one."
+
+---
+
+### When to Use Which Solution
+
+| Solution | Behavior | Use when |
+|---|---|---|
+| `@JsonManagedReference` + `@JsonBackReference` | Forward side serialized, back side always hidden | You only need one direction in the response (most common) |
+| `@JsonIdentityInfo` | Both sides serialized, second occurrence replaced with ID | You need both directions visible, API consumers can resolve IDs |
+| DTO (recommended) | Full control, no annotations on entity | Production APIs — cleanest, most flexible, no entity leakage |
+
+**Summary of all approaches**
+
+```text
+Problem: User → Address → User → Address → ... (infinite recursion)
+
+Solution 1: @JsonManagedReference + @JsonBackReference
+  User → Address ✅ (full object)
+  Address → User ❌ (always hidden)
+
+Solution 2: @JsonIdentityInfo
+  User → Address ✅ (full object first time, ID on repeat)
+  Address → User ✅ (full object first time, ID on repeat)
+
+Solution 3: DTO (best practice)
+  UserDTO → AddressDTO ✅ (exactly what you want)
+  AddressDTO → UserDTO ✅ (if you include it)
+  No recursion, no proxies, no Jackson annotations on entities
+```
+
+
+
+
+### OneToMany Unidirectional Mapping
+
+In a `@OneToMany` unidirectional mapping, one parent entity is associated with **multiple** child entities. The reference exists only in the parent — the child has no knowledge of the parent.
+
+**Real-life use case**: A `User` can place many `Order`s. The User entity has a list of Orders. The Order entity does NOT have a reference back to User.
+
+```text
+Java Objects:                              
+
+┌───────────────────────┐                  
+│  User                 │                  
+│                       │                  
+│  id: Long             │    @OneToMany    
+│  name: String         │                  
+│  orders: List<Order>  ├─────────────────> ┌────────────────────┐
+│                       │                   │  Order             │
+│                       │                   │                    │
+└───────────────────────┘                   │  id: Long          │
+                                            │  product: String   │
+           1 User  ───────>  N Orders       │  amount: BigDecimal│
+           (parent)          (children)     │                    │
+                                            │  (NO ref to User)  │
+                                            └────────────────────┘
+
+Direction: User ──────> Orders   (one way only)
+           User knows its Orders.   Order does NOT know its User.
+```
+
+**Code example**
+
+```java
+@Entity
+@Table(name = "orders")
+public class Order {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String product;
+
+    private BigDecimal amount;
+
+    // NO reference to User — this is unidirectional
+    // constructors, getters, setters
+}
+```
+
+```java
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToMany(cascade = CascadeType.ALL)
+    private List<Order> orders = new ArrayList<>();
+
+    // constructors, getters, setters
+}
+```
+
+**Usage**
+
+```java
+@Transactional
+public User createUserWithOrders() {
+    Order order1 = new Order();
+    order1.setProduct("Laptop");
+    order1.setAmount(new BigDecimal("999.99"));
+
+    Order order2 = new Order();
+    order2.setProduct("Mouse");
+    order2.setAmount(new BigDecimal("29.99"));
+
+    User user = new User();
+    user.setName("Alice");
+    user.getOrders().add(order1);
+    user.getOrders().add(order2);
+
+    return userRepository.save(user);
+}
+```
+
+---
+
+### How OneToMany Unidirectional is Stored in DB — The Join Table
+
+By default, when you use `@OneToMany` **without** `@JoinColumn`, Hibernate creates a **third join table** to link the parent and child tables. This is because in a unidirectional `@OneToMany`, the child table has no FK column to the parent — so Hibernate needs a separate table to hold the relationship.
+
+```text
+DEFAULT behavior (@OneToMany without @JoinColumn):
+
+┌──────────────┐        ┌────────────────────────┐        ┌──────────────────────┐
+│ users         │        │ users_orders            │        │ orders               │
+├──────────────┤        │ (AUTO-GENERATED         │        ├──────────────────────┤
+│ id (PK)      │───────>│  JOIN TABLE)            │<───────│ id (PK)              │
+│ name         │        ├────────────────────────┤        │ product              │
+│              │        │ user_id (FK) ──> users  │        │ amount               │
+│              │        │ orders_id (FK) ──> orders│        │                      │
+│              │        │                        │        │ (NO user_id here!)    │
+└──────────────┘        └────────────────────────┘        └──────────────────────┘
+```
+
+**Generated DDL (3 tables)**
+
+```sql
+CREATE TABLE users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255)
+);
+
+CREATE TABLE orders (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product VARCHAR(255),
+    amount DECIMAL(19,2)
+);
+
+-- Hibernate auto-creates this join table:
+CREATE TABLE users_orders (
+    user_id BIGINT NOT NULL,
+    orders_id BIGINT NOT NULL UNIQUE,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (orders_id) REFERENCES orders(id)
+);
+```
+
+**SQL generated when saving User with Orders**
+
+```text
+INSERT INTO orders (product, amount) VALUES ('Laptop', 999.99);          ← Order 1 saved
+INSERT INTO orders (product, amount) VALUES ('Mouse', 29.99);            ← Order 2 saved
+INSERT INTO users (name) VALUES ('Alice');                                ← User saved
+INSERT INTO users_orders (user_id, orders_id) VALUES (1, 1);             ← link User to Order 1
+INSERT INTO users_orders (user_id, orders_id) VALUES (1, 2);             ← link User to Order 2
+```
+
+**5 SQL statements** for a simple save — this is **inefficient**.
+
+```text
+Why does Hibernate create a join table by default?
+
+1. @OneToMany is on the PARENT (User).
+2. The CHILD (Order) has NO reference to User and NO FK column.
+3. Hibernate cannot add a FK to Order because Order doesn't "know" about User.
+4. So Hibernate creates a middle table to store the relationship.
+```
+
+---
+
+### @JoinColumn — Avoiding the Join Table (Industry Standard)
+
+By adding `@JoinColumn` to the `@OneToMany`, you tell Hibernate: **"Put the foreign key column directly in the child table. Do NOT create a join table."**
+
+```text
+WITH @JoinColumn (@OneToMany + @JoinColumn):
+
+┌──────────────┐                              ┌──────────────────────┐
+│ users         │                              │ orders               │
+├──────────────┤                              ├──────────────────────┤
+│ id (PK)      │──────────────────────────────>│ id (PK)              │
+│ name         │                              │ product              │
+│              │                              │ amount               │
+│              │                              │ user_id (FK)  ←──────│── FK added to child table
+│              │                              │                      │
+└──────────────┘                              └──────────────────────┘
+
+NO join table!   FK lives in the CHILD table (orders).
+Only 2 tables.
+```
+
+**Code example**
+
+```java
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id")                // FK "user_id" goes into the orders table
+    private List<Order> orders = new ArrayList<>();
+}
+```
+
+```java
+@Entity
+@Table(name = "orders")
+public class Order {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String product;
+
+    private BigDecimal amount;
+
+    // Still NO reference to User — still unidirectional
+    // The "user_id" column is managed by Hibernate, not by Order entity
+}
+```
+
+**Generated DDL (2 tables only)**
+
+```sql
+CREATE TABLE users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255)
+);
+
+CREATE TABLE orders (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product VARCHAR(255),
+    amount DECIMAL(19,2),
+    user_id BIGINT,                                -- FK added by @JoinColumn
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+**SQL generated when saving**
+
+```text
+INSERT INTO users (name) VALUES ('Alice');                                       ← User saved first
+INSERT INTO orders (product, amount) VALUES ('Laptop', 999.99);                  ← Order 1 saved (user_id is NULL initially)
+INSERT INTO orders (product, amount) VALUES ('Mouse', 29.99);                    ← Order 2 saved (user_id is NULL initially)
+UPDATE orders SET user_id = 1 WHERE id = 1;                                      ← FK set via UPDATE
+UPDATE orders SET user_id = 1 WHERE id = 2;                                      ← FK set via UPDATE
+```
+
+Note: Hibernate inserts the child rows with `user_id = NULL` first, then issues **UPDATE** statements to set the FK. This is because in unidirectional `@OneToMany`, the child entity does not know about the FK — the parent manages it.
+
+**Is @JoinColumn the industry standard?**
+
+Yes. Using `@JoinColumn` with `@OneToMany` is the **standard approach** in production code.
+
+```text
+Without @JoinColumn:
+  - 3 tables (extra join table)
+  - 5+ SQL statements for a simple save
+  - Extra JOINs needed for every query
+  - Harder to understand schema
+
+With @JoinColumn:
+  - 2 tables (clean, normalized schema)
+  - Fewer SQL statements
+  - Standard FK relationship
+  - Simpler queries
+```
+
+**Will it make queries faster?**
+
+```text
+Without @JoinColumn (join table):
+  SELECT u.*, o.*
+  FROM users u
+  JOIN users_orders uo ON u.id = uo.user_id       ← extra join through middle table
+  JOIN orders o ON uo.orders_id = o.id
+  WHERE u.id = 1;
+
+With @JoinColumn (direct FK):
+  SELECT u.*, o.*
+  FROM users u
+  LEFT JOIN orders o ON u.id = o.user_id           ← direct join, one less table
+  WHERE u.id = 1;
+
+Direct FK = one fewer JOIN = faster queries, simpler execution plan.
+```
+
+---
+
+### Lazy Loading in OneToMany (Default)
+
+`@OneToMany` defaults to `FetchType.LAZY`. The child collection is **not loaded** when the parent is fetched. It is loaded only when you **access** the collection.
+
+**Entity**
+
+```java
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)   // LAZY is default for @OneToMany
+    @JoinColumn(name = "user_id")
+    private List<Order> orders = new ArrayList<>();
+}
+```
+
+**Controller + Service**
+
+```java
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/{id}")
+    public UserDTO getUser(@PathVariable Long id) {
+        return userService.getUserById(id);
+    }
+}
+```
+
+```java
+@Service
+public class UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Transactional(readOnly = true)
+    public UserDTO getUserById(Long id) {
+        User user = userRepository.findById(id).orElseThrow();
+        // SQL #1: SELECT u.id, u.name FROM users u WHERE u.id = 1
+        // At this point, user.orders is a Hibernate PersistentBag PROXY (not loaded)
+
+        List<OrderDTO> orderDTOs = user.getOrders().stream()     // ← TRIGGERS SQL #2
+            .map(o -> new OrderDTO(o.getId(), o.getProduct(), o.getAmount()))
+            .toList();
+        // SQL #2: SELECT o.id, o.product, o.amount, o.user_id FROM orders o WHERE o.user_id = 1
+        // Orders loaded NOW because we accessed the collection
+
+        return new UserDTO(user.getId(), user.getName(), orderDTOs);
+    }
+}
+```
+
+```text
+SQL generated (lazy loading):
+
+Query 1 (load parent):
+  SELECT u.id, u.name FROM users u WHERE u.id = 1;
+
+Query 2 (load children — triggered by user.getOrders()):
+  SELECT o.id, o.product, o.amount, o.user_id
+  FROM orders o
+  WHERE o.user_id = 1;
+
+Total: 2 queries (second one only if you access the orders)
+```
+
+```text
+Timeline:
+
+findById(1L)                    user.getOrders().stream()
+     │                                   │
+     v                                   v
+SELECT users ...              SELECT orders WHERE user_id = 1
+(orders = PROXY)              (orders loaded into real list)
+     │                                   │
+     └───── orders NOT loaded ───────────┘
+                                    loaded here
+```
+
+---
+
+### Returning Entity Directly — Jackson Exception
+
+If you return the **entity** directly as a REST response with lazy loading, you **will** get a Jackson serialization exception for `@OneToMany`:
+
+```java
+// DANGEROUS — returning entity directly
+@GetMapping("/{id}")
+public User getUser(@PathVariable Long id) {
+    return userRepository.findById(id).orElseThrow();
+    // Transaction ends here (if no @Transactional on controller)
+    // user.orders = Hibernate PersistentBag proxy (not initialized)
+    // Jackson tries to serialize user.orders → EXCEPTION
+}
+```
+
+```text
+What happens:
+
+1. Repository loads User inside its own transaction
+2. Transaction commits → persistence context closes
+3. user.orders = PersistentBag proxy (NOT initialized)
+4. Jackson tries to call user.getOrders() to serialize the list
+5. Proxy tries to initialize → NO active Session
+6. EXCEPTION:
+
+   com.fasterxml.jackson.databind.exc.InvalidDefinitionException:
+   No serializer found for class org.hibernate.collection.spi.PersistentBag
+
+   OR
+
+   org.hibernate.LazyInitializationException:
+   failed to lazily initialize a collection of role: User.orders — could not initialize proxy — no Session
+```
+
+**Will the child entities be loaded automatically?** No. Unlike `@OneToOne` with eager default, `@OneToMany` defaults to LAZY. Jackson will NOT trigger the load — it will fail because the session is closed.
+
+**With OSIV (Open Session In View) enabled** (`spring.jpa.open-in-view=true`, the default): Jackson CAN trigger the lazy load because the EntityManager is still open during view rendering. But this is considered a **bad practice** because:
+- It hides the N+1 problem.
+- It couples the view layer to the persistence layer.
+- It keeps the database connection open longer than necessary.
+
+**The right solution is to use DTOs** (as shown in the lazy loading example above).
+
+---
+
+### Eager Loading in OneToMany
+
+With eager loading, Hibernate loads the parent **and all children** in a single JOIN query when the parent is fetched.
+
+**Entity**
+
+```java
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)   // EAGER — load children immediately
+    @JoinColumn(name = "user_id")
+    private List<Order> orders = new ArrayList<>();
+}
+```
+
+**Controller + Service**
+
+```java
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/{id}")
+    public UserDTO getUser(@PathVariable Long id) {
+        return userService.getUserById(id);
+    }
+}
+```
+
+```java
+@Service
+public class UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Transactional(readOnly = true)
+    public UserDTO getUserById(Long id) {
+        User user = userRepository.findById(id).orElseThrow();
+        // SQL: SELECT u.*, o.* FROM users u LEFT JOIN orders o ON u.id = o.user_id WHERE u.id = 1
+        // Orders are ALREADY loaded — no proxy, real list
+
+        List<OrderDTO> orderDTOs = user.getOrders().stream()     // NO extra SQL — already loaded
+            .map(o -> new OrderDTO(o.getId(), o.getProduct(), o.getAmount()))
+            .toList();
+
+        return new UserDTO(user.getId(), user.getName(), orderDTOs);
+    }
+}
+```
+
+```text
+SQL generated (eager loading — single query):
+
+SELECT u.id, u.name,
+       o.id, o.product, o.amount, o.user_id
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+WHERE u.id = 1;
+
+Total: 1 query (all data loaded at once)
+```
+
+```text
+Timeline:
+
+findById(1L)
+     │
+     v
+SELECT users LEFT JOIN orders ...
+(user + ALL orders loaded in one shot)
+     │
+     └───── orders are REAL objects, not proxies
+            no second query needed
+```
+
+**Why EAGER is dangerous for @OneToMany**
+
+```text
+Scenario: findAll() with EAGER @OneToMany
+
+userRepository.findAll();
+→ SELECT * FROM users;                                    ← loads 100 users
+→ For EACH user: SELECT * FROM orders WHERE user_id = ?   ← 100 more queries!
+
+Total: 101 queries (N+1 problem)
+This is why @OneToMany defaults to LAZY.
+```
+
+Eager loading is only safe for `@OneToMany` when:
+- You always need the children with the parent.
+- The collection is small and bounded.
+- You are loading a single parent entity (not a list).
+
+---
+
+### Cascade Types in OneToMany Unidirectional
+
+**CascadeType.PERSIST — Saving parent auto-saves children**
+
+```java
+@OneToMany(cascade = CascadeType.PERSIST)
+@JoinColumn(name = "user_id")
+private List<Order> orders = new ArrayList<>();
+```
+
+```java
+@Transactional
+public User createUserWithOrders() {
+    Order order1 = new Order("Laptop", new BigDecimal("999.99"));
+    Order order2 = new Order("Mouse", new BigDecimal("29.99"));
+
+    User user = new User("Alice");
+    user.getOrders().add(order1);
+    user.getOrders().add(order2);
+
+    return userRepository.save(user);   // saves User AND both Orders
+}
+```
+
+```text
+SQL:
+  INSERT INTO users (name) VALUES ('Alice');
+  INSERT INTO orders (product, amount) VALUES ('Laptop', 999.99);
+  INSERT INTO orders (product, amount) VALUES ('Mouse', 29.99);
+  UPDATE orders SET user_id = 1 WHERE id = 1;
+  UPDATE orders SET user_id = 1 WHERE id = 2;
+```
+
+```text
+persist(user)
+     │
+     ├─ INSERT User
+     ├─ CASCADE PERSIST → INSERT Order 1
+     ├─ CASCADE PERSIST → INSERT Order 2
+     └─ UPDATE Orders to set FK
+```
+
+---
+
+**CascadeType.MERGE — Updating parent auto-updates children**
+
+```java
+@OneToMany(cascade = CascadeType.MERGE)
+@JoinColumn(name = "user_id")
+private List<Order> orders = new ArrayList<>();
+```
+
+```java
+@Transactional
+public User updateUserAndOrders(Long userId) {
+    User user = userRepository.findById(userId).orElseThrow();
+    user.setName("Bob");
+    user.getOrders().get(0).setProduct("Gaming Laptop");   // update first order
+
+    return userRepository.save(user);
+}
+```
+
+```text
+SQL:
+  UPDATE users SET name = 'Bob' WHERE id = 1;
+  UPDATE orders SET product = 'Gaming Laptop' WHERE id = 1;
+```
+
+```text
+merge(user)
+     │
+     ├─ UPDATE User (name changed)
+     └─ CASCADE MERGE → UPDATE Order 1 (product changed)
+```
+
+---
+
+**CascadeType.REMOVE — Deleting parent auto-deletes children**
+
+```java
+@OneToMany(cascade = CascadeType.REMOVE)
+@JoinColumn(name = "user_id")
+private List<Order> orders = new ArrayList<>();
+```
+
+```java
+@Transactional
+public void deleteUser(Long userId) {
+    userRepository.deleteById(userId);
+}
+```
+
+```text
+SQL:
+  SELECT u.* FROM users u WHERE u.id = 1;                    ← load user
+  SELECT o.* FROM orders o WHERE o.user_id = 1;              ← load orders (for cascade)
+  DELETE FROM orders WHERE id = 1;                            ← cascade delete order 1
+  DELETE FROM orders WHERE id = 2;                            ← cascade delete order 2
+  DELETE FROM users WHERE id = 1;                             ← delete user
+```
+
+```text
+remove(user)
+     │
+     ├─ CASCADE REMOVE → DELETE Order 1
+     ├─ CASCADE REMOVE → DELETE Order 2
+     └─ DELETE User
+```
+
+---
+
+**CascadeType.REFRESH — Refreshing parent auto-refreshes children**
+
+```java
+@OneToMany(cascade = CascadeType.REFRESH)
+@JoinColumn(name = "user_id")
+private List<Order> orders = new ArrayList<>();
+```
+
+```java
+@Transactional
+public void refreshUser(Long userId) {
+    User user = userRepository.findById(userId).orElseThrow();
+
+    // Someone changed the order amount directly in DB to 1500.00
+    user.getOrders().get(0).setAmount(new BigDecimal("0.00"));  // in-memory change
+
+    entityManager.refresh(user);
+    // Hibernate re-reads user AND all orders from DB
+    // in-memory change is DISCARDED
+    // order.amount is back to 1500.00 (from DB)
+}
+```
+
+```text
+SQL:
+  SELECT u.* FROM users u WHERE u.id = 1;                    ← refresh user
+  SELECT o.* FROM orders o WHERE o.user_id = 1;              ← cascade refresh all orders
+```
+
+---
+
+**CascadeType.DETACH — Detaching parent auto-detaches children**
+
+```java
+@OneToMany(cascade = CascadeType.DETACH)
+@JoinColumn(name = "user_id")
+private List<Order> orders = new ArrayList<>();
+```
+
+```java
+@Transactional
+public void detachExample(Long userId) {
+    User user = userRepository.findById(userId).orElseThrow();
+    user.getOrders().size();    // initialize lazy collection
+
+    entityManager.detach(user);
+    // user AND all orders are now DETACHED
+    // changes to user or orders will NOT be auto-detected by dirty checking
+
+    user.setName("Changed");                           // NOT tracked
+    user.getOrders().get(0).setProduct("Changed");     // NOT tracked
+    // No UPDATE SQL will be generated
+}
+```
+
+---
+
+**CascadeType.ALL — All operations cascaded (most common for owned collections)**
+
+```java
+@OneToMany(cascade = CascadeType.ALL)
+@JoinColumn(name = "user_id")
+private List<Order> orders = new ArrayList<>();
+```
+
+Equivalent to `{PERSIST, MERGE, REMOVE, REFRESH, DETACH}`.
+
+```text
+Cascade usage summary for @OneToMany:
+
+┌──────────────────┬────────────────────────────────────────────────────┐
+│ Cascade Type     │ Propagates                                        │
+├──────────────────┼────────────────────────────────────────────────────┤
+│ PERSIST          │ save(parent) → saves all children                 │
+│ MERGE            │ save(existing parent) → updates all children      │
+│ REMOVE           │ delete(parent) → deletes all children             │
+│ REFRESH          │ refresh(parent) → re-reads all children from DB   │
+│ DETACH           │ detach(parent) → detaches all children            │
+│ ALL              │ All of the above                                  │
+└──────────────────┴────────────────────────────────────────────────────┘
+
+Industry standard for @OneToMany:
+  - Owned collections (User → Orders):     CascadeType.ALL
+  - Shared references (Order → Product):   NO cascade or PERSIST + MERGE only
+```
+
+---
+
+### Orphan Child Problem — When Updating the Child List
+
+An **orphan** is a child entity that was **removed from the parent's collection** but still exists in the database. This happens when you update the parent's list by replacing or removing children — the old children are disconnected from the parent but NOT deleted.
+
+**The problem**
+
+```java
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id")
+    private List<Order> orders = new ArrayList<>();
+}
+```
+
+**API + Service that causes orphans**
+
+```java
+// DTO for the update request
+public class UpdateUserOrdersRequest {
+    private String name;
+    private List<OrderDTO> orders;    // new list of orders from the client
+}
+```
+
+```java
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @PutMapping("/{id}/orders")
+    public UserDTO updateUserOrders(@PathVariable Long id,
+                                     @RequestBody UpdateUserOrdersRequest request) {
+        return userService.updateUserOrders(id, request);
+    }
+}
+```
+
+```java
+@Service
+public class UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Transactional
+    public UserDTO updateUserOrders(Long userId, UpdateUserOrdersRequest request) {
+        User user = userRepository.findById(userId).orElseThrow();
+        // user.orders = [Order(id=1, "Laptop"), Order(id=2, "Mouse")]
+
+        // Client sends a NEW list of orders — replaces old ones
+        user.getOrders().clear();    // remove old orders from the collection
+
+        for (OrderDTO dto : request.getOrders()) {
+            Order newOrder = new Order(dto.getProduct(), dto.getAmount());
+            user.getOrders().add(newOrder);
+        }
+
+        userRepository.save(user);
+        // ...
+    }
+}
+```
+
+```text
+What happens WITHOUT orphanRemoval:
+
+Before update:
+┌──────────────┐      ┌──────────────────────────────┐
+│ users         │      │ orders                       │
+├──────────────┤      ├──────────────────────────────┤
+│ id=1 "Alice" │      │ id=1, "Laptop", user_id=1    │
+│              │      │ id=2, "Mouse",  user_id=1    │
+└──────────────┘      └──────────────────────────────┘
+
+After user.getOrders().clear() + add new orders:
+┌──────────────┐      ┌──────────────────────────────┐
+│ users         │      │ orders                       │
+├──────────────┤      ├──────────────────────────────┤
+│ id=1 "Alice" │      │ id=1, "Laptop", user_id=NULL │ ← ORPHAN! (FK set to NULL, row NOT deleted)
+│              │      │ id=2, "Mouse",  user_id=NULL │ ← ORPHAN! (FK set to NULL, row NOT deleted)
+│              │      │ id=3, "Keyboard", user_id=1  │ ← new order
+│              │      │ id=4, "Monitor",  user_id=1  │ ← new order
+└──────────────┘      └──────────────────────────────┘
+```
+
+**SQL generated (orphans created)**
+
+```text
+UPDATE orders SET user_id = NULL WHERE id = 1;     ← FK set to NULL (not deleted!)
+UPDATE orders SET user_id = NULL WHERE id = 2;     ← FK set to NULL (not deleted!)
+INSERT INTO orders (product, amount) VALUES ('Keyboard', 49.99);
+INSERT INTO orders (product, amount) VALUES ('Monitor', 299.99);
+UPDATE orders SET user_id = 1 WHERE id = 3;
+UPDATE orders SET user_id = 1 WHERE id = 4;
+```
+
+The old orders (id=1, id=2) are now **orphans** — they exist in the database with `user_id = NULL`, not connected to any user, wasting space and causing data inconsistency.
+
+---
+
+### Solving with orphanRemoval = true
+
+`orphanRemoval = true` tells Hibernate: **"If a child entity is removed from the parent's collection, DELETE it from the database."**
+
+```java
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)   // ← orphanRemoval added
+    @JoinColumn(name = "user_id")
+    private List<Order> orders = new ArrayList<>();
+}
+```
+
+**Same service code, different result**
+
+```java
+@Transactional
+public UserDTO updateUserOrders(Long userId, UpdateUserOrdersRequest request) {
+    User user = userRepository.findById(userId).orElseThrow();
+    // user.orders = [Order(id=1, "Laptop"), Order(id=2, "Mouse")]
+
+    user.getOrders().clear();    // remove old orders from the collection
+
+    for (OrderDTO dto : request.getOrders()) {
+        Order newOrder = new Order(dto.getProduct(), dto.getAmount());
+        user.getOrders().add(newOrder);
+    }
+
+    userRepository.save(user);
+    // Now orphans are DELETED, not just disconnected
+}
+```
+
+```text
+What happens WITH orphanRemoval = true:
+
+Before update:
+┌──────────────┐      ┌──────────────────────────────┐
+│ users         │      │ orders                       │
+├──────────────┤      ├──────────────────────────────┤
+│ id=1 "Alice" │      │ id=1, "Laptop", user_id=1    │
+│              │      │ id=2, "Mouse",  user_id=1    │
+└──────────────┘      └──────────────────────────────┘
+
+After user.getOrders().clear() + add new orders:
+┌──────────────┐      ┌──────────────────────────────┐
+│ users         │      │ orders                       │
+├──────────────┤      ├──────────────────────────────┤
+│ id=1 "Alice" │      │ id=3, "Keyboard", user_id=1  │ ← new order
+│              │      │ id=4, "Monitor",  user_id=1  │ ← new order
+└──────────────┘      └──────────────────────────────┘
+
+Orders id=1 and id=2 are DELETED from the database — no orphans!
+```
+
+**SQL generated (orphans deleted)**
+
+```text
+DELETE FROM orders WHERE id = 1;                       ← orphan removed!
+DELETE FROM orders WHERE id = 2;                       ← orphan removed!
+INSERT INTO orders (product, amount) VALUES ('Keyboard', 49.99);
+INSERT INTO orders (product, amount) VALUES ('Monitor', 299.99);
+UPDATE orders SET user_id = 1 WHERE id = 3;
+UPDATE orders SET user_id = 1 WHERE id = 4;
+```
+
+```text
+Comparison:
+
+WITHOUT orphanRemoval:
+  user.getOrders().clear()  →  UPDATE orders SET user_id = NULL   (orphans remain)
+
+WITH orphanRemoval = true:
+  user.getOrders().clear()  →  DELETE FROM orders WHERE id = ?    (orphans deleted)
+```
+
+**When does orphanRemoval trigger?**
+
+```text
+user.getOrders().remove(order1);        → DELETE order1 from DB
+user.getOrders().clear();               → DELETE ALL orders from DB
+user.setOrders(newList);                → DELETE old orders, INSERT new ones
+
+It triggers whenever a child is REMOVED from the parent's collection,
+regardless of whether the parent is being deleted.
+```
+
+---
+
+### Orphan Removal vs Cascade Delete
+
+These are **different operations** that solve different problems.
+
+```text
+┌─────────────────────────┬───────────────────────────────────────────────────────┐
+│                         │ What triggers deletion                               │
+├─────────────────────────┼───────────────────────────────────────────────────────┤
+│ CascadeType.REMOVE      │ Parent entity is DELETED                             │
+│                         │ → all children are also deleted                      │
+│                         │                                                      │
+│ orphanRemoval = true    │ Child is REMOVED FROM THE COLLECTION                 │
+│                         │ → that specific child is deleted from DB             │
+│                         │ (parent is NOT deleted — it still exists)            │
+└─────────────────────────┴───────────────────────────────────────────────────────┘
+```
+
+**CascadeType.REMOVE scenario — parent is deleted**
+
+```java
+@OneToMany(cascade = CascadeType.REMOVE)
+@JoinColumn(name = "user_id")
+private List<Order> orders = new ArrayList<>();
+```
+
+```java
+userRepository.deleteById(1L);
+// DELETE FROM orders WHERE user_id = 1;     ← all orders deleted
+// DELETE FROM users WHERE id = 1;           ← user deleted
+```
+
+```text
+CASCADE REMOVE:
+  Delete parent → children are also deleted
+
+  user deleted
+     │
+     ├─ Order 1 deleted  (because parent was deleted)
+     └─ Order 2 deleted  (because parent was deleted)
+```
+
+**orphanRemoval scenario — child is removed from collection, parent still exists**
+
+```java
+@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+@JoinColumn(name = "user_id")
+private List<Order> orders = new ArrayList<>();
+```
+
+```java
+@Transactional
+public void removeOneOrder(Long userId, Long orderId) {
+    User user = userRepository.findById(userId).orElseThrow();
+    user.getOrders().removeIf(o -> o.getId().equals(orderId));
+    // orphanRemoval triggers: DELETE FROM orders WHERE id = ?
+    // User is NOT deleted — only the removed order is deleted
+}
+```
+
+```text
+ORPHAN REMOVAL:
+  Remove child from collection → only that child is deleted
+  Parent still exists
+
+  user still exists
+     │
+     ├─ Order 1 removed from list → DELETED from DB
+     └─ Order 2 still in list → still in DB
+```
+
+**Side-by-side comparison**
+
+| | CascadeType.REMOVE | orphanRemoval = true |
+|---|---|---|
+| **Trigger** | `delete(parent)` | `collection.remove(child)` or `collection.clear()` |
+| **Parent deleted?** | Yes | No — parent still exists |
+| **Which children deleted?** | ALL children | Only the removed child(ren) |
+| **Use case** | Delete user → delete all their orders | Update user's orders → remove old, add new |
+| **Without the other** | Cannot clean orphans on collection update | Does not auto-delete children when parent is deleted |
+| **Together** | `cascade = ALL, orphanRemoval = true` covers both scenarios |
+
+**Best practice for owned @OneToMany collections**
+
+```java
+@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+@JoinColumn(name = "user_id")
+private List<Order> orders = new ArrayList<>();
+```
+
+```text
+cascade = CascadeType.ALL    → handles: save, update, delete parent → propagates to children
+orphanRemoval = true         → handles: remove child from collection → deletes it from DB
+
+Together they cover ALL lifecycle scenarios:
+  ✅ Save parent with children
+  ✅ Update parent and children
+  ✅ Delete parent → children deleted
+  ✅ Remove child from list → child deleted from DB (no orphans)
+```
+
+
+
+
+### OneToMany Bidirectional Mapping
+
+In a bidirectional `@OneToMany` / `@ManyToOne` mapping, **both** the parent and child entities have references to each other. The parent has a collection of children, and each child has a reference back to the parent.
+
+**Real-life use case**: A `User` has many `Order`s (parent → children). Each `Order` belongs to one `User` (child → parent). You can navigate both directions: get all orders for a user, or get the user who placed an order.
+
+```text
+Java Objects:                              Database Tables:
+
+┌───────────────────────┐                  ┌──────────────────────────┐
+│  User (PARENT)        │                  │  users                   │
+│                       │                  ├──────────────────────────┤
+│  id: Long             │  @OneToMany      │  id (PK, BIGINT)         │
+│  name: String         │  (mappedBy)      │  name (VARCHAR)          │
+│  orders: List<Order>  ├────────────>     │                          │
+│                       │                  └──────────────────────────┘
+│                       │<────────────┐
+└───────────────────────┘             │
+                                      │    ┌──────────────────────────┐
+┌───────────────────────┐             │    │  orders                  │
+│  Order (CHILD)        │             │    ├──────────────────────────┤
+│                       │  @ManyToOne │    │  id (PK, BIGINT)         │
+│  id: Long             │  @JoinColumn│    │  product (VARCHAR)       │
+│  product: String      │             │    │  amount (DECIMAL)        │
+│  amount: BigDecimal   ├─────────────┘    │  user_id (FK, BIGINT) ───┼──> users.id
+│  user: User           │                  │                          │
+│                       │                  │  FK lives in CHILD table │
+└───────────────────────┘                  └──────────────────────────┘
+
+Direction: User <──────────> Order   (both ways)
+           User knows its Orders.   Order knows its User.
+```
+
+---
+
+### Owning Side vs Inverse Side
+
+In every bidirectional relationship, JPA requires you to define:
+
+- **Owning side**: The entity whose table holds the **foreign key**. This side **controls** the relationship — JPA reads the owning side to decide what SQL to generate.
+- **Inverse side**: The entity that **mirrors** the relationship using `mappedBy`. It does NOT control the FK — it is just a convenience for navigation.
+
+**Is the owning side always the parent?**
+
+**No — it is the opposite.** In a `@OneToMany` / `@ManyToOne` bidirectional mapping, the **child** (the `@ManyToOne` side) is **always the owning side** because the FK naturally lives in the child table.
+
+```text
+┌────────────────────────────────┐        ┌────────────────────────────────┐
+│  User (INVERSE SIDE)           │        │  Order (OWNING SIDE)           │
+│                                │        │                                │
+│  @OneToMany(mappedBy = "user") │        │  @ManyToOne                    │
+│  private List<Order> orders;   │        │  @JoinColumn(name = "user_id") │
+│                                │        │  private User user;            │
+│  "I'm just the mirror.        │        │                                │
+│   I do NOT control the FK."   │        │  "I control the FK.            │
+│                                │        │   user_id is in MY table."     │
+│  → NO @JoinColumn here        │        │  → @JoinColumn here            │
+└────────────────────────────────┘        └────────────────────────────────┘
+```
+
+```text
+Why the child is the owning side:
+
+In relational databases, a "many" side always holds the FK:
+  - One User has many Orders
+  - The FK (user_id) goes in the Orders table
+  - Each Order row points to its User via user_id
+  - You can't put a "list of order IDs" inside a single user row
+
+Therefore:
+  Child table (orders) has the FK → Child entity is the owning side
+  Parent table (users) has NO FK → Parent entity is the inverse side
+```
+
+**Which side contains the FK relationship?** The **child** (owning side).
+
+**Where do we put @JoinColumn?** On the **child** entity (the `@ManyToOne` side).
+
+---
+
+### Child Entity Holds the Foreign Key by Default
+
+In a bidirectional `@OneToMany` / `@ManyToOne`, the FK **always** lives in the child table. This is a fundamental rule of relational databases — the "many" side holds the FK to the "one" side.
+
+**Code example**
+
+```java
+// CHILD — OWNING SIDE (holds the FK)
+@Entity
+@Table(name = "orders")
+public class Order {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String product;
+
+    private BigDecimal amount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")                // FK column in orders table
+    private User user;                            // reference to parent
+
+    // constructors, getters, setters
+}
+```
+
+```java
+// PARENT — INVERSE SIDE (mirrors the relationship)
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Order> orders = new ArrayList<>();
+
+    // constructors, getters, setters
+}
+```
+
+**Generated DDL**
+
+```sql
+CREATE TABLE users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255)
+);
+
+CREATE TABLE orders (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product VARCHAR(255),
+    amount DECIMAL(19,2),
+    user_id BIGINT,                                -- FK in CHILD table
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+```text
+DB Tables:
+
+┌──────────────────┐                    ┌──────────────────────────────┐
+│ users             │                    │ orders                       │
+├──────────────────┤                    ├──────────────────────────────┤
+│ id=1, "Alice"    │◄───────────────────│ id=1, "Laptop", user_id=1   │
+│                  │◄───────────────────│ id=2, "Mouse",  user_id=1   │
+│                  │                    │                              │
+│ id=2, "Bob"      │◄───────────────────│ id=3, "Phone",  user_id=2   │
+└──────────────────┘                    └──────────────────────────────┘
+
+FK (user_id) is in the orders table.
+No FK in the users table.
+Only 2 tables — no join table needed.
+```
+
+**SQL for saving**
+
+```java
+@Transactional
+public User createUserWithOrders() {
+    User user = new User();
+    user.setName("Alice");
+
+    Order order1 = new Order();
+    order1.setProduct("Laptop");
+    order1.setAmount(new BigDecimal("999.99"));
+    order1.setUser(user);                     // ← SET PARENT IN CHILD (critical!)
+
+    Order order2 = new Order();
+    order2.setProduct("Mouse");
+    order2.setAmount(new BigDecimal("29.99"));
+    order2.setUser(user);                     // ← SET PARENT IN CHILD (critical!)
+
+    user.getOrders().add(order1);
+    user.getOrders().add(order2);
+
+    return userRepository.save(user);
+}
+```
+
+```text
+SQL generated:
+  INSERT INTO users (name) VALUES ('Alice');
+  INSERT INTO orders (product, amount, user_id) VALUES ('Laptop', 999.99, 1);    ← FK set directly!
+  INSERT INTO orders (product, amount, user_id) VALUES ('Mouse', 29.99, 1);      ← FK set directly!
+```
+
+Notice: Unlike unidirectional `@OneToMany` (which does INSERT with NULL FK + UPDATE), bidirectional sets the FK **directly** in the INSERT — more efficient!
+
+---
+
+### mappedBy on the @OneToMany (Inverse/Parent Side)
+
+`mappedBy` tells JPA: "I am NOT the owner of this relationship. The owner is the field named in `mappedBy` on the other entity. Do NOT create a FK or join table for me."
+
+```java
+@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+private List<Order> orders = new ArrayList<>();
+```
+
+The value `"user"` refers to the **field name** in the `Order` entity:
+
+```java
+// In Order.java
+@ManyToOne
+@JoinColumn(name = "user_id")
+private User user;              // ← this is the field "user" that mappedBy refers to
+```
+
+```text
+@OneToMany(mappedBy = "user")  ─── refers to ──→  Order.user field
+                                                        │
+                                                  @ManyToOne
+                                                  @JoinColumn(name = "user_id")
+                                                  The REAL FK owner
+```
+
+**What happens WITHOUT mappedBy?**
+
+```text
+WITHOUT mappedBy on @OneToMany:
+
+@Entity User:
+    @OneToMany(cascade = CascadeType.ALL)
+    private List<Order> orders;
+
+@Entity Order:
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
+Result: JPA sees TWO independent relationships!
+  1. User → Orders  (creates a users_orders join table or separate FK management)
+  2. Order → User   (creates user_id FK in orders table)
+
+  ┌──────────────┐     ┌──────────────────────┐     ┌─────────────────────┐
+  │ users         │     │ users_orders          │     │ orders              │
+  │ id (PK)      │────>│ user_id, orders_id    │<────│ id (PK)             │
+  │ name         │     │                      │     │ product             │
+  │              │     └──────────────────────┘     │ amount              │
+  │              │                                  │ user_id (FK) ───────│──> users.id
+  └──────────────┘                                  └─────────────────────┘
+
+  3 tables!  Duplicate relationship!  Extra INSERTs and UPDATEs!
+```
+
+```text
+WITH mappedBy = "user" on @OneToMany:
+
+@Entity User:
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<Order> orders;
+
+@Entity Order:
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
+Result: JPA sees ONE relationship managed by Order.user:
+  ┌──────────────┐                              ┌─────────────────────┐
+  │ users         │                              │ orders              │
+  │ id (PK)      │                              │ id (PK)             │
+  │ name         │                              │ product             │
+  │              │                              │ amount              │
+  │              │◄──────────────────────────────│ user_id (FK)        │
+  └──────────────┘                              └─────────────────────┘
+
+  2 tables!  Single FK!  Clean and efficient!
+```
+
+**Generated SQL comparison**
+
+```text
+WITHOUT mappedBy (3 tables, extra SQL):
+  INSERT INTO users (name) VALUES ('Alice');
+  INSERT INTO orders (product, amount, user_id) VALUES ('Laptop', 999.99, 1);
+  INSERT INTO users_orders (user_id, orders_id) VALUES (1, 1);     ← unnecessary!
+
+WITH mappedBy (2 tables, clean SQL):
+  INSERT INTO users (name) VALUES ('Alice');
+  INSERT INTO orders (product, amount, user_id) VALUES ('Laptop', 999.99, 1);
+  (no join table inserts)
+```
+
+---
+
+### What Happens If You Only Set the Child List on the Parent (Not the Parent on Child)
+
+Since JPA **only reads the owning side** (`Order.user`) to manage the FK, if you only add Orders to User's list but do NOT set `order.setUser(user)`, the FK column will be **NULL**.
+
+**The problem**
+
+```java
+@Transactional
+public User createUserWithOrders_WRONG() {
+    User user = new User();
+    user.setName("Alice");
+
+    Order order1 = new Order();
+    order1.setProduct("Laptop");
+    order1.setAmount(new BigDecimal("999.99"));
+    // order1.setUser(user);     ← NOT SET! Missing!
+
+    Order order2 = new Order();
+    order2.setProduct("Mouse");
+    order2.setAmount(new BigDecimal("29.99"));
+    // order2.setUser(user);     ← NOT SET! Missing!
+
+    user.getOrders().add(order1);      // only adding to parent's list
+    user.getOrders().add(order2);      // only adding to parent's list
+
+    return userRepository.save(user);
+}
+```
+
+```text
+SQL generated:
+  INSERT INTO users (name) VALUES ('Alice');
+  INSERT INTO orders (product, amount, user_id) VALUES ('Laptop', 999.99, NULL);    ← user_id is NULL!
+  INSERT INTO orders (product, amount, user_id) VALUES ('Mouse', 29.99, NULL);      ← user_id is NULL!
+```
+
+```text
+DB after save:
+
+┌──────────────────┐                    ┌──────────────────────────────────┐
+│ users             │                    │ orders                           │
+├──────────────────┤                    ├──────────────────────────────────┤
+│ id=1, "Alice"    │    NO connection!  │ id=1, "Laptop", user_id=NULL    │ ← orphan!
+│                  │                    │ id=2, "Mouse",  user_id=NULL    │ ← orphan!
+└──────────────────┘                    └──────────────────────────────────┘
+
+The orders exist in the DB but have NO connection to the user!
+```
+
+**Why does this happen?**
+
+```text
+JPA relationship management rules:
+
+1. JPA only looks at the OWNING SIDE to determine FK values.
+2. The owning side is Order.user (annotated with @ManyToOne + @JoinColumn).
+3. We never called order.setUser(user) → Order.user = null → user_id = NULL.
+4. Adding orders to user.getOrders() is for Java navigation only.
+   JPA IGNORES the inverse side (User.orders) when generating INSERT SQL.
+
+  User.orders = [order1, order2]    ← JPA ignores this for FK
+  Order.user = null                 ← JPA reads THIS for FK → NULL
+```
+
+**The correct way — always set BOTH sides**
+
+```java
+@Transactional
+public User createUserWithOrders_CORRECT() {
+    User user = new User();
+    user.setName("Alice");
+
+    Order order1 = new Order();
+    order1.setProduct("Laptop");
+    order1.setAmount(new BigDecimal("999.99"));
+    order1.setUser(user);                     // ← SET owning side (controls FK)
+
+    Order order2 = new Order();
+    order2.setProduct("Mouse");
+    order2.setAmount(new BigDecimal("29.99"));
+    order2.setUser(user);                     // ← SET owning side (controls FK)
+
+    user.getOrders().add(order1);             // ← SET inverse side (for Java navigation)
+    user.getOrders().add(order2);             // ← SET inverse side (for Java navigation)
+
+    return userRepository.save(user);
+}
+```
+
+```text
+SQL generated:
+  INSERT INTO users (name) VALUES ('Alice');
+  INSERT INTO orders (product, amount, user_id) VALUES ('Laptop', 999.99, 1);    ← FK set correctly!
+  INSERT INTO orders (product, amount, user_id) VALUES ('Mouse', 29.99, 1);      ← FK set correctly!
+```
+
+**Best practice — add a helper method to the parent to keep both sides in sync**
+
+```java
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Order> orders = new ArrayList<>();
+
+    // Helper method — sets BOTH sides of the relationship
+    public void addOrder(Order order) {
+        orders.add(order);          // inverse side (Java navigation)
+        order.setUser(this);        // owning side (controls FK)
+    }
+
+    public void removeOrder(Order order) {
+        orders.remove(order);       // inverse side
+        order.setUser(null);        // owning side (nullifies FK)
+    }
+}
+```
+
+```java
+// Now usage is simple and safe:
+User user = new User();
+user.setName("Alice");
+user.addOrder(order1);    // sets both sides automatically
+user.addOrder(order2);    // sets both sides automatically
+userRepository.save(user);
+```
+
+---
+
+### @JsonIgnore on the Parent Reference in Child Entity
+
+Yes — you **should** put `@JsonIgnore` on the parent reference in the child entity to prevent infinite recursion when serializing bidirectional relationships.
+
+```java
+@Entity
+@Table(name = "orders")
+public class Order {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String product;
+
+    private BigDecimal amount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @JsonIgnore                           // ← prevents infinite recursion
+    private User user;
+}
+```
+
+**Why it is needed**
+
+Without `@JsonIgnore`, Jackson serializes User → orders → [Order → user → User → orders → ...] infinitely:
+
+```text
+WITHOUT @JsonIgnore:
+
+{
+  "id": 1,
+  "name": "Alice",
+  "orders": [
+    {
+      "id": 1,
+      "product": "Laptop",
+      "user": {                          ← serializes User AGAIN
+        "id": 1,
+        "name": "Alice",
+        "orders": [                      ← serializes orders AGAIN
+          {
+            "user": {                    ← INFINITE LOOP → StackOverflowError
+              ...
+```
+
+```text
+WITH @JsonIgnore on Order.user:
+
+{
+  "id": 1,
+  "name": "Alice",
+  "orders": [
+    {
+      "id": 1,
+      "product": "Laptop",
+      "amount": 999.99
+    },
+    {
+      "id": 2,
+      "product": "Mouse",
+      "amount": 29.99
+    }
+  ]
+}
+
+Clean response — no infinite recursion.
+"user" field in each Order is skipped by Jackson.
+```
+
+**Limitation**: `@JsonIgnore` **always** hides the `user` field in Order's JSON. If you need to show the user when fetching an Order individually, you have the same alternatives as `@OneToOne`:
+
+| Solution | Behavior |
+|---|---|
+| `@JsonIgnore` on `Order.user` | Always hides user in Order JSON. Simplest. |
+| `@JsonManagedReference` on `User.orders` + `@JsonBackReference` on `Order.user` | User shows orders, Order hides user. |
+| `@JsonIdentityInfo` on both entities | Both directions visible, second occurrence replaced with ID. |
+| **DTO (recommended)** | Full control over response shape. No annotations on entities. |
+
+**In practice**, for `@OneToMany` bidirectional, using `@JsonIgnore` on the child's parent reference is the most common approach because:
+- When fetching User, you want orders included → User.orders is serialized.
+- When fetching Order, you rarely need the full User object embedded → `@JsonIgnore` on `Order.user` is acceptable.
+- For cases where you need User info in the Order response, you create a DTO with a flat `userId` or `userName` field.
+
+---
+
+### ManyToOne Bidirectional Mapping
+
+A `@ManyToOne` bidirectional mapping is the **exact same relationship** as `@OneToMany` bidirectional, viewed from the **child's perspective**. It is not a separate concept — it is the other side of the same coin.
+
+**Real-life use case**: An `Order` belongs to one `User`. The Order has a reference to its User. The User has a list of Orders. This is the same User-Order relationship — you are just starting from the Order's point of view.
+
+```text
+From @OneToMany perspective (User's view):
+    User (1) ──────────> Orders (N)
+    "I have many orders"
+
+From @ManyToOne perspective (Order's view):
+    Order (N) ──────────> User (1)
+    "I belong to one user"
+
+Both views describe the SAME relationship and the SAME tables.
+```
+
+```text
+Java Objects:
+
+┌───────────────────────┐    @ManyToOne     ┌───────────────────────┐
+│  Order (CHILD)        │ ──────────────>   │  User (PARENT)        │
+│                       │                   │                       │
+│  id: Long             │                   │  id: Long             │
+│  product: String      │                   │  name: String         │
+│  amount: BigDecimal   │                   │  orders: List<Order>  │
+│  user: User ──────────┼─── FK             │                       │
+│                       │                   │                       │
+└───────────────────────┘   <──────────────┤│                       │
+                              @OneToMany    └───────────────────────┘
+                              (mappedBy)
+
+
+Database Tables (IDENTICAL to @OneToMany bidirectional):
+
+┌──────────────────┐                    ┌──────────────────────────────┐
+│ users             │                    │ orders                       │
+├──────────────────┤                    ├──────────────────────────────┤
+│ id (PK)          │◄───────────────────│ id (PK)                      │
+│ name             │                    │ product                      │
+│                  │                    │ amount                       │
+│                  │                    │ user_id (FK) ────────────────│──> users.id
+└──────────────────┘                    └──────────────────────────────┘
+```
+
+**How it is similar to @OneToMany bidirectional**
+
+| Aspect | @OneToMany Bidirectional | @ManyToOne Bidirectional |
+|---|---|---|
+| **Relationship** | Same | Same |
+| **Tables** | users + orders (FK in orders) | users + orders (FK in orders) |
+| **Owning side** | Order (child, @ManyToOne) | Order (child, @ManyToOne) |
+| **Inverse side** | User (parent, @OneToMany mappedBy) | User (parent, @OneToMany mappedBy) |
+| **Code** | Identical | Identical |
+| **SQL** | Identical | Identical |
+| **FK location** | orders.user_id | orders.user_id |
+
+They are **the same mapping** — just described from different perspectives. When we say "OneToMany bidirectional" we emphasize the parent having a list. When we say "ManyToOne bidirectional" we emphasize the child pointing to its parent. The code, tables, and SQL are identical.
+
+**Code example (identical to @OneToMany bidirectional)**
+
+```java
+// CHILD — OWNING SIDE (same as before)
+@Entity
+@Table(name = "orders")
+public class Order {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String product;
+
+    private BigDecimal amount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")               // FK in child table
+    @JsonIgnore
+    private User user;                           // Many orders → One user
+}
+```
+
+```java
+// PARENT — INVERSE SIDE (same as before)
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Order> orders = new ArrayList<>();   // One user → Many orders
+
+    public void addOrder(Order order) {
+        orders.add(order);
+        order.setUser(this);
+    }
+}
+```
+
+**Real-life usage — starting from the Order's perspective**
+
+```java
+@Service
+public class OrderService {
+
+    @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    // Create an order for an existing user (ManyToOne perspective)
+    @Transactional
+    public Order createOrder(Long userId, String product, BigDecimal amount) {
+        User user = userRepository.findById(userId).orElseThrow();
+
+        Order order = new Order();
+        order.setProduct(product);
+        order.setAmount(amount);
+        order.setUser(user);           // ManyToOne — set the parent on the child
+
+        return orderRepository.save(order);
+    }
+
+    // Get the user who placed an order (ManyToOne navigation)
+    @Transactional(readOnly = true)
+    public UserDTO getUserForOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        User user = order.getUser();    // navigate from child → parent
+        return new UserDTO(user.getId(), user.getName());
+    }
+}
+```
+
+```text
+SQL for createOrder:
+  INSERT INTO orders (product, amount, user_id) VALUES ('Keyboard', 49.99, 1);
+
+SQL for getUserForOrder:
+  SELECT o.* FROM orders o WHERE o.id = 1;                    ← load order
+  SELECT u.* FROM users u WHERE u.id = 1;                     ← lazy load user (when getUser() accessed)
+```
+
+**When to use which name**
+
+```text
+Say "@OneToMany bidirectional" when:
+  - You are working from the parent side (User managing its Orders)
+  - You are designing the parent entity and its collection
+
+Say "@ManyToOne bidirectional" when:
+  - You are working from the child side (Order referencing its User)
+  - You are creating a child entity and assigning it to a parent
+  - You need to navigate from child → parent
+
+Both are the same underlying relationship — only the emphasis differs.
+```
+
+---
+
+### How @ManyToOne Bidirectional is the Same as @OneToMany Bidirectional
+
+They are **not two different mappings** — they are the **same single relationship** expressed with two annotations. A bidirectional relationship always requires **both** `@OneToMany` on the parent and `@ManyToOne` on the child. You cannot have one without the other in a bidirectional setup.
+
+**Real-life use case — Department and Employee**
+
+A `Department` has many `Employee`s. An `Employee` belongs to one `Department`. Whether you call this "@OneToMany bidirectional" or "@ManyToOne bidirectional" depends only on which entity you start talking about.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│  "@OneToMany bidirectional" = "@ManyToOne bidirectional"                     │
+│                                                                              │
+│  They are the SAME relationship, described from two viewpoints:              │
+│                                                                              │
+│  ┌─────────────────────┐          ┌──────────────────────┐                   │
+│  │  Department          │          │  Employee             │                   │
+│  │  (PARENT)            │          │  (CHILD)              │                   │
+│  │                      │          │                       │                   │
+│  │  @OneToMany          │          │  @ManyToOne           │                   │
+│  │  (mappedBy)          │          │  @JoinColumn          │                   │
+│  │  List<Employee>      │─────────>│  department: Dept     │                   │
+│  │  employees           │<─────────│                       │                   │
+│  │                      │          │  FK: department_id    │                   │
+│  │  INVERSE side        │          │  OWNING side          │                   │
+│  └─────────────────────┘          └──────────────────────┘                   │
+│                                                                              │
+│  Both annotations exist in EVERY bidirectional 1:N relationship.             │
+│  You can't have @OneToMany bidirectional WITHOUT @ManyToOne.                 │
+│  You can't have @ManyToOne bidirectional WITHOUT @OneToMany.                 │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Code — the complete bidirectional relationship**
+
+```java
+// PARENT — Department has many Employees
+@Entity
+@Table(name = "departments")
+public class Department {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Employee> employees = new ArrayList<>();
+
+    public void addEmployee(Employee employee) {
+        employees.add(employee);
+        employee.setDepartment(this);
+    }
+
+    public void removeEmployee(Employee employee) {
+        employees.remove(employee);
+        employee.setDepartment(null);
+    }
+}
+```
+
+```java
+// CHILD — Employee belongs to one Department
+@Entity
+@Table(name = "employees")
+public class Employee {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    @JsonIgnore
+    private Department department;
+}
+```
+
+**Same relationship, two entry points**
+
+```java
+// FROM @OneToMany PERSPECTIVE — "Department has employees"
+@Service
+public class DepartmentService {
+
+    @Transactional
+    public DepartmentDTO getDepartmentWithEmployees(Long deptId) {
+        Department dept = departmentRepository.findById(deptId).orElseThrow();
+        // Navigate: Department → employees (OneToMany direction)
+        List<EmployeeDTO> empDTOs = dept.getEmployees().stream()
+            .map(e -> new EmployeeDTO(e.getId(), e.getName()))
+            .toList();
+        return new DepartmentDTO(dept.getId(), dept.getName(), empDTOs);
+    }
+}
+```
+
+```java
+// FROM @ManyToOne PERSPECTIVE — "Employee belongs to department"
+@Service
+public class EmployeeService {
+
+    @Transactional
+    public EmployeeWithDeptDTO getEmployeeWithDepartment(Long empId) {
+        Employee emp = employeeRepository.findById(empId).orElseThrow();
+        // Navigate: Employee → department (ManyToOne direction)
+        Department dept = emp.getDepartment();
+        return new EmployeeWithDeptDTO(emp.getId(), emp.getName(), dept.getName());
+    }
+
+    @Transactional
+    public Employee assignToDepartment(Long empId, Long deptId) {
+        Employee emp = employeeRepository.findById(empId).orElseThrow();
+        Department dept = departmentRepository.findById(deptId).orElseThrow();
+        emp.setDepartment(dept);    // ManyToOne — set FK on owning side
+        return employeeRepository.save(emp);
+    }
+}
+```
+
+**SQL is identical regardless of which name you use**
+
+```text
+getDepartmentWithEmployees (OneToMany perspective):
+  SELECT d.* FROM departments d WHERE d.id = 1;
+  SELECT e.* FROM employees e WHERE e.department_id = 1;       ← lazy load collection
+
+getEmployeeWithDepartment (ManyToOne perspective):
+  SELECT e.* FROM employees e WHERE e.id = 1;
+  SELECT d.* FROM departments d WHERE d.id = 1;                ← lazy load parent
+
+assignToDepartment (ManyToOne perspective):
+  UPDATE employees SET department_id = 2 WHERE id = 1;         ← FK updated on owning side
+```
+
+**DB tables — always the same structure**
+
+```text
+┌──────────────────────┐                    ┌───────────────────────────────────┐
+│ departments           │                    │ employees                         │
+├──────────────────────┤                    ├───────────────────────────────────┤
+│ id=1, "Engineering"  │◄───────────────────│ id=1, "Alice", department_id=1   │
+│                      │◄───────────────────│ id=2, "Bob",   department_id=1   │
+│ id=2, "Marketing"    │◄───────────────────│ id=3, "Eve",   department_id=2   │
+└──────────────────────┘                    └───────────────────────────────────┘
+
+Whether you call this "@OneToMany bidirectional" or "@ManyToOne bidirectional":
+  - Same 2 tables
+  - Same FK (department_id in employees)
+  - Same owning side (Employee)
+  - Same inverse side (Department)
+  - Same SQL
+```
+
+**Summary**
+
+```text
+"@OneToMany bidirectional" and "@ManyToOne bidirectional" are just two names
+for the SAME relationship.
+
+Every bidirectional 1:N relationship has BOTH annotations:
+  - @OneToMany(mappedBy = "...") on the parent    (inverse side)
+  - @ManyToOne + @JoinColumn on the child          (owning side)
+
+The difference is only in perspective:
+  ┌─────────────────────────────┬────────────────────────────────────┐
+  │ Name                        │ Emphasis                           │
+  ├─────────────────────────────┼────────────────────────────────────┤
+  │ @OneToMany bidirectional    │ Parent → children (list)           │
+  │ @ManyToOne bidirectional    │ Child → parent (single reference)  │
+  └─────────────────────────────┴────────────────────────────────────┘
+
+  Code? Same.   Tables? Same.   SQL? Same.   FK? Same.
+```
+
+---
+
+### ManyToMany Unidirectional Mapping
+
+In a `@ManyToMany` relationship, **multiple entities on one side** are associated with **multiple entities on the other side**. There is no parent-child hierarchy — both entities are **independent** and equal.
+
+**Real-life use case**: An `Order` can contain many `Product`s. A `Product` can appear in many `Order`s. Neither owns the other — they are independent business entities.
+
+```text
+Java Objects:
+
+┌───────────────────────┐                  ┌───────────────────────┐
+│  Order                │    @ManyToMany   │  Product              │
+│                       │                  │                       │
+│  id: Long             │                  │  id: Long             │
+│  orderDate: LocalDate │                  │  name: String         │
+│  products: Set<Product├─────────────────>│  price: BigDecimal    │
+│                       │                  │                       │
+│  (OWNING entity)      │                  │  (NO ref to Order)    │
+└───────────────────────┘                  └───────────────────────┘
+
+Direction: Order ──────> Products   (one way only, unidirectional)
+           Order knows its Products.   Product does NOT know its Orders.
+```
+
+---
+
+### No Parent-Child Concept in ManyToMany
+
+In `@OneToMany` / `@ManyToOne`, there is a clear parent-child hierarchy: User (parent) owns Orders (children), the child cannot exist without the parent. In `@ManyToMany`, **neither entity owns the other**.
+
+```text
+@OneToMany (parent-child):                  @ManyToMany (peers):
+
+  User (PARENT)                               Order ←──────→ Product
+    │                                         (independent)   (independent)
+    └── Order (CHILD, depends on User)
+                                              Neither is parent.
+  Parent deleted → child deleted              Neither depends on the other.
+  Child has FK to parent                      Deleting Order does NOT delete Product.
+                                              Deleting Product does NOT delete Order.
+```
+
+**Who is the owning entity in unidirectional @ManyToMany?**
+
+The entity that has the `@ManyToMany` annotation with `@JoinTable` is the **owning entity**. In unidirectional, there is no inverse entity — only one side knows about the relationship.
+
+```text
+Order (OWNING):
+  - Has @ManyToMany
+  - Has @JoinTable
+  - JPA manages the join table through this entity
+
+Product (NOT AWARE):
+  - No @ManyToMany
+  - No reference to Order
+  - Completely independent
+```
+
+Since there is no `mappedBy` (only the owning side exists in unidirectional), JPA **fully manages** the join table lifecycle through the owning entity. You do not need to create a join table entity — JPA handles it.
+
+---
+
+### @ManyToMany with @JoinTable — Code Example
+
+**Entity code**
+
+```java
+@Entity
+@Table(name = "products")
+public class Product {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    private BigDecimal price;
+
+    // NO reference to Order — unidirectional
+    // constructors, getters, setters
+}
+```
+
+```java
+@Entity
+@Table(name = "orders")
+public class Order {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "order_date")
+    private LocalDate orderDate;
+
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+        name = "order_products",                                    // join table name
+        joinColumns = @JoinColumn(name = "order_id"),               // FK to THIS entity (Order)
+        inverseJoinColumns = @JoinColumn(name = "product_id")       // FK to the OTHER entity (Product)
+    )
+    private Set<Product> products = new HashSet<>();
+
+    // constructors, getters, setters
+
+    public void addProduct(Product product) {
+        products.add(product);
+    }
+
+    public void removeProduct(Product product) {
+        products.remove(product);
+    }
+}
+```
+
+**@JoinTable properties explained**
+
+```text
+@JoinTable(
+    name = "order_products",                                  ← name of the join table in DB
+    joinColumns = @JoinColumn(name = "order_id"),             ← FK column pointing to the OWNING entity (Order)
+    inverseJoinColumns = @JoinColumn(name = "product_id")     ← FK column pointing to the OTHER entity (Product)
+)
+```
+
+```text
+┌─────────────────────┐
+│  @JoinTable          │
+│                      │
+│  name                │── "order_products" (the join table name)
+│                      │
+│  joinColumns         │── FK to the entity WHERE @JoinTable is declared (Order)
+│    @JoinColumn       │      name = "order_id" → references orders.id
+│                      │
+│  inverseJoinColumns  │── FK to the OTHER entity (Product)
+│    @JoinColumn       │      name = "product_id" → references products.id
+│                      │
+└─────────────────────┘
+```
+
+**Yes — it creates a new join table**
+
+```text
+┌──────────────────┐       ┌─────────────────────┐       ┌──────────────────┐
+│ orders            │       │ order_products       │       │ products          │
+├──────────────────┤       │ (JOIN TABLE)         │       ├──────────────────┤
+│ id (PK)          │──────>│ order_id (FK)        │       │ id (PK)          │
+│ order_date       │       │ product_id (FK) ─────┼──────>│ name             │
+│                  │       │                     │       │ price            │
+│                  │       │ PK(order_id,        │       │                  │
+│                  │       │    product_id)       │       │                  │
+└──────────────────┘       └─────────────────────┘       └──────────────────┘
+
+3 tables: orders, products, and the auto-generated order_products join table.
+The join table has a composite PK of (order_id, product_id) to prevent duplicates.
+```
+
+**Generated DDL**
+
+```sql
+CREATE TABLE products (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255),
+    price DECIMAL(19,2)
+);
+
+CREATE TABLE orders (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_date DATE
+);
+
+-- JPA auto-creates this join table:
+CREATE TABLE order_products (
+    order_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    PRIMARY KEY (order_id, product_id),
+    FOREIGN KEY (order_id) REFERENCES orders(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+```
+
+**API + Service code**
+
+```java
+// DTO for creating an order
+public class CreateOrderRequest {
+    private LocalDate orderDate;
+    private List<Long> productIds;      // IDs of existing products
+
+    // getters, setters
+}
+```
+
+```java
+@RestController
+@RequestMapping("/api/orders")
+public class OrderController {
+
+    @Autowired
+    private OrderService orderService;
+
+    @PostMapping
+    public OrderDTO createOrder(@RequestBody CreateOrderRequest request) {
+        return orderService.createOrder(request);
+    }
+}
+```
+
+```java
+@Service
+public class OrderService {
+
+    @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Transactional
+    public OrderDTO createOrder(CreateOrderRequest request) {
+        // Fetch existing products by IDs
+        List<Product> products = productRepository.findAllById(request.getProductIds());
+
+        Order order = new Order();
+        order.setOrderDate(request.getOrderDate());
+
+        for (Product product : products) {
+            order.addProduct(product);       // add to the Set
+        }
+
+        Order saved = orderRepository.save(order);
+        // JPA inserts into orders table + order_products join table automatically
+
+        return toDTO(saved);
+    }
+
+    private OrderDTO toDTO(Order order) {
+        List<ProductDTO> productDTOs = order.getProducts().stream()
+            .map(p -> new ProductDTO(p.getId(), p.getName(), p.getPrice()))
+            .toList();
+        return new OrderDTO(order.getId(), order.getOrderDate(), productDTOs);
+    }
+}
+```
+
+**Generated SQL for POST /api/orders**
+
+```text
+Request body:
+{
+    "orderDate": "2026-04-16",
+    "productIds": [1, 3, 5]
+}
+
+SQL executed:
+  SELECT p.* FROM products p WHERE p.id IN (1, 3, 5);              ← fetch existing products
+
+  INSERT INTO orders (order_date) VALUES ('2026-04-16');             ← insert order (gets id=10)
+
+  INSERT INTO order_products (order_id, product_id) VALUES (10, 1); ← link order to product 1
+  INSERT INTO order_products (order_id, product_id) VALUES (10, 3); ← link order to product 3
+  INSERT INTO order_products (order_id, product_id) VALUES (10, 5); ← link order to product 5
+```
+
+```text
+DB after save:
+
+orders:
+  id=10, order_date='2026-04-16'
+
+order_products (join table):
+  order_id=10, product_id=1
+  order_id=10, product_id=3
+  order_id=10, product_id=5
+
+products (unchanged — they already existed):
+  id=1, "Laptop", 999.99
+  id=3, "Keyboard", 49.99
+  id=5, "Monitor", 299.99
+```
+
+**JPA manages the join table — you do not**
+
+Since the owning entity (Order) has `@ManyToMany` + `@JoinTable` without `mappedBy`, JPA fully manages the `order_products` table:
+
+```text
+What JPA manages automatically:
+  ✅ Creating the join table at startup (if ddl-auto = update/create)
+  ✅ Inserting rows when you add products to order.products
+  ✅ Deleting rows when you remove products from order.products
+  ✅ Deleting all join rows when the order is deleted
+
+What you do NOT need to do:
+  ❌ No @Entity for order_products
+  ❌ No Repository for order_products
+  ❌ No manual INSERT/DELETE on the join table
+  ❌ No mappedBy (unidirectional — only one side manages it)
+```
+
+**Why CascadeType.PERSIST + MERGE (not ALL) for @ManyToMany?**
+
+```text
+@ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+
+Why NOT CascadeType.ALL (which includes REMOVE)?
+
+  - Products are INDEPENDENT entities shared across many Orders.
+  - If you delete Order #10, you do NOT want to delete "Laptop" from products table.
+  - Other orders also reference "Laptop".
+  - CascadeType.REMOVE on @ManyToMany would delete the Product entity itself,
+    breaking all other orders that reference it.
+
+  CascadeType.PERSIST  → auto-save new products when saving an order (if needed)
+  CascadeType.MERGE    → auto-update product changes when updating an order
+  NO REMOVE            → deleting order only removes join table rows, not products
+```
+
+---
+
+### ManyToMany Bidirectional Mapping
+
+In a bidirectional `@ManyToMany`, **both** entities have a reference to each other. Both can navigate to the other side.
+
+**Real-life use case**: An `Order` has many `Product`s, and a `Product` can be in many `Order`s. You want to navigate both ways: get products for an order, AND get all orders for a product.
+
+```text
+Java Objects:
+
+┌───────────────────────┐    @ManyToMany    ┌───────────────────────┐
+│  Order                │    @JoinTable     │  Product              │
+│                       │                   │                       │
+│  id: Long             │                   │  id: Long             │
+│  orderDate: LocalDate ├──────────────────>│  name: String         │
+│  products: Set<Product│                   │  price: BigDecimal    │
+│                       │<──────────────────┤  orders: Set<Order>   │
+│  (OWNING side)        │    @ManyToMany    │                       │
+│                       │    (mappedBy)     │  (INVERSE side)       │
+└───────────────────────┘                   └───────────────────────┘
+
+Direction: Order <──────────> Product   (both ways)
+```
+
+---
+
+### Anyone Can Be Owning or Inverse Side
+
+In `@ManyToMany`, since both entities are **peers** (no parent-child), you can choose either as the owning side. The choice is a **design decision**, not a database constraint.
+
+```text
+Option A: Order is owning side (more common)
+  Order has @ManyToMany + @JoinTable
+  Product has @ManyToMany(mappedBy = "products")
+
+Option B: Product is owning side
+  Product has @ManyToMany + @JoinTable
+  Order has @ManyToMany(mappedBy = "orders")
+
+Both produce the SAME join table and SAME DB structure.
+The difference: JPA reads the OWNING side to manage the join table.
+So you should make the entity you UPDATE MORE OFTEN the owning side.
+```
+
+**Convention**: The entity from which you **add/remove relationships most often** should be the owning side. Typically, when placing an Order you add products to it — so Order is the owning side.
+
+---
+
+### DB Structure — Same as Unidirectional
+
+The database structure is **identical** to unidirectional `@ManyToMany`. Adding bidirectional navigation does NOT change the tables — it only adds a Java-side reference.
+
+```text
+DB Tables (SAME for unidirectional and bidirectional):
+
+┌──────────────────┐       ┌─────────────────────┐       ┌──────────────────┐
+│ orders            │       │ order_products       │       │ products          │
+├──────────────────┤       │ (JOIN TABLE)         │       ├──────────────────┤
+│ id (PK)          │──────>│ order_id (FK)        │       │ id (PK)          │
+│ order_date       │       │ product_id (FK) ─────┼──────>│ name             │
+│                  │       │                     │       │ price            │
+└──────────────────┘       │ PK(order_id,        │       └──────────────────┘
+                           │    product_id)       │
+                           └─────────────────────┘
+
+Still 3 tables.  Still a join table.
+Neither entity table holds FKs to the other.
+ALL relationship data is in the join table.
+```
+
+```text
+Why a join table (not FKs in entity tables)?
+
+  - Cannot put "list of product IDs" in a single orders row    → violates 1NF
+  - Cannot put "list of order IDs" in a single products row    → violates 1NF
+  - A separate join table is the ONLY way to represent M:N in relational DBs
+
+  Unidirectional:  Same 3 tables, only Order knows about Products in Java.
+  Bidirectional:   Same 3 tables, both Order and Product know about each other in Java.
+```
+
+---
+
+### Code Example — Bidirectional @ManyToMany
+
+**Owning side — Order (has @ManyToMany + @JoinTable)**
+
+```java
+@Entity
+@Table(name = "orders")
+public class Order {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "order_date")
+    private LocalDate orderDate;
+
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+        name = "order_products",
+        joinColumns = @JoinColumn(name = "order_id"),
+        inverseJoinColumns = @JoinColumn(name = "product_id")
+    )
+    private Set<Product> products = new HashSet<>();
+
+    // Helper methods — keep both sides in sync
+    public void addProduct(Product product) {
+        products.add(product);
+        product.getOrders().add(this);      // sync inverse side
+    }
+
+    public void removeProduct(Product product) {
+        products.remove(product);
+        product.getOrders().remove(this);   // sync inverse side
+    }
+
+    // constructors, getters, setters
+}
+```
+
+**Inverse side — Product (has @ManyToMany with mappedBy)**
+
+```java
+@Entity
+@Table(name = "products")
+public class Product {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+
+    private BigDecimal price;
+
+    @ManyToMany(mappedBy = "products")       // "products" = field name in Order
+    @JsonIgnore                               // prevent infinite recursion
+    private Set<Order> orders = new HashSet<>();
+
+    // constructors, getters, setters
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Product product = (Product) o;
+        return id != null && id.equals(product.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();     // stable hashCode for Sets
+    }
+}
+```
+
+**Why `equals()` and `hashCode()` on entities used in Sets?**
+
+```text
+@ManyToMany uses Set<Product> and Set<Order>.
+Sets rely on equals()/hashCode() to determine membership.
+
+Without proper equals()/hashCode():
+  - set.add(product) and set.remove(product) may not work correctly.
+  - Duplicate entries can appear in the Set.
+  - Hibernate may generate unnecessary INSERT/DELETE on the join table.
+
+Rule: Use the @Id field for equals(), and a stable constant for hashCode().
+```
+
+---
+
+### API + Service Code — Bidirectional
+
+**DTOs**
+
+```java
+public class CreateOrderRequest {
+    private LocalDate orderDate;
+    private List<Long> productIds;
+}
+
+public class OrderDTO {
+    private Long id;
+    private LocalDate orderDate;
+    private List<ProductDTO> products;
+}
+
+public class ProductDTO {
+    private Long id;
+    private String name;
+    private BigDecimal price;
+}
+
+public class ProductWithOrdersDTO {
+    private Long id;
+    private String name;
+    private BigDecimal price;
+    private List<OrderSummaryDTO> orders;
+}
+
+public class OrderSummaryDTO {
+    private Long id;
+    private LocalDate orderDate;
+}
+```
+
+**Controller**
+
+```java
+@RestController
+@RequestMapping("/api")
+public class OrderProductController {
+
+    @Autowired
+    private OrderService orderService;
+
+    @Autowired
+    private ProductService productService;
+
+    // Create order with products (owning side)
+    @PostMapping("/orders")
+    public OrderDTO createOrder(@RequestBody CreateOrderRequest request) {
+        return orderService.createOrder(request);
+    }
+
+    // Get all orders for a product (inverse side navigation)
+    @GetMapping("/products/{id}/orders")
+    public ProductWithOrdersDTO getProductWithOrders(@PathVariable Long id) {
+        return productService.getProductWithOrders(id);
+    }
+}
+```
+
+**OrderService — owning side operations**
+
+```java
+@Service
+public class OrderService {
+
+    @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Transactional
+    public OrderDTO createOrder(CreateOrderRequest request) {
+        List<Product> products = productRepository.findAllById(request.getProductIds());
+
+        Order order = new Order();
+        order.setOrderDate(request.getOrderDate());
+
+        for (Product product : products) {
+            order.addProduct(product);    // sets BOTH sides (owning + inverse)
+        }
+
+        Order saved = orderRepository.save(order);
+        // JPA manages join table via the OWNING side (Order)
+
+        return toDTO(saved);
+    }
+
+    @Transactional
+    public OrderDTO removeProductFromOrder(Long orderId, Long productId) {
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        Product product = productRepository.findById(productId).orElseThrow();
+
+        order.removeProduct(product);   // removes from BOTH sides
+        // JPA deletes the join table row automatically
+
+        return toDTO(order);
+    }
+
+    private OrderDTO toDTO(Order order) {
+        List<ProductDTO> productDTOs = order.getProducts().stream()
+            .map(p -> new ProductDTO(p.getId(), p.getName(), p.getPrice()))
+            .toList();
+        return new OrderDTO(order.getId(), order.getOrderDate(), productDTOs);
+    }
+}
+```
+
+**ProductService — inverse side navigation**
+
+```java
+@Service
+public class ProductService {
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Transactional(readOnly = true)
+    public ProductWithOrdersDTO getProductWithOrders(Long productId) {
+        Product product = productRepository.findById(productId).orElseThrow();
+
+        // Navigate from inverse side: Product → Orders
+        List<OrderSummaryDTO> orderDTOs = product.getOrders().stream()
+            .map(o -> new OrderSummaryDTO(o.getId(), o.getOrderDate()))
+            .toList();
+
+        return new ProductWithOrdersDTO(
+            product.getId(), product.getName(), product.getPrice(), orderDTOs
+        );
+    }
+}
+```
+
+**Generated SQL for POST /api/orders**
+
+```text
+Request:
+{
+    "orderDate": "2026-04-16",
+    "productIds": [1, 3, 5]
+}
+
+SQL:
+  SELECT p.* FROM products p WHERE p.id IN (1, 3, 5);              ← fetch products
+
+  INSERT INTO orders (order_date) VALUES ('2026-04-16');             ← insert order (id=10)
+
+  INSERT INTO order_products (order_id, product_id) VALUES (10, 1); ← join table row
+  INSERT INTO order_products (order_id, product_id) VALUES (10, 3); ← join table row
+  INSERT INTO order_products (order_id, product_id) VALUES (10, 5); ← join table row
+```
+
+**Generated SQL for GET /api/products/1/orders**
+
+```text
+SQL:
+  SELECT p.* FROM products p WHERE p.id = 1;                                     ← load product
+
+  SELECT o.* FROM orders o                                                        ← load orders
+  JOIN order_products op ON o.id = op.order_id                                     via join table
+  WHERE op.product_id = 1;
+```
+
+**Generated SQL for removing a product from an order**
+
+```text
+SQL:
+  DELETE FROM order_products WHERE order_id = 10 AND product_id = 3;   ← only join table row deleted
+                                                                        ← Product(id=3) still exists
+                                                                        ← Order(id=10) still exists
+```
+
+---
+
+### JPA Manages Everything from the Owning Side
+
+JPA only reads the **owning side** to decide what to do with the join table. The inverse side (`mappedBy`) is purely for Java navigation.
+
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                     │
+│  OWNING SIDE (Order):                                               │
+│    order.addProduct(product)  → JPA inserts into order_products     │
+│    order.removeProduct(product) → JPA deletes from order_products   │
+│    orderRepository.delete(order) → JPA deletes join rows + order    │
+│                                                                     │
+│  INVERSE SIDE (Product):                                            │
+│    product.getOrders().add(order)  → JPA does NOTHING               │
+│    product.getOrders().remove(order) → JPA does NOTHING             │
+│    productRepository.delete(product) → deletes product only,        │
+│                                         NOT join table rows!        │
+│                                         (may cause FK violation)    │
+│                                                                     │
+│  Rule: ALWAYS manage the relationship through the OWNING side.      │
+│        The inverse side is just a mirror for navigation.            │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**What happens if you only modify the inverse side?**
+
+```java
+// WRONG — modifying only the INVERSE side
+@Transactional
+public void addOrderToProduct_WRONG(Long productId, Long orderId) {
+    Product product = productRepository.findById(productId).orElseThrow();
+    Order order = orderRepository.findById(orderId).orElseThrow();
+
+    product.getOrders().add(order);     // inverse side only
+    // JPA generates NO INSERT into order_products!
+    // The relationship is NOT saved!
+}
+```
+
+```java
+// CORRECT — modify the OWNING side (or use helper that syncs both)
+@Transactional
+public void addProductToOrder_CORRECT(Long orderId, Long productId) {
+    Order order = orderRepository.findById(orderId).orElseThrow();
+    Product product = productRepository.findById(productId).orElseThrow();
+
+    order.addProduct(product);          // owning side + syncs inverse
+    // JPA generates INSERT into order_products
+}
+```
+
+**Summary — @ManyToMany bidirectional**
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  @ManyToMany Bidirectional                                                   │
+│                                                                              │
+│  DB structure: SAME as unidirectional (3 tables: orders, products, join)     │
+│  Java difference: Product now has Set<Order> orders (back reference)         │
+│                                                                              │
+│  Owning side (Order):                                                        │
+│    @ManyToMany + @JoinTable(name, joinColumns, inverseJoinColumns)           │
+│    → JPA manages join table through this side                                │
+│                                                                              │
+│  Inverse side (Product):                                                     │
+│    @ManyToMany(mappedBy = "products")                                        │
+│    → Just for navigation, JPA ignores changes here                           │
+│                                                                              │
+│  Always modify the OWNING side to persist relationship changes.              │
+│  Use helper methods (addProduct/removeProduct) to sync both sides.           │
+│  Use Set (not List) for @ManyToMany to avoid Hibernate bag issues.           │
+│  Use CascadeType.PERSIST + MERGE (never ALL/REMOVE for shared entities).    │
+│  Use @JsonIgnore on inverse side to prevent infinite recursion.              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### How JPA Internally Manages the Join Table from the Owning Entity
+
+JPA treats the owning side as the **single source of truth** for the `@ManyToMany` relationship. Every operation on the join table — INSERT, DELETE, full re-sync — is derived by comparing the owning entity's collection state **before and after** the transaction.
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  JPA's Internal Flow for @ManyToMany (Owning Side = Order)                     │
+│                                                                                 │
+│  @Transactional method begins                                                   │
+│       │                                                                         │
+│       v                                                                         │
+│  1. Load Order (owning entity)                                                  │
+│     → Hibernate takes a SNAPSHOT of order.products = {P1, P3, P5}               │
+│                                                                                 │
+│  2. You modify the collection:                                                  │
+│     order.removeProduct(P3);       → order.products = {P1, P5}                  │
+│     order.addProduct(P7);          → order.products = {P1, P5, P7}              │
+│                                                                                 │
+│  3. Flush / Commit                                                              │
+│     → Hibernate compares SNAPSHOT vs CURRENT:                                   │
+│                                                                                 │
+│     Snapshot:  {P1, P3, P5}                                                     │
+│     Current:   {P1, P5, P7}                                                     │
+│                                                                                 │
+│     Diff:                                                                       │
+│       REMOVED: P3  → DELETE FROM order_products WHERE order_id=10 AND product_id=3│
+│       ADDED:   P7  → INSERT INTO order_products (order_id, product_id) VALUES (10,7)│
+│       KEPT:    P1, P5 → no SQL (already in join table)                          │
+│                                                                                 │
+│  4. Join table is now in sync with the owning collection.                       │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Step-by-step code example showing exactly what JPA does**
+
+```java
+@Service
+public class OrderService {
+
+    @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Transactional
+    public void updateOrderProducts(Long orderId) {
+
+        // STEP 1: Load owning entity — JPA snapshots the collection
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        // SQL: SELECT o.* FROM orders o WHERE o.id = 10
+        // SQL: SELECT p.* FROM products p
+        //        JOIN order_products op ON p.id = op.product_id
+        //        WHERE op.order_id = 10
+        //
+        // Snapshot taken: order.products = {Product(1), Product(3), Product(5)}
+
+        // STEP 2: Modify the collection on the OWNING side
+        Product p3 = order.getProducts().stream()
+            .filter(p -> p.getId().equals(3L)).findFirst().orElseThrow();
+        order.removeProduct(p3);              // remove P3
+
+        Product p7 = productRepository.findById(7L).orElseThrow();
+        order.addProduct(p7);                 // add P7
+
+        // At this point IN MEMORY:
+        //   order.products = {Product(1), Product(5), Product(7)}
+        //   No SQL yet — changes are in Persistence Context only
+
+        // STEP 3: Transaction commits → flush
+        // JPA compares snapshot vs current and generates:
+    }
+    // After @Transactional method returns:
+    // SQL: DELETE FROM order_products WHERE order_id = 10 AND product_id = 3
+    // SQL: INSERT INTO order_products (order_id, product_id) VALUES (10, 7)
+}
+```
+
+```text
+Join table state:
+
+BEFORE:                                   AFTER:
+┌──────────┬────────────┐                ┌──────────┬────────────┐
+│ order_id │ product_id │                │ order_id │ product_id │
+├──────────┼────────────┤                ├──────────┼────────────┤
+│    10    │     1      │   (kept)       │    10    │     1      │
+│    10    │     3      │   (removed)    │    10    │     5      │
+│    10    │     5      │   (kept)       │    10    │     7      │  (added)
+└──────────┴────────────┘                └──────────┴────────────┘
+```
+
+---
+
+**What JPA manages for each operation on the owning entity**
+
+```text
+┌─────────────────────────────────────┬──────────────────────────────────────────────────────┐
+│ Operation on Owning Entity (Order)  │ What JPA does to the join table                      │
+├─────────────────────────────────────┼──────────────────────────────────────────────────────┤
+│ order.addProduct(product)           │ INSERT INTO order_products (order_id, product_id)     │
+│                                     │ VALUES (?, ?)                                        │
+├─────────────────────────────────────┼──────────────────────────────────────────────────────┤
+│ order.removeProduct(product)        │ DELETE FROM order_products                            │
+│                                     │ WHERE order_id = ? AND product_id = ?                │
+├─────────────────────────────────────┼──────────────────────────────────────────────────────┤
+│ order.getProducts().clear()         │ DELETE FROM order_products WHERE order_id = ?         │
+│                                     │ (all rows for this order removed)                    │
+├─────────────────────────────────────┼──────────────────────────────────────────────────────┤
+│ order.setProducts(newSet)           │ DELETE all old rows + INSERT all new rows             │
+│                                     │ (full re-sync of join table for this order)          │
+├─────────────────────────────────────┼──────────────────────────────────────────────────────┤
+│ orderRepository.save(newOrder)      │ INSERT INTO orders + INSERT all join rows             │
+│ (with products added)               │                                                      │
+├─────────────────────────────────────┼──────────────────────────────────────────────────────┤
+│ orderRepository.delete(order)       │ DELETE FROM order_products WHERE order_id = ?         │
+│                                     │ DELETE FROM orders WHERE id = ?                      │
+│                                     │ (join rows deleted FIRST to avoid FK violation)      │
+│                                     │ Products are NOT deleted (independent entities)      │
+└─────────────────────────────────────┴──────────────────────────────────────────────────────┘
+```
+
+---
+
+**What JPA does NOT manage (inverse side changes)**
+
+```java
+@Transactional
+public void inverseSideDemo(Long productId, Long orderId) {
+    Product product = productRepository.findById(productId).orElseThrow();
+    Order order = orderRepository.findById(orderId).orElseThrow();
+
+    // Modifying INVERSE side only:
+    product.getOrders().add(order);
+
+    // Flush / Commit:
+    // SQL generated: NOTHING!
+    // JPA does not read the inverse side. The join table is UNCHANGED.
+}
+```
+
+```text
+Why JPA ignores the inverse side:
+
+  mappedBy = "products" means:
+    "The field 'products' in Order is the REAL owner."
+    "I (Product.orders) am just a MIRROR."
+    "Don't read me for persistence decisions."
+
+  JPA's dirty checking for @ManyToMany ONLY compares:
+    owning collection snapshot  vs  owning collection current state
+
+  It NEVER compares the inverse collection.
+
+  ┌───────────────────────────────┐     ┌───────────────────────────────┐
+  │  Order.products (OWNING)      │     │  Product.orders (INVERSE)     │
+  │                               │     │                               │
+  │  Changed? → JPA generates SQL │     │  Changed? → JPA ignores it    │
+  │  Snapshot tracked? → YES      │     │  Snapshot tracked? → NO       │
+  │  Drives join table? → YES     │     │  Drives join table? → NO      │
+  └───────────────────────────────┘     └───────────────────────────────┘
+```
+
+---
+
+**Complete lifecycle managed by JPA from the owning entity**
+
+```java
+@Service
+public class OrderLifecycleService {
+
+    @Autowired
+    private OrderRepository orderRepository;
+    @Autowired
+    private ProductRepository productRepository;
+
+    // CREATE — JPA inserts order + join rows
+    @Transactional
+    public Order createOrderWithProducts(List<Long> productIds) {
+        List<Product> products = productRepository.findAllById(productIds);
+        Order order = new Order();
+        order.setOrderDate(LocalDate.now());
+        products.forEach(order::addProduct);
+        return orderRepository.save(order);
+        // SQL: INSERT INTO orders ...
+        // SQL: INSERT INTO order_products (order_id, product_id) VALUES (?, ?) × N
+    }
+
+    // READ — JPA loads order and lazily loads join + products
+    @Transactional(readOnly = true)
+    public Order getOrderWithProducts(Long orderId) {
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        order.getProducts().size();    // trigger lazy load
+        return order;
+        // SQL: SELECT o.* FROM orders WHERE id = ?
+        // SQL: SELECT p.* FROM products JOIN order_products ON ... WHERE order_id = ?
+    }
+
+    // UPDATE — JPA diffs the collection and syncs join table
+    @Transactional
+    public Order replaceProducts(Long orderId, List<Long> newProductIds) {
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        // Snapshot: order.products = {P1, P3, P5}
+
+        // Clear old (JPA will diff)
+        order.getProducts().forEach(p -> p.getOrders().remove(order));
+        order.getProducts().clear();
+
+        // Add new
+        List<Product> newProducts = productRepository.findAllById(newProductIds);
+        newProducts.forEach(order::addProduct);
+        // Current: order.products = {P2, P4}
+
+        return order;
+        // SQL: DELETE FROM order_products WHERE order_id = 10 AND product_id = 1
+        // SQL: DELETE FROM order_products WHERE order_id = 10 AND product_id = 3
+        // SQL: DELETE FROM order_products WHERE order_id = 10 AND product_id = 5
+        // SQL: INSERT INTO order_products (order_id, product_id) VALUES (10, 2)
+        // SQL: INSERT INTO order_products (order_id, product_id) VALUES (10, 4)
+    }
+
+    // DELETE — JPA removes join rows first, then order
+    @Transactional
+    public void deleteOrder(Long orderId) {
+        orderRepository.deleteById(orderId);
+        // SQL: DELETE FROM order_products WHERE order_id = 10  ← join rows first
+        // SQL: DELETE FROM orders WHERE id = 10                ← then the order
+        // Products are NOT deleted — they are independent entities
+    }
+}
+```
+
+```text
+Full CRUD lifecycle — all managed by JPA from the owning entity:
+
+  CREATE:  save(order with products)  → INSERT orders + INSERT join rows
+  READ:    findById + access products → SELECT orders + SELECT via join table
+  UPDATE:  modify products set        → DELETE old join rows + INSERT new join rows
+  DELETE:  deleteById(orderId)        → DELETE join rows + DELETE order
+                                         (products untouched)
+
+  You never write SQL for the join table.
+  You never create an @Entity for the join table.
+  You never create a Repository for the join table.
+  JPA handles it all — as long as you modify the OWNING side.
 ```
 
 

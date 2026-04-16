@@ -1,0 +1,28 @@
+
+
+Add all the theories for the following question in detail and wherever possible add diagram and add code
+
+- Explain one to many bidirectional mapping, with real life use case and code example and diagram and generated SQL and tables
+  - What is owing side vs inverse side? is the owing side always be the parent side? Explain with a code example and diagram and generated SQL? Which side contains the foregn key relation ship? In which side we keep the @JoinColumn? 
+  - In bidirectional by default child entity hold the foreign key?  Explain with a code example and diagram and generated SQL and DB tables
+  - In the inverse side/parent side how should we add mappedBy property in the @OneToMany? Explain with a code example and diagram and generated SQL and DB tables
+  - What will happen if we only set the list of child entity in the parent? As JPA is not maintaining the child enity mapping in the parent and only maintaining the relationship inside child entity.. Will we get null if we dont set parent inside the child entity ? Explain with a code example and diagram and generated SQL and DB tables
+  - Could we put @JsonIgnore at the parent at the Child entity?
+
+- Explain many to one bidirectional mapping, with real life use case and code example and diagram and generated SQL and tables
+  - How it is similar to the one to many bidirectional mapping, with real life use case and code example and diagram
+
+
+Add all the theories for the following question in detail and wherever possible add diagram and add code
+
+- Explain many to many unirectional mapping, with real life use case and code example and diagram and generated SQL and tables
+  - How there are no parent child concept?Who is owning and who is inverse entity? take an example of Order and Product Entity..
+  - How we use @ManyToMany, @JoinColumn(name, joinColumns, inverseJoinColumns) with real life use case and code example (API POST /orders + actual service code) and diagram and generated SQL and tables? WIll it create a new table with OrderId and ProductId? 
+  - In the Owning entity (Order Entity) it is not using `mappedby`, so JPA will maintain the lifecycle, we do not need to create it, JPA will take care of it
+
+
+- Explain many to many birectional mapping, with real life use case and (API + Service) code example and diagram and generated SQL and tables
+  - Since it is many to many birectional, so anyone can be owning and inverse side..
+  - DB structure will be same the only difference will be that both entity will have the reference of the other entity. Both Entity and indepedent entity.. will it create a new table with OrderId and ProductId? or anyone will hold the foreign keys?
+  - The owning entity will have the @ManytoMany and @JoinTable(name, joinColumns,inverseJoinColumns) and the inverse table will have @ManyToMany(mappedBy). and (API + Service) code example and diagram and generated SQL and tables
+  - JPA will handle/manage the things from owning entity.

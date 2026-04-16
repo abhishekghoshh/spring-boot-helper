@@ -48,3 +48,8 @@
 ### Session Management
 
 - [Session Management using Spring Session Redis in Spring Boot | Tech Primers](https://www.youtube.com/watch?v=KStr5ZspNvM)
+
+
+### Sequirity with Keycloak
+
+- [Master Keycloak Authentication with Spring Boot, React & OAuth2 🔐 | Secure Full Stack Microservices](https://www.youtube.com/watch?v=3tKA4zxqZVI)

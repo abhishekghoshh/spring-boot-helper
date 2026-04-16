@@ -43,6 +43,12 @@
 - [Complete Java, Spring, and Microservices course](https://www.youtube.com/playlist?list=PLsyeobzWxl7q6oUFts2erdot6jxF_lisP)
 
 
+- [Concept && Coding - by Shrayansh](https://www.youtube.com/@ConceptAndCodingByShrayansh)
+- [CodeSnippet](https://www.youtube.com/@CodeSnippetByChetanGhate/playlists)
+- [Learn Code With Durgesh](https://www.youtube.com/@LearnCodeWithDurgesh/playlists)
+- [Engineering Digest](https://www.youtube.com/@EngineeringDigest/playlists)
+- [EmbarkX | Learn Programming | Faisal Memon](https://www.youtube.com/@EmbarkX/playlists)
+
 
 ### Daily Code Buffer
 
