@@ -7609,4 +7609,4231 @@ Full CRUD lifecycle — all managed by JPA from the owning entity:
 ```
 
 
+---
 
+### Derived Query Methods in Spring Data JPA, When Repository Built-in Methods Are Not Enough. 
+
+`JpaRepository` gives us built-in methods like `findAll()`, `findById()`, `save()`, `deleteById()`, etc. But these are generic — they operate on the **entire entity** without any filtering conditions.
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────┐
+│  Built-in JpaRepository methods:                                              │
+│                                                                                │
+│    findAll()      → SELECT * FROM employees                                    │
+│    findById(1L)   → SELECT * FROM employees WHERE id = 1                       │
+│    save(entity)   → INSERT / UPDATE                                            │
+│    deleteById(1L) → DELETE FROM employees WHERE id = 1                         │
+│                                                                                │
+│  But what if we need:                                                          │
+│    "Find employees whose salary is greater than 50000"                         │
+│    "Find employees whose name starts with 'A' and department is 'IT'"          │
+│    "Count employees in a given city"                                           │
+│    "Check if an employee exists with a given email"                            │
+│    "Delete employees whose status is 'INACTIVE'"                               │
+│                                                                                │
+│  No built-in method supports these WHERE-clause conditions!                    │
+│                                                                                │
+│  Solution → Derived Query Methods                                              │
+│             Just declare a method in the repository interface                   │
+│             with a specific naming convention. Spring Data JPA                  │
+│             will DERIVE the SQL from the method name itself.                   │
+│             No implementation needed. No SQL written.                           │
+└────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### What Is a Derived Query and Why Is It Called So?
+
+A **derived query** is a query that Spring Data JPA **derives** (generates) automatically from the **method name** you declare in the repository interface. You don't write any SQL, JPQL, or provide any implementation — the framework parses the method name, breaks it into tokens, maps them to entity properties and SQL operators, and generates the query at application startup.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  Why "Derived"?                                                              │
+│                                                                              │
+│  The query is DERIVED FROM the method name.                                  │
+│                                                                              │
+│  Method name:  findByNameAndSalaryGreaterThan(String name, Double salary)    │
+│                  │      │       │                                             │
+│                  │      │       └─ DERIVED operator: >                        │
+│                  │      └────────── DERIVED property: salary                  │
+│                  └───────────────── DERIVED property: name + AND combinator   │
+│                                                                              │
+│  DERIVED SQL:   SELECT * FROM employees                                      │
+│                 WHERE name = ? AND salary > ?                                 │
+│                                                                              │
+│  You wrote: just a method signature in the interface.                        │
+│  Spring wrote: the full SQL, the parameter binding, the result mapping.      │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+It is called **derived** because:
+1. The **query** is derived from the **method name**
+2. The **parameters** are derived from the **method arguments**
+3. The **return type** tells Spring what shape the result should be (single entity, list, page, count, boolean)
+4. You never write the implementation — Spring's proxy generates it at startup by parsing your method name using `PartTree.java`
+
+---
+
+### How Spring Data JPA Parses the Method Name — PartTree.java and Part.java
+
+When your application starts, Spring Data JPA creates a **proxy** for your repository interface. For each derived query method, it feeds the method name into `PartTree.java` which is a **parser class** in `org.springframework.data.repository.query.parser`.
+
+#### PartTree.java — The Method Name Parser
+
+`PartTree` parses the full method name into a tree structure of parts. It uses regular expressions to identify the **subject** (find/count/exists/delete), split the **predicate** by `Or` and `And`, and extract the **OrderBy** clause.
+
+**Key constants and regex from the actual source code:**
+
+```java
+// PartTree.java — Spring Data Commons source
+
+// Keyword template used to split at camelCase boundaries after a keyword
+private static final String KEYWORD_TEMPLATE = "(%s)(?=(\\p{Lu}|\\P{InBASIC_LATIN}))";
+
+// Subject patterns — what kind of operation is this?
+private static final String QUERY_PATTERN  = "find|read|get|query|search|stream";
+private static final String COUNT_PATTERN  = "count";
+private static final String EXISTS_PATTERN = "exists";
+private static final String DELETE_PATTERN = "delete|remove";
+
+// The master regex — matches the FULL prefix up to "By"
+private static final Pattern PREFIX_TEMPLATE = Pattern.compile(
+    "^(" + QUERY_PATTERN + "|" + COUNT_PATTERN + "|" + EXISTS_PATTERN + "|"
+        + DELETE_PATTERN + ")((\\p{Lu}.*?))??By"
+);
+
+// Subject-specific patterns
+private static final Pattern COUNT_BY_TEMPLATE   = Pattern.compile("^count(\\p{Lu}.*?)??By");
+private static final Pattern EXISTS_BY_TEMPLATE  = Pattern.compile("^(" + EXISTS_PATTERN + ")(\\p{Lu}.*?)??By");
+private static final Pattern DELETE_BY_TEMPLATE  = Pattern.compile("^(" + DELETE_PATTERN + ")(\\p{Lu}.*?)??By");
+
+// Top/First limiting pattern — e.g., findFirst5By, findTop3By
+private static final String LIMITING_QUERY_PATTERN = "(First|Top)(\\d*)?";
+private static final Pattern LIMITED_QUERY_TEMPLATE = Pattern.compile(
+    "^(" + QUERY_PATTERN + ")(" + "Distinct" + ")?" + LIMITING_QUERY_PATTERN + "(\\p{Lu}.*?)??By"
+);
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  PREFIX_TEMPLATE regex (expanded):                                               │
+│                                                                                  │
+│  ^(find|read|get|query|search|stream|count|exists|delete|remove)                 │
+│   ((\p{Lu}.*?))??By                                                              │
+│                                                                                  │
+│  This means:                                                                     │
+│    ^ → start of method name                                                      │
+│    (find|read|...|remove) → one of the allowed operation keywords                │
+│    ((\p{Lu}.*?))?? → optional entity name (e.g., "User" in findUserBy)           │
+│                       \p{Lu} = uppercase Unicode letter                           │
+│                       .*?    = lazy match for rest of entity name                 │
+│                       ??     = possessive optional (prefer empty match)           │
+│    By → the literal keyword "By" that separates subject from predicate           │
+│                                                                                  │
+│  Example matches:                                                                │
+│    findBy...            → QUERY, no entity hint                                  │
+│    findEmployeeBy...    → QUERY, entity hint = "Employee"                        │
+│    countBy...           → COUNT                                                  │
+│    existsBy...          → EXISTS                                                 │
+│    deleteBy...          → DELETE                                                 │
+│    removeBy...          → DELETE                                                 │
+│    readBy...            → QUERY                                                  │
+│    queryBy...           → QUERY                                                  │
+│    searchBy...          → QUERY                                                  │
+│    streamBy...          → QUERY (returns Stream<T>)                              │
+│    streamAllBy...       → QUERY                                                  │
+│    findDistinctBy...    → QUERY with DISTINCT                                    │
+│    findFirst5By...      → QUERY with LIMIT 5                                     │
+│    findTop3By...        → QUERY with LIMIT 3                                     │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**How PartTree parses a method name step by step:**
+
+```text
+Method name: findByNameAndSalaryGreaterThanOrderByNameAsc
+
+STEP 1: Match PREFIX_TEMPLATE → "findBy"
+         subject = "find" → QUERY operation
+         remainder after "By" = "NameAndSalaryGreaterThanOrderByNameAsc"
+
+STEP 2: Split at "OrderBy" →
+         predicatePart = "NameAndSalaryGreaterThan"
+         orderByPart   = "NameAsc"
+
+STEP 3: Split predicatePart at "Or" →
+         orPart[0] = "NameAndSalaryGreaterThan"
+         (No "Or" found, so just one OrPart)
+
+STEP 4: Split each OrPart at "And" →
+         andPart[0] = "Name"              → Part(Name, SIMPLE_PROPERTY)
+         andPart[1] = "SalaryGreaterThan" → Part(Salary, GREATER_THAN)
+
+STEP 5: Parse OrderBy →
+         "NameAsc" → Sort by "name" ASC
+
+STEP 6: Build the query tree:
+
+  PartTree
+  ├── Subject: QUERY (find)
+  ├── Predicate
+  │   └── OrPart[0]
+  │       ├── Part(name, SIMPLE_PROPERTY, 1 arg)  → WHERE name = ?
+  │       └── Part(salary, GREATER_THAN, 1 arg)   → AND salary > ?
+  └── OrderBy: name ASC
+
+  Generated SQL:
+    SELECT * FROM employees
+    WHERE name = ?1 AND salary > ?2
+    ORDER BY name ASC
+```
+
+#### Part.java — Individual Condition Parser
+
+Each condition token (e.g., `NameStartingWith`, `SalaryGreaterThan`, `AgeIsNull`) is parsed by `Part.java`. It inspects the token string against an ordered list of keyword `Type` enums and extracts the **property name** and **operator type**.
+
+**Part.Type enum — ALL available keywords from the actual source code:**
+
+```text
+┌──────────────────────────┬──────────────────────────────────┬──────────┬──────────────────────────┐
+│ Type (Enum Constant)     │ Keywords (in method name)        │ # Args   │ SQL Equivalent           │
+├──────────────────────────┼──────────────────────────────────┼──────────┼──────────────────────────┤
+│ BETWEEN                  │ IsBetween, Between               │ 2        │ BETWEEN ? AND ?          │
+│ IS_NOT_NULL              │ IsNotNull, NotNull               │ 0        │ IS NOT NULL              │
+│ IS_NULL                  │ IsNull, Null                     │ 0        │ IS NULL                  │
+│ LESS_THAN                │ IsLessThan, LessThan             │ 1        │ < ?                      │
+│ LESS_THAN_EQUAL          │ IsLessThanEqual, LessThanEqual   │ 1        │ <= ?                     │
+│ GREATER_THAN             │ IsGreaterThan, GreaterThan       │ 1        │ > ?                      │
+│ GREATER_THAN_EQUAL       │ IsGreaterThanEqual,              │ 1        │ >= ?                     │
+│                          │ GreaterThanEqual                 │          │                          │
+│ BEFORE                   │ IsBefore, Before                 │ 1        │ < ? (for dates)          │
+│ AFTER                    │ IsAfter, After                   │ 1        │ > ? (for dates)          │
+│ NOT_LIKE                 │ IsNotLike, NotLike               │ 1        │ NOT LIKE ?               │
+│ LIKE                     │ IsLike, Like                     │ 1        │ LIKE ?                   │
+│ STARTING_WITH            │ IsStartingWith, StartingWith,    │ 1        │ LIKE ?%                  │
+│                          │ StartsWith                       │          │                          │
+│ ENDING_WITH              │ IsEndingWith, EndingWith,        │ 1        │ LIKE %?                  │
+│                          │ EndsWith                         │          │                          │
+│ IS_NOT_EMPTY             │ IsNotEmpty, NotEmpty             │ 0        │ <> '' (collections)      │
+│ IS_EMPTY                 │ IsEmpty, Empty                   │ 0        │ = '' (collections)       │
+│ NOT_CONTAINING           │ IsNotContaining, NotContaining,  │ 1        │ NOT LIKE %?%             │
+│                          │ NotContains                      │          │                          │
+│ CONTAINING               │ IsContaining, Containing,        │ 1        │ LIKE %?%                 │
+│                          │ Contains                         │          │                          │
+│ NOT_IN                   │ IsNotIn, NotIn                   │ 1        │ NOT IN (?)               │
+│ IN                       │ IsIn, In                         │ 1        │ IN (?)                   │
+│ NEAR                     │ IsNear, Near                     │ 1        │ (geo-spatial)            │
+│ WITHIN                   │ IsWithin, Within                 │ 1        │ (geo-spatial)            │
+│ REGEX                    │ MatchesRegex, Matches, Regex     │ 1        │ REGEXP ?                 │
+│ EXISTS                   │ Exists                           │ 0        │ EXISTS (subquery)        │
+│ TRUE                     │ IsTrue, True                     │ 0        │ = TRUE                   │
+│ FALSE                    │ IsFalse, False                   │ 0        │ = FALSE                  │
+│ NEGATING_SIMPLE_PROPERTY │ IsNot, Not                       │ 1        │ <> ?                     │
+│ SIMPLE_PROPERTY          │ Is, Equals                       │ 1        │ = ?                      │
+│ (default if no keyword)  │ (property name only)             │ 1        │ = ?                      │
+└──────────────────────────┴──────────────────────────────────┴──────────┴──────────────────────────┘
+
+NOTE: The order in the ALL list matters! PartTree iterates in this exact order.
+      e.g., "IsNotNull" is checked BEFORE "IsNull" so "NameIsNotNull" doesn't
+      accidentally match "NameIsNot" + "Null" as property.
+```
+
+**Additional keywords for the method structure (not Part.Type but PartTree-level):**
+
+```text
+┌────────────────────┬─────────────────────────────────────────────────────────┐
+│ Keyword            │ Purpose                                                 │
+├────────────────────┼─────────────────────────────────────────────────────────┤
+│ By                 │ Separator between subject (find/count/exists/delete)    │
+│                    │ and predicate (conditions). MANDATORY.                  │
+├────────────────────┼─────────────────────────────────────────────────────────┤
+│ And                │ Combines two conditions with SQL AND                    │
+│                    │ e.g., NameAndAge → WHERE name = ? AND age = ?           │
+├────────────────────┼─────────────────────────────────────────────────────────┤
+│ Or                 │ Combines two conditions with SQL OR                     │
+│                    │ e.g., NameOrEmail → WHERE name = ? OR email = ?         │
+├────────────────────┼─────────────────────────────────────────────────────────┤
+│ OrderBy            │ Adds ORDER BY clause                                    │
+│                    │ e.g., OrderByNameAsc → ORDER BY name ASC                │
+├────────────────────┼─────────────────────────────────────────────────────────┤
+│ Asc / Desc         │ Sort direction (appended after property in OrderBy)     │
+│                    │ e.g., OrderByNameAscAgeDesc → ORDER BY name ASC, age DESC│
+├────────────────────┼─────────────────────────────────────────────────────────┤
+│ Distinct           │ Adds SELECT DISTINCT                                    │
+│                    │ e.g., findDistinctByName → SELECT DISTINCT ...          │
+├────────────────────┼─────────────────────────────────────────────────────────┤
+│ First / Top        │ Limits results (with optional count)                    │
+│                    │ e.g., findFirst5By → LIMIT 5, findTopBy → LIMIT 1      │
+├────────────────────┼─────────────────────────────────────────────────────────┤
+│ AllIgnoreCase /    │ Apply case-insensitive matching to ALL or single        │
+│ IgnoreCase         │ conditions. e.g., findByNameIgnoreCase                  │
+│ / IgnoringCase     │ → WHERE LOWER(name) = LOWER(?)                         │
+└────────────────────┴─────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Method Name Structure
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│  Method Name Structure for Derived Query:                                            │
+│                                                                                      │
+│  ┌─────────┐ ┌──────────┐ ┌────┐ ┌──────────────────┐ ┌────────────────────────────┐│
+│  │ Subject  │ │ Optional │ │ By │ │    Predicate      │ │ Optional OrderBy           ││
+│  │ Keyword  │ │ Modifiers│ │    │ │    (conditions)   │ │                            ││
+│  └────┬─────┘ └────┬─────┘ └─┬──┘ └────────┬─────────┘ └───────────┬────────────────┘│
+│       │             │         │              │                       │                 │
+│       v             v         v              v                       v                 │
+│  find/read/    Distinct    By       Property+Operator+        OrderBy+Property+       │
+│  get/query/    First5              And/Or+Property+Operator    Asc/Desc                │
+│  search/stream Top3                                                                    │
+│  count                                                                                 │
+│  exists                                                                                │
+│  delete/remove                                                                         │
+│                                                                                        │
+│  Examples:                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐   │
+│  │ find         │          │ By │ Name                                             │   │
+│  │ find         │          │ By │ NameAndSalaryGreaterThan                         │   │
+│  │ find         │Distinct  │ By │ DepartmentContaining │ OrderByNameAsc            │   │
+│  │ find         │First5    │ By │ StatusTrue           │ OrderBySalaryDesc         │   │
+│  │ count        │          │ By │ DepartmentAndActive                              │   │
+│  │ exists       │          │ By │ Email                                            │   │
+│  │ delete       │          │ By │ StatusAndLastLoginBefore                         │   │
+│  │ read         │          │ By │ AgeBetween                                       │   │
+│  │ stream       │All       │ By │ DepartmentIn                                     │   │
+│  └─────────────────────────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### How Method Name + Arguments + Return Type Create the Dynamic Query
+
+Spring Data JPA combines three things to build the full query:
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  THREE INPUTS that Spring uses to build the query:                               │
+│                                                                                  │
+│  1. METHOD NAME    → determines the SQL structure                                │
+│     findByNameAndSalaryGreaterThan → SELECT ... WHERE name = ? AND salary > ?    │
+│                                                                                  │
+│  2. METHOD ARGUMENTS → bound to the ? placeholders (positional order)            │
+│     (String name, Double salary) → ?1 = name, ?2 = salary                        │
+│                                                                                  │
+│  3. RETURN TYPE    → determines how to shape the result                          │
+│     List<Employee>  → return multiple rows as a List                              │
+│     Employee        → return single row (or null / throw if not found)           │
+│     Optional<Employee> → return single row wrapped in Optional                   │
+│     Page<Employee>  → return a page with pagination metadata                     │
+│     Slice<Employee> → return a slice (knows if more pages exist)                 │
+│     Stream<Employee> → return as Java Stream (must be closed)                    │
+│     Long / long     → for count queries                                          │
+│     Boolean / boolean → for exists queries                                       │
+│     void            → for delete queries                                         │
+│     Long            → for delete queries (returns count of deleted rows)         │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Complete code example with Entity, Repository, Controller, and generated SQL:**
+
+```java
+// Entity
+@Entity
+@Table(name = "employees")
+public class Employee {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String name;
+    private String email;
+    private String department;
+    private Double salary;
+    private Boolean active;
+    private LocalDate joiningDate;
+    // getters, setters, constructors
+}
+```
+
+```java
+// Repository — all methods are derived queries, NO implementation needed
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+
+    // 1. SIMPLE PROPERTY — WHERE name = ?
+    List<Employee> findByName(String name);
+    // SQL: SELECT * FROM employees WHERE name = ?1
+
+    // 2. AND combinator — WHERE department = ? AND active = ?
+    List<Employee> findByDepartmentAndActive(String department, Boolean active);
+    // SQL: SELECT * FROM employees WHERE department = ?1 AND active = ?2
+
+    // 3. OR combinator — WHERE name = ? OR email = ?
+    List<Employee> findByNameOrEmail(String name, String email);
+    // SQL: SELECT * FROM employees WHERE name = ?1 OR email = ?2
+
+    // 4. GREATER_THAN — WHERE salary > ?
+    List<Employee> findBySalaryGreaterThan(Double minSalary);
+    // SQL: SELECT * FROM employees WHERE salary > ?1
+
+    // 5. BETWEEN — WHERE salary BETWEEN ? AND ?  (takes 2 args)
+    List<Employee> findBySalaryBetween(Double min, Double max);
+    // SQL: SELECT * FROM employees WHERE salary BETWEEN ?1 AND ?2
+
+    // 6. LIKE — WHERE name LIKE ?  (caller must include % wildcards)
+    List<Employee> findByNameLike(String pattern);
+    // SQL: SELECT * FROM employees WHERE name LIKE ?1
+
+    // 7. STARTING_WITH — WHERE name LIKE 'A%'  (Spring adds the %)
+    List<Employee> findByNameStartingWith(String prefix);
+    // SQL: SELECT * FROM employees WHERE name LIKE ?1 || '%'
+    //      (or: WHERE name LIKE 'A%' — Spring wraps the param)
+
+    // 8. CONTAINING — WHERE department LIKE '%eng%'
+    List<Employee> findByDepartmentContaining(String keyword);
+    // SQL: SELECT * FROM employees WHERE department LIKE '%' || ?1 || '%'
+
+    // 9. IS_NULL — WHERE email IS NULL  (no argument needed)
+    List<Employee> findByEmailIsNull();
+    // SQL: SELECT * FROM employees WHERE email IS NULL
+
+    // 10. IS_NOT_NULL — WHERE email IS NOT NULL
+    List<Employee> findByEmailIsNotNull();
+    // SQL: SELECT * FROM employees WHERE email IS NOT NULL
+
+    // 11. IN — WHERE department IN ('IT', 'HR', 'Finance')
+    List<Employee> findByDepartmentIn(List<String> departments);
+    // SQL: SELECT * FROM employees WHERE department IN (?1, ?2, ?3)
+
+    // 12. TRUE / FALSE — WHERE active = TRUE
+    List<Employee> findByActiveTrue();
+    // SQL: SELECT * FROM employees WHERE active = TRUE
+
+    // 13. ORDER BY — WHERE department = ? ORDER BY salary DESC
+    List<Employee> findByDepartmentOrderBySalaryDesc(String department);
+    // SQL: SELECT * FROM employees WHERE department = ?1 ORDER BY salary DESC
+
+    // 14. BEFORE (for dates) — WHERE joiningDate < ?
+    List<Employee> findByJoiningDateBefore(LocalDate date);
+    // SQL: SELECT * FROM employees WHERE joining_date < ?1
+
+    // 15. AFTER (for dates) — WHERE joiningDate > ?
+    List<Employee> findByJoiningDateAfter(LocalDate date);
+    // SQL: SELECT * FROM employees WHERE joining_date > ?1
+
+    // 16. NEGATING — WHERE department <> ?
+    List<Employee> findByDepartmentNot(String department);
+    // SQL: SELECT * FROM employees WHERE department <> ?1
+
+    // 17. IGNORE CASE — WHERE LOWER(name) = LOWER(?)
+    List<Employee> findByNameIgnoreCase(String name);
+    // SQL: SELECT * FROM employees WHERE LOWER(name) = LOWER(?1)
+
+    // 18. COUNT — SELECT COUNT(*) WHERE department = ?
+    long countByDepartment(String department);
+    // SQL: SELECT COUNT(*) FROM employees WHERE department = ?1
+
+    // 19. EXISTS — SELECT CASE WHEN COUNT > 0 THEN TRUE ELSE FALSE
+    boolean existsByEmail(String email);
+    // SQL: SELECT CASE WHEN COUNT(e.id) > 0 THEN TRUE ELSE FALSE END
+    //      FROM employees e WHERE e.email = ?1
+
+    // 20. DELETE — DELETE WHERE status = ?
+    void deleteByActive(Boolean active);
+    // SQL: SELECT * FROM employees WHERE active = ?1  (loads first)
+    //      DELETE FROM employees WHERE id = ?  (then deletes one by one)
+
+    // 21. DISTINCT — SELECT DISTINCT department FROM employees WHERE active = ?
+    List<Employee> findDistinctByActiveTrue();
+    // SQL: SELECT DISTINCT * FROM employees WHERE active = TRUE
+
+    // 22. First/Top — LIMIT results
+    List<Employee> findFirst5BySalaryGreaterThanOrderBySalaryDesc(Double salary);
+    // SQL: SELECT * FROM employees WHERE salary > ?1 ORDER BY salary DESC LIMIT 5
+
+    // 23. Single result — returns Optional
+    Optional<Employee> findByEmail(String email);
+    // SQL: SELECT * FROM employees WHERE email = ?1  (expects 0 or 1 row)
+
+    // 24. COMPLEX — multiple conditions + ordering
+    List<Employee> findByDepartmentAndSalaryGreaterThanAndActiveTrueOrderByNameAsc(
+        String department, Double salary
+    );
+    // SQL: SELECT * FROM employees
+    //      WHERE department = ?1 AND salary > ?2 AND active = TRUE
+    //      ORDER BY name ASC
+}
+```
+
+```text
+How argument binding works — positional order:
+
+  Method: findByNameAndSalaryBetweenAndActiveTrue(String name, Double min, Double max)
+                    │              │          │                 │           │        │
+                    │              │          │                 │           │        │
+  Argument #:      (1)           (2)        (3)               ─┘          ─┘       ─┘
+                    │              │          │              no arg       no arg    no arg
+                    v              v          v            (0 args)     (0 args)  (0 args)
+  SQL: WHERE name = ?1 AND salary BETWEEN ?2 AND ?3 AND active = TRUE
+
+  Rules:
+  - Arguments are bound LEFT TO RIGHT
+  - 0-arg types (IsNull, IsNotNull, True, False) consume no arguments
+  - BETWEEN consumes 2 arguments
+  - All others consume 1 argument
+  - The argument count MUST match the total required by all Part.Types
+  - If mismatch → startup error: "Failed to create query for method..."
+```
+
+**Controller + Service using derived queries:**
+
+```java
+@RestController
+@RequestMapping("/api/employees")
+public class EmployeeController {
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    @GetMapping("/by-department")
+    public List<Employee> getByDepartment(@RequestParam String department) {
+        return employeeService.getByDepartment(department);
+    }
+
+    @GetMapping("/high-earners")
+    public List<Employee> getHighEarners(@RequestParam Double minSalary) {
+        return employeeService.getHighEarners(minSalary);
+    }
+
+    @GetMapping("/count-by-department")
+    public long countByDepartment(@RequestParam String department) {
+        return employeeService.countByDepartment(department);
+    }
+
+    @GetMapping("/exists-by-email")
+    public boolean existsByEmail(@RequestParam String email) {
+        return employeeService.existsByEmail(email);
+    }
+}
+
+@Service
+public class EmployeeService {
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    public List<Employee> getByDepartment(String department) {
+        return employeeRepository.findByDepartmentAndActiveTrue(department);
+        // SQL: SELECT * FROM employees WHERE department = 'IT' AND active = TRUE
+    }
+
+    public List<Employee> getHighEarners(Double minSalary) {
+        return employeeRepository.findBySalaryGreaterThanOrderBySalaryDesc(minSalary);
+        // SQL: SELECT * FROM employees WHERE salary > 50000 ORDER BY salary DESC
+    }
+
+    public long countByDepartment(String department) {
+        return employeeRepository.countByDepartment(department);
+        // SQL: SELECT COUNT(*) FROM employees WHERE department = 'IT'
+    }
+
+    public boolean existsByEmail(String email) {
+        return employeeRepository.existsByEmail(email);
+        // SQL: SELECT CASE WHEN COUNT(e.id) > 0 THEN TRUE ELSE FALSE END
+        //      FROM employees e WHERE e.email = 'john@example.com'
+    }
+}
+```
+
+```text
+Complete flow — from method call to SQL:
+
+  Controller calls:  employeeRepository.findByDepartmentAndSalaryGreaterThan("IT", 50000)
+       │
+       v
+  Spring Proxy intercepts the call
+       │
+       v
+  PartTree already parsed at startup:
+    Subject:  QUERY (find)
+    Predicate:
+      OrPart[0]:
+        Part(department, SIMPLE_PROPERTY, 1 arg)   → AND department = ?1
+        Part(salary, GREATER_THAN, 1 arg)          → AND salary > ?2
+       │
+       v
+  JPA Criteria Query / JPQL is built:
+    SELECT e FROM Employee e WHERE e.department = :param0 AND e.salary > :param1
+       │
+       v
+  Hibernate translates to SQL:
+    SELECT e.id, e.name, e.email, e.department, e.salary, e.active, e.joining_date
+    FROM employees e
+    WHERE e.department = 'IT' AND e.salary > 50000
+       │
+       v
+  JDBC executes → ResultSet → mapped to List<Employee> → returned to Controller
+```
+
+---
+
+### Why Derived Queries Support GET/REMOVE Only — Not INSERT/UPDATE
+
+Derived queries can only be used for **read (SELECT)** and **delete (DELETE)** operations. You **cannot** create a derived query for INSERT or UPDATE.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Supported:                                                                      │
+│    find/read/get/query/search/stream + By  → SELECT query                        │
+│    count + By                              → SELECT COUNT query                   │
+│    exists + By                             → SELECT EXISTS query                  │
+│    delete/remove + By                      → DELETE operation                     │
+│                                                                                  │
+│  NOT Supported:                                                                  │
+│    insert + By     → ✗ No such prefix in PartTree                                │
+│    update + By     → ✗ No such prefix in PartTree                                │
+│    save + By       → ✗ No such prefix in PartTree                                │
+│    merge + By      → ✗ No such prefix in PartTree                                │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Reason 1 — PartTree's PREFIX_TEMPLATE simply doesn't include insert/update:**
+
+```java
+// From PartTree.java source:
+private static final String QUERY_PATTERN  = "find|read|get|query|search|stream";
+private static final String COUNT_PATTERN  = "count";
+private static final String EXISTS_PATTERN = "exists";
+private static final String DELETE_PATTERN = "delete|remove";
+
+// COMBINED regex:
+"^(" + QUERY_PATTERN + "|" + COUNT_PATTERN + "|" + EXISTS_PATTERN + "|" + DELETE_PATTERN + ")..."
+
+// There is NO "insert|save" or "update|modify" pattern!
+// If you write insertByName(...) → PartTree won't match → startup error.
+```
+
+**Reason 2 — Semantic mismatch: derived queries describe WHERE clauses, not SET clauses:**
+
+```text
+A derived method name describes WHAT to filter:
+  findByNameAndDepartment(name, dept)  →  WHERE name = ? AND department = ?
+       ↑ describes the WHERE clause
+
+For UPDATE, you would need to express BOTH:
+  - WHAT to update (SET clause) — which columns, what values
+  - WHERE to apply (WHERE clause) — which rows to target
+
+  UPDATE employees SET salary = ?, department = ? WHERE name = ? AND active = ?
+                       ↑ SET clause                     ↑ WHERE clause
+
+  A single method name cannot cleanly express both SET and WHERE.
+  "updateSalaryAndDepartmentByNameAndActive" → ambiguous!
+  Does "Salary" go to SET or WHERE? There's no keyword to distinguish them.
+
+For INSERT, there is no WHERE clause at all:
+  INSERT INTO employees (name, email, salary) VALUES (?, ?, ?)
+  There's nothing to "derive" — you just need the full entity.
+  That's exactly what save() does.
+```
+
+**Reason 3 — JPA's EntityManager design for writes:**
+
+```text
+JPA manages writes through the Persistence Context:
+
+  INSERT → entityManager.persist(entity)  → save() method
+  UPDATE → entityManager.merge(entity)    → save() method (if entity has ID)
+           OR dirty checking (modify managed entity, flush auto-applies)
+
+  Both INSERT and UPDATE need the FULL entity object (or at least the fields to set).
+  A derived query method with just a WHERE clause can't express what values to write.
+
+  DELETE works because:
+    DELETE only needs a WHERE clause — "which rows to remove"
+    findByDepartment(dept)   → SELECT ... WHERE dept = ?  → returns entities
+    deleteByDepartment(dept) → DELETE ... WHERE dept = ?   → removes those rows
+    Same WHERE clause structure — just different operation.
+
+  So the query derivation mechanism maps perfectly to SELECT and DELETE
+  but NOT to INSERT (no WHERE) or UPDATE (needs SET + WHERE).
+```
+
+**What to use for INSERT/UPDATE instead:**
+
+```text
+┌──────────────────────┬─────────────────────────────────────────────────────────┐
+│ Operation            │ How to do it                                            │
+├──────────────────────┼─────────────────────────────────────────────────────────┤
+│ INSERT               │ repository.save(newEntity)                              │
+│                      │ (built-in JpaRepository method)                         │
+├──────────────────────┼─────────────────────────────────────────────────────────┤
+│ UPDATE (full entity) │ repository.save(existingEntity)                         │
+│                      │ (if entity has ID → merge instead of persist)           │
+├──────────────────────┼─────────────────────────────────────────────────────────┤
+│ UPDATE (partial /    │ @Modifying @Query("UPDATE Employee e SET e.salary =     │
+│ bulk)                │ :salary WHERE e.department = :dept")                    │
+│                      │ int updateSalary(@Param("salary") Double salary,       │
+│                      │                  @Param("dept") String dept);          │
+│                      │ (custom JPQL with @Query annotation — next topic)       │
+└──────────────────────┴─────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Why @Transactional Is Required on Derived Delete Methods
+
+When you declare a derived delete method like `deleteByDepartment(String department)`, you **must** annotate the calling service method with `@Transactional`. Without it, you get an error.
+
+**How derived delete actually works internally:**
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Derived delete does NOT generate a direct "DELETE FROM ... WHERE ..." SQL!      │
+│                                                                                  │
+│  It is a TWO-STEP process:                                                       │
+│                                                                                  │
+│  STEP 1: SELECT — find all matching entities                                     │
+│    SQL: SELECT e.* FROM employees e WHERE e.department = 'INACTIVE'              │
+│    → Returns List<Employee> into the Persistence Context                         │
+│                                                                                  │
+│  STEP 2: DELETE — remove each entity one by one via EntityManager.remove()       │
+│    SQL: DELETE FROM employees WHERE id = 1                                       │
+│    SQL: DELETE FROM employees WHERE id = 5                                       │
+│    SQL: DELETE FROM employees WHERE id = 9                                       │
+│    → Each entity is removed individually (lifecycle callbacks fire)              │
+│                                                                                  │
+│  This is BY DESIGN — so that:                                                    │
+│    - @PreRemove / @PostRemove lifecycle callbacks fire                           │
+│    - Cascade operations (CascadeType.REMOVE) propagate to children              │
+│    - Orphan removal triggers                                                     │
+│    - L1 cache stays consistent (entities transition to REMOVED state)            │
+│                                                                                  │
+│  But this also means:                                                            │
+│    - It needs a TRANSACTION for the SELECT + multiple DELETEs                    │
+│    - Without @Transactional → TransactionRequiredException                      │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Why it needs @Transactional specifically:**
+
+```text
+Reason 1: Multiple SQL statements must be atomic
+  ─────────────────────────────────────────────
+  The derived delete runs: SELECT + DELETE + DELETE + DELETE + ...
+  If any DELETE fails, ALL should roll back.
+  Without @Transactional, each SQL runs in its own auto-commit.
+  → Partial deletion = data inconsistency.
+
+Reason 2: EntityManager.remove() requires an active transaction
+  ─────────────────────────────────────────────
+  The Persistence Context must be in "transaction" mode to call remove().
+  Without @Transactional → javax.persistence.TransactionRequiredException:
+      "No EntityManager with actual transaction available for current thread"
+
+Reason 3: Flush + Commit
+  ─────────────────────────────────────────────
+  The DELETE SQL statements are sent to the DB during flush (before commit).
+  Flush only happens within a transaction boundary.
+  Without @Transactional → no flush → no SQL sent → nothing deleted.
+```
+
+**Code example:**
+
+```java
+// Repository
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+    void deleteByDepartment(String department);
+    long deleteByActivefalse();  // returns count of deleted rows
+    List<Employee> removeByDepartment(String department);  // returns deleted entities
+}
+
+// Service — MUST have @Transactional
+@Service
+public class EmployeeService {
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @Transactional   // ← MANDATORY for derived delete
+    public void removeInactiveDepartment(String department) {
+        employeeRepository.deleteByDepartment(department);
+        // Internally:
+        // SQL 1: SELECT * FROM employees WHERE department = 'OLD_DEPT'
+        //        → loads [Employee(id=1), Employee(id=5), Employee(id=9)]
+        // SQL 2: DELETE FROM employees WHERE id = 1
+        // SQL 3: DELETE FROM employees WHERE id = 5
+        // SQL 4: DELETE FROM employees WHERE id = 9
+        // All within one transaction — commit or rollback together
+    }
+
+    // WITHOUT @Transactional → RUNTIME ERROR:
+    // org.springframework.dao.InvalidDataAccessApiUsageException:
+    //   No EntityManager with actual transaction available for current thread
+    //   - cannot reliably process 'remove' call
+}
+```
+
+```text
+Note: READ operations (find/get/read) do NOT require @Transactional because:
+  - SELECT queries don't modify data
+  - They run in auto-commit mode by default
+  - No flush/commit needed
+
+  COUNT and EXISTS also don't need @Transactional (they are SELECT queries).
+
+  Only DELETE/REMOVE derived queries need @Transactional because they
+  modify data via EntityManager.remove() in a multi-step process.
+
+  ┌──────────────┬──────────────────┐
+  │ Operation    │ @Transactional?  │
+  ├──────────────┼──────────────────┤
+  │ findBy...    │ Not required     │
+  │ countBy...   │ Not required     │
+  │ existsBy...  │ Not required     │
+  │ deleteBy...  │ REQUIRED ✓       │
+  │ removeBy...  │ REQUIRED ✓       │
+  └──────────────┴──────────────────┘
+```
+
+---
+
+### Pagination in Derived Queries Using Pageable
+
+Instead of loading thousands of rows into memory, you can pass a `Pageable` parameter to any derived query method. Spring Data JPA will append `LIMIT` and `OFFSET` to the generated SQL.
+
+**Conventions:**
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│  Pagination Conventions:                                                           │
+│                                                                                    │
+│  1. Add Pageable as the LAST parameter of the method                               │
+│  2. Return type can be:                                                            │
+│     - Page<T>  → includes total count, total pages, page number, content          │
+│     - Slice<T> → lighter than Page, knows hasNext but NOT total count             │
+│     - List<T>  → just the content, no metadata                                   │
+│                                                                                    │
+│  3. Pageable is created using PageRequest.of(page, size)                          │
+│     - page → 0-INDEXED (first page = 0, second page = 1, ...)                    │
+│     - size → number of records per page                                            │
+│                                                                                    │
+│  4. Page<T> triggers an EXTRA COUNT query to calculate total:                     │
+│     - Query 1: SELECT * FROM ... WHERE ... LIMIT ? OFFSET ?                      │
+│     - Query 2: SELECT COUNT(*) FROM ... WHERE ...                                │
+│                                                                                    │
+│  5. Slice<T> does NOT trigger the count query (more efficient):                   │
+│     - Only: SELECT * FROM ... WHERE ... LIMIT (size+1) OFFSET ?                  │
+│     - Fetches one extra row to determine hasNext                                  │
+│                                                                                    │
+│  6. List<T> does NOT trigger the count query either:                              │
+│     - Only: SELECT * FROM ... WHERE ... LIMIT ? OFFSET ?                         │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+When to use Page vs Slice vs List:
+
+  ┌────────────┬───────────────────────┬─────────────────────────────────────────────┐
+  │ Return     │ Extra COUNT query?    │ Use when                                    │
+  ├────────────┼───────────────────────┼─────────────────────────────────────────────┤
+  │ Page<T>    │ YES (extra SQL)       │ UI needs "Page 3 of 12" or total count.    │
+  │            │                       │ e.g., admin dashboard, data table.          │
+  ├────────────┼───────────────────────┼─────────────────────────────────────────────┤
+  │ Slice<T>   │ NO                    │ "Load More" button or infinite scroll.      │
+  │            │                       │ Only need to know if more data exists.      │
+  ├────────────┼───────────────────────┼─────────────────────────────────────────────┤
+  │ List<T>    │ NO                    │ Internal use where you just need the data.  │
+  │            │                       │ No pagination metadata needed.              │
+  └────────────┴───────────────────────┴─────────────────────────────────────────────┘
+```
+
+**Complete code example:**
+
+```java
+// Repository
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+
+    // Paginated derived query — returns Page with full metadata
+    Page<Employee> findByDepartment(String department, Pageable pageable);
+    // SQL 1: SELECT * FROM employees WHERE department = ?1 LIMIT ? OFFSET ?
+    // SQL 2: SELECT COUNT(*) FROM employees WHERE department = ?1
+
+    // Paginated with additional condition
+    Page<Employee> findByDepartmentAndSalaryGreaterThan(
+        String department, Double salary, Pageable pageable
+    );
+    // SQL 1: SELECT * FROM employees WHERE department = ?1 AND salary > ?2 LIMIT ? OFFSET ?
+    // SQL 2: SELECT COUNT(*) FROM employees WHERE department = ?1 AND salary > ?2
+
+    // Slice — no count query
+    Slice<Employee> findByActiveTrue(Pageable pageable);
+    // SQL: SELECT * FROM employees WHERE active = TRUE LIMIT (size+1) OFFSET ?
+
+    // List — just data
+    List<Employee> findByDepartmentContaining(String keyword, Pageable pageable);
+    // SQL: SELECT * FROM employees WHERE department LIKE '%keyword%' LIMIT ? OFFSET ?
+}
+```
+
+```java
+// Controller
+@RestController
+@RequestMapping("/api/employees")
+public class EmployeeController {
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    @GetMapping("/by-department")
+    public Page<Employee> getByDepartment(
+        @RequestParam String department,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+    ) {
+        return employeeService.getByDepartment(department, page, size);
+    }
+
+    @GetMapping("/active")
+    public Slice<Employee> getActiveEmployees(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+    ) {
+        return employeeService.getActiveEmployees(page, size);
+    }
+}
+
+// Service
+@Service
+public class EmployeeService {
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    public Page<Employee> getByDepartment(String department, int page, int size) {
+
+        // Create Pageable: page 0 = first page, size 10 = 10 records per page
+        Pageable pageable = PageRequest.of(page, size);
+
+        return employeeRepository.findByDepartment(department, pageable);
+        // Two SQL queries executed:
+        //
+        // SQL 1 (data):
+        //   SELECT e.id, e.name, e.email, e.department, e.salary, e.active, e.joining_date
+        //   FROM employees e
+        //   WHERE e.department = 'IT'
+        //   LIMIT 10 OFFSET 0
+        //
+        // SQL 2 (count — because return type is Page):
+        //   SELECT COUNT(e.id)
+        //   FROM employees e
+        //   WHERE e.department = 'IT'
+    }
+
+    public Slice<Employee> getActiveEmployees(int page, int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return employeeRepository.findByActiveTrue(pageable);
+        // Only ONE SQL query executed (Slice = no count):
+        //
+        // SQL:
+        //   SELECT e.id, e.name, e.email, e.department, e.salary, e.active, e.joining_date
+        //   FROM employees e
+        //   WHERE e.active = TRUE
+        //   LIMIT 11 OFFSET 0
+        //          ↑ fetches size+1 (10+1=11) to check if next page exists
+    }
+}
+```
+
+```text
+Page<Employee> object contains:
+
+  ┌──────────────────────────────────────────────────────────────────┐
+  │  Page<Employee>                                                  │
+  │  ├── content: List<Employee>     → the actual 10 records        │
+  │  ├── totalElements: 47           → total matching rows in DB    │
+  │  ├── totalPages: 5               → ceil(47 / 10) = 5           │
+  │  ├── number: 0                   → current page number (0-based)│
+  │  ├── size: 10                    → page size                    │
+  │  ├── numberOfElements: 10        → elements in THIS page        │
+  │  ├── first: true                 → is this the first page?     │
+  │  ├── last: false                 → is this the last page?      │
+  │  ├── hasNext: true               → does a next page exist?     │
+  │  ├── hasPrevious: false          → does a previous page exist? │
+  │  └── sort: Sort.UNSORTED         → sort info (if provided)     │
+  └──────────────────────────────────────────────────────────────────┘
+
+  JSON response (Spring auto-serializes Page):
+
+  {
+    "content": [ { "id": 1, "name": "Alice", ... }, ... ],
+    "pageable": {
+      "pageNumber": 0,
+      "pageSize": 10,
+      "sort": { "sorted": false, "unsorted": true, "empty": true },
+      "offset": 0,
+      "paged": true,
+      "unpaged": false
+    },
+    "totalElements": 47,
+    "totalPages": 5,
+    "last": false,
+    "first": true,
+    "size": 10,
+    "number": 0,
+    "numberOfElements": 10,
+    "sort": { "sorted": false, "unsorted": true, "empty": true },
+    "empty": false
+  }
+```
+
+```text
+Page calculation:
+
+  Total rows matching WHERE clause: 47
+  Page size: 10
+
+  Page 0: OFFSET 0,  LIMIT 10 → rows 1-10
+  Page 1: OFFSET 10, LIMIT 10 → rows 11-20
+  Page 2: OFFSET 20, LIMIT 10 → rows 21-30
+  Page 3: OFFSET 30, LIMIT 10 → rows 31-40
+  Page 4: OFFSET 40, LIMIT 10 → rows 41-47 (only 7 records)
+
+  PageRequest.of(page, size) → OFFSET = page * size, LIMIT = size
+
+  ┌─────────────────────────────────────────────────────────────────────────┐
+  │  PageRequest.of(0, 10) → LIMIT 10 OFFSET 0    │  Page 0: rows 1-10   │
+  │  PageRequest.of(1, 10) → LIMIT 10 OFFSET 10   │  Page 1: rows 11-20  │
+  │  PageRequest.of(2, 10) → LIMIT 10 OFFSET 20   │  Page 2: rows 21-30  │
+  │  PageRequest.of(3, 10) → LIMIT 10 OFFSET 30   │  Page 3: rows 31-40  │
+  │  PageRequest.of(4, 10) → LIMIT 10 OFFSET 40   │  Page 4: rows 41-47  │
+  └─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Sorting in Derived Queries Using Sort Object
+
+You can sort results dynamically by passing a `Sort` parameter to any derived query method. This appends `ORDER BY` to the generated SQL.
+
+**Conventions:**
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│  Sorting Conventions:                                                              │
+│                                                                                    │
+│  1. Add Sort as the LAST parameter (or Pageable which includes Sort)              │
+│  2. Sort.by("propertyName")             → default ASC                             │
+│  3. Sort.by(Sort.Direction.DESC, "prop") → explicit direction                     │
+│  4. Sort.by("prop1").and(Sort.by("prop2")) → multiple properties                  │
+│  5. Sort.by(Sort.Order.asc("name"), Sort.Order.desc("salary"))                    │
+│     → different directions for different properties                                │
+│                                                                                    │
+│  6. Property names must match ENTITY field names (Java names, not column names):  │
+│     ✓ Sort.by("joiningDate")   → ORDER BY joining_date                            │
+│     ✗ Sort.by("joining_date")  → error! Not an entity property                   │
+│                                                                                    │
+│  7. You can ALSO hardcode OrderBy in the method name:                             │
+│     findByDepartmentOrderByNameAsc → always sorts by name ASC                     │
+│     But this is STATIC — cannot change at runtime.                                │
+│     Sort parameter is DYNAMIC — caller decides the sort.                          │
+│                                                                                    │
+│  8. If both OrderBy in method name AND Sort parameter exist:                      │
+│     The method-name OrderBy is applied FIRST, then Sort parameter appended.       │
+│     Generally avoid mixing both — use one approach.                                │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Complete code example:**
+
+```java
+// Repository
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+
+    // Derived query with Sort parameter
+    List<Employee> findByDepartment(String department, Sort sort);
+    // SQL depends on the Sort passed at runtime
+
+    // Multiple conditions with Sort
+    List<Employee> findByDepartmentAndActiveTrue(String department, Sort sort);
+
+    // Static OrderBy in method name — always sorts by salary DESC
+    List<Employee> findByDepartmentOrderBySalaryDesc(String department);
+    // SQL: SELECT * FROM employees WHERE department = ?1 ORDER BY salary DESC
+}
+```
+
+```java
+// Controller
+@RestController
+@RequestMapping("/api/employees")
+public class EmployeeController {
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    @GetMapping("/by-department/sorted")
+    public List<Employee> getByDepartmentSorted(
+        @RequestParam String department,
+        @RequestParam(defaultValue = "name") String sortBy,
+        @RequestParam(defaultValue = "asc") String direction
+    ) {
+        return employeeService.getByDepartmentSorted(department, sortBy, direction);
+    }
+
+    @GetMapping("/by-department/multi-sorted")
+    public List<Employee> getByDepartmentMultiSorted(
+        @RequestParam String department
+    ) {
+        return employeeService.getByDepartmentMultiSorted(department);
+    }
+}
+
+// Service
+@Service
+public class EmployeeService {
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    // ── SINGLE PROPERTY ASCENDING ──
+    public List<Employee> sortByNameAsc(String department) {
+        Sort sort = Sort.by("name");  // default direction = ASC
+        return employeeRepository.findByDepartment(department, sort);
+        // SQL: SELECT * FROM employees WHERE department = 'IT' ORDER BY name ASC
+    }
+
+    // ── SINGLE PROPERTY DESCENDING ──
+    public List<Employee> sortBySalaryDesc(String department) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "salary");
+        return employeeRepository.findByDepartment(department, sort);
+        // SQL: SELECT * FROM employees WHERE department = 'IT' ORDER BY salary DESC
+    }
+
+    // ── MULTIPLE PROPERTIES, SAME DIRECTION ──
+    public List<Employee> sortByMultipleSameDirection(String department) {
+        Sort sort = Sort.by(Sort.Direction.ASC, "department", "name");
+        return employeeRepository.findByDepartment(department, sort);
+        // SQL: SELECT * FROM employees
+        //      WHERE department = 'IT'
+        //      ORDER BY department ASC, name ASC
+    }
+
+    // ── MULTIPLE PROPERTIES, DIFFERENT DIRECTIONS ──
+    public List<Employee> getByDepartmentMultiSorted(String department) {
+        Sort sort = Sort.by(
+            Sort.Order.asc("name"),        // name ascending
+            Sort.Order.desc("salary"),     // salary descending
+            Sort.Order.asc("joiningDate")  // joiningDate ascending
+        );
+        return employeeRepository.findByDepartment(department, sort);
+        // SQL: SELECT * FROM employees
+        //      WHERE department = 'IT'
+        //      ORDER BY name ASC, salary DESC, joining_date ASC
+    }
+
+    // ── DYNAMIC SORT FROM REQUEST PARAMETERS ──
+    public List<Employee> getByDepartmentSorted(
+        String department, String sortBy, String direction
+    ) {
+        Sort sort = direction.equalsIgnoreCase("desc")
+            ? Sort.by(Sort.Direction.DESC, sortBy)
+            : Sort.by(Sort.Direction.ASC, sortBy);
+
+        return employeeRepository.findByDepartment(department, sort);
+        // If sortBy="salary", direction="desc":
+        // SQL: SELECT * FROM employees WHERE department = 'IT' ORDER BY salary DESC
+    }
+
+    // ── CHAINING SORTS WITH .and() ──
+    public List<Employee> chainedSort(String department) {
+        Sort sort = Sort.by("department").ascending()
+                        .and(Sort.by("salary").descending())
+                        .and(Sort.by("name").ascending());
+        return employeeRepository.findByDepartment(department, sort);
+        // SQL: SELECT * FROM employees
+        //      WHERE department = 'IT'
+        //      ORDER BY department ASC, salary DESC, name ASC
+    }
+}
+```
+
+```text
+Sort object creation — all approaches:
+
+  ┌─────────────────────────────────────────────────────────┬─────────────────────────────┐
+  │ Code                                                    │ SQL ORDER BY                │
+  ├─────────────────────────────────────────────────────────┼─────────────────────────────┤
+  │ Sort.by("name")                                         │ ORDER BY name ASC           │
+  │ Sort.by(Direction.DESC, "salary")                       │ ORDER BY salary DESC        │
+  │ Sort.by("name", "salary")                               │ ORDER BY name ASC,          │
+  │                                                         │          salary ASC         │
+  │ Sort.by(Direction.DESC, "name", "salary")               │ ORDER BY name DESC,         │
+  │                                                         │          salary DESC        │
+  │ Sort.by(Order.asc("name"), Order.desc("salary"))        │ ORDER BY name ASC,          │
+  │                                                         │          salary DESC        │
+  │ Sort.by("name").ascending()                             │ ORDER BY name ASC           │
+  │      .and(Sort.by("salary").descending())               │        , salary DESC        │
+  │ Sort.unsorted()                                         │ (no ORDER BY)               │
+  └─────────────────────────────────────────────────────────┴─────────────────────────────┘
+```
+
+```text
+Static OrderBy (in method name) vs Dynamic Sort (parameter):
+
+  ┌──────────────────────────────────────┬────────────────────────────────────────┐
+  │ Static (method name)                 │ Dynamic (Sort parameter)               │
+  ├──────────────────────────────────────┼────────────────────────────────────────┤
+  │ findByDeptOrderByNameAsc             │ findByDept(dept, Sort)                 │
+  │ Sort fixed at compile time           │ Sort decided at runtime                │
+  │ Cannot change without code change    │ Caller passes any Sort object          │
+  │ Simple, no extra parameter           │ More flexible, one method for all sorts│
+  │ Good for: always-same-sort queries   │ Good for: user-controlled sorting      │
+  │ e.g., "latest orders"               │ e.g., sortable table columns           │
+  └──────────────────────────────────────┴────────────────────────────────────────┘
+```
+
+---
+
+### Pagination with Sorting Combined
+
+`Pageable` already supports sorting built-in. You can create a `PageRequest` with both page/size AND sort information. This generates SQL with `ORDER BY`, `LIMIT`, and `OFFSET` all together.
+
+**Conventions:**
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│  Pagination + Sorting Conventions:                                                 │
+│                                                                                    │
+│  1. Use PageRequest.of(page, size, Sort) — combines both in one object            │
+│  2. Or use PageRequest.of(page, size, Direction, "property1", "property2")        │
+│  3. The repository method takes Pageable (which includes Sort info)               │
+│  4. Return Page<T> if you need total count, Slice<T> if not                       │
+│  5. Sort is ALWAYS applied BEFORE pagination:                                      │
+│     → First ORDER BY → then LIMIT/OFFSET                                          │
+│     → This ensures consistent page boundaries                                     │
+│     → Without sorting, pagination can return inconsistent results                 │
+│       (DB may return rows in different order between queries)                      │
+│  6. Pageable parameter ALREADY contains Sort, so you do NOT need both             │
+│     Pageable and Sort parameters — Pageable is enough.                            │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Complete code example:**
+
+```java
+// Repository — same method serves pagination, sorting, and both combined
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+
+    // One method handles: pagination only, sorting only, OR both
+    Page<Employee> findByDepartment(String department, Pageable pageable);
+
+    // With additional conditions
+    Page<Employee> findByDepartmentAndSalaryGreaterThan(
+        String department, Double salary, Pageable pageable
+    );
+
+    Slice<Employee> findByActiveTrue(Pageable pageable);
+}
+```
+
+```java
+// Controller
+@RestController
+@RequestMapping("/api/employees")
+public class EmployeeController {
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    // GET /api/employees/search?department=IT&page=0&size=10&sortBy=salary&direction=desc
+    @GetMapping("/search")
+    public Page<Employee> search(
+        @RequestParam String department,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "name") String sortBy,
+        @RequestParam(defaultValue = "asc") String direction
+    ) {
+        return employeeService.search(department, page, size, sortBy, direction);
+    }
+
+    // GET /api/employees/advanced-search?department=IT&page=0&size=10
+    @GetMapping("/advanced-search")
+    public Page<Employee> advancedSearch(
+        @RequestParam String department,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+    ) {
+        return employeeService.advancedSearch(department, page, size);
+    }
+}
+
+// Service
+@Service
+public class EmployeeService {
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    // ── PAGINATION + SINGLE SORT ──
+    public Page<Employee> search(
+        String department, int page, int size, String sortBy, String direction
+    ) {
+        Sort sort = direction.equalsIgnoreCase("desc")
+            ? Sort.by(Sort.Direction.DESC, sortBy)
+            : Sort.by(Sort.Direction.ASC, sortBy);
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return employeeRepository.findByDepartment(department, pageable);
+        // SQL 1 (data):
+        //   SELECT e.id, e.name, e.email, e.department, e.salary, e.active, e.joining_date
+        //   FROM employees e
+        //   WHERE e.department = 'IT'
+        //   ORDER BY e.salary DESC
+        //   LIMIT 10 OFFSET 0
+        //
+        // SQL 2 (count — because return type is Page):
+        //   SELECT COUNT(e.id) FROM employees e WHERE e.department = 'IT'
+    }
+
+    // ── PAGINATION + MULTIPLE SORTS WITH DIFFERENT DIRECTIONS ──
+    public Page<Employee> advancedSearch(String department, int page, int size) {
+
+        Sort sort = Sort.by(
+            Sort.Order.asc("name"),
+            Sort.Order.desc("salary"),
+            Sort.Order.asc("joiningDate")
+        );
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return employeeRepository.findByDepartment(department, pageable);
+        // SQL 1 (data):
+        //   SELECT e.id, e.name, e.email, e.department, e.salary, e.active, e.joining_date
+        //   FROM employees e
+        //   WHERE e.department = 'IT'
+        //   ORDER BY e.name ASC, e.salary DESC, e.joining_date ASC
+        //   LIMIT 10 OFFSET 0
+        //
+        // SQL 2 (count):
+        //   SELECT COUNT(e.id) FROM employees e WHERE e.department = 'IT'
+    }
+
+    // ── SHORTHAND — PageRequest.of with direction and properties ──
+    public Page<Employee> simpleSearch(String department, int page, int size) {
+
+        // All properties will have SAME direction
+        Pageable pageable = PageRequest.of(page, size, Sort.Direction.DESC, "salary", "name");
+
+        return employeeRepository.findByDepartment(department, pageable);
+        // SQL:
+        //   SELECT * FROM employees
+        //   WHERE department = 'IT'
+        //   ORDER BY salary DESC, name DESC
+        //   LIMIT 10 OFFSET 0
+    }
+
+    // ── PAGINATION ONLY (no sort) ──
+    public Page<Employee> paginatedOnly(String department, int page, int size) {
+
+        Pageable pageable = PageRequest.of(page, size);  // no Sort
+
+        return employeeRepository.findByDepartment(department, pageable);
+        // SQL:
+        //   SELECT * FROM employees WHERE department = 'IT' LIMIT 10 OFFSET 0
+        //   SELECT COUNT(*) FROM employees WHERE department = 'IT'
+    }
+
+    // ── SORTING ONLY (no pagination) ──
+    public Page<Employee> sortedOnly(String department) {
+
+        // Unpaged with sort — returns ALL matching rows sorted
+        Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE, Sort.by("name"));
+
+        return employeeRepository.findByDepartment(department, pageable);
+        // SQL:
+        //   SELECT * FROM employees WHERE department = 'IT' ORDER BY name ASC
+        //   (effectively no LIMIT because MAX_VALUE)
+    }
+}
+```
+
+```text
+PageRequest creation — all approaches:
+
+  ┌──────────────────────────────────────────────────────────┬──────────────────────────────────┐
+  │ Code                                                     │ SQL Generated                    │
+  ├──────────────────────────────────────────────────────────┼──────────────────────────────────┤
+  │ PageRequest.of(0, 10)                                    │ LIMIT 10 OFFSET 0                │
+  │                                                          │ (no ORDER BY)                    │
+  ├──────────────────────────────────────────────────────────┼──────────────────────────────────┤
+  │ PageRequest.of(2, 10, Sort.by("name"))                   │ ORDER BY name ASC                │
+  │                                                          │ LIMIT 10 OFFSET 20               │
+  ├──────────────────────────────────────────────────────────┼──────────────────────────────────┤
+  │ PageRequest.of(0, 5, Sort.Direction.DESC, "salary")      │ ORDER BY salary DESC             │
+  │                                                          │ LIMIT 5 OFFSET 0                 │
+  ├──────────────────────────────────────────────────────────┼──────────────────────────────────┤
+  │ PageRequest.of(1, 10, Sort.by(                           │ ORDER BY name ASC, salary DESC   │
+  │     Sort.Order.asc("name"),                              │ LIMIT 10 OFFSET 10               │
+  │     Sort.Order.desc("salary")))                          │                                  │
+  ├──────────────────────────────────────────────────────────┼──────────────────────────────────┤
+  │ PageRequest.of(0, 20, Sort.Direction.ASC,                │ ORDER BY department ASC,         │
+  │     "department", "name", "salary")                      │   name ASC, salary ASC           │
+  │                                                          │ LIMIT 20 OFFSET 0                │
+  └──────────────────────────────────────────────────────────┴──────────────────────────────────┘
+```
+
+```text
+How Pagination + Sorting work together at the SQL level:
+
+  Request: Page 2, Size 10, Sort by salary DESC then name ASC
+  PageRequest.of(2, 10, Sort.by(Order.desc("salary"), Order.asc("name")))
+
+  Step 1: WHERE clause (from derived query)
+    WHERE department = 'IT'
+
+  Step 2: ORDER BY (from Sort in Pageable) — applied FIRST
+    ORDER BY salary DESC, name ASC
+
+  Step 3: LIMIT / OFFSET (from page + size in Pageable)
+    LIMIT 10 OFFSET 20    (page=2, size=10, offset=2*10=20)
+
+  Final SQL:
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  SELECT e.id, e.name, e.email, e.department, e.salary, e.active,           │
+  │         e.joining_date                                                      │
+  │  FROM employees e                                                           │
+  │  WHERE e.department = 'IT'                 ← from derived query             │
+  │  ORDER BY e.salary DESC, e.name ASC        ← from Sort                     │
+  │  LIMIT 10 OFFSET 20                        ← from PageRequest              │
+  └─────────────────────────────────────────────────────────────────────────────┘
+
+  Why ORDER BY must come before LIMIT/OFFSET:
+    Without ORDER BY, the DB returns rows in arbitrary order.
+    LIMIT/OFFSET on unsorted data → Page 1 and Page 2 might overlap!
+    With ORDER BY → stable, deterministic ordering → consistent pages.
+
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │  Without Sort:                                                              │
+  │  Page 0: [Alice, Bob, Charlie, ...]    ← DB returns in any order           │
+  │  Page 1: [Alice, Dave, Eve, ...]       ← might repeat Alice!              │
+  │                                                                             │
+  │  With Sort (by name ASC):                                                   │
+  │  Page 0: [Alice, Bob, Charlie, ...]    ← deterministic                     │
+  │  Page 1: [Dave, Eve, Frank, ...]       ← guaranteed no overlap            │
+  └─────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+Complete flow — Pagination + Sorting in derived query:
+
+  Client: GET /api/employees/search?department=IT&page=1&size=5&sortBy=salary&direction=desc
+     │
+     v
+  Controller: extracts params → calls service
+     │
+     v
+  Service:
+    Sort sort = Sort.by(Direction.DESC, "salary");
+    Pageable pageable = PageRequest.of(1, 5, sort);
+    employeeRepository.findByDepartment("IT", pageable);
+     │
+     v
+  Spring Proxy:
+    PartTree already parsed: Subject=QUERY, Predicate=Part(department, SIMPLE_PROPERTY)
+    Appends Sort from Pageable → ORDER BY salary DESC
+    Appends pagination from Pageable → LIMIT 5 OFFSET 5
+     │
+     v
+  Hibernate generates SQL:
+    SQL 1: SELECT * FROM employees WHERE department='IT' ORDER BY salary DESC LIMIT 5 OFFSET 5
+    SQL 2: SELECT COUNT(*) FROM employees WHERE department='IT'
+     │
+     v
+  Results:
+    Page<Employee> {
+      content: [emp6, emp7, emp8, emp9, emp10],  ← 5 records (page 1)
+      totalElements: 23,                          ← total matching IT dept
+      totalPages: 5,                              ← ceil(23/5) = 5
+      number: 1,                                  ← current page (0-indexed)
+      size: 5,                                    ← page size
+      sort: { sorted: true, orders: [{property: "salary", direction: "DESC"}] }
+    }
+     │
+     v
+  Controller returns → Jackson serializes to JSON → Client receives paginated, sorted response
+```
+
+---
+
+
+### JPQL — Java Persistence Query Language, When Derived Queries Are Not Enough, 
+
+Derived queries work great for simple conditions, but they break down when:
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Limitations of Derived Queries:                                                 │
+│                                                                                  │
+│  1. Complex conditions → method name becomes unreadably long                     │
+│     findByDepartmentAndSalaryGreaterThanAndActiveTrueAndJoiningDateAfter         │
+│     AndNameContainingIgnoreCaseOrderBySalaryDesc(...)                            │
+│                                                                                  │
+│  2. JOIN queries across entities                                                 │
+│     → Derived queries cannot express JOINs                                       │
+│                                                                                  │
+│  3. Aggregate functions (SUM, AVG, MAX, MIN, COUNT with GROUP BY)                │
+│     → Not supported in derived queries                                           │
+│                                                                                  │
+│  4. Subqueries                                                                   │
+│     → Not supported in derived queries                                           │
+│                                                                                  │
+│  5. Selecting specific columns (projections)                                     │
+│     → Derived queries always return the full entity                              │
+│                                                                                  │
+│  6. UPDATE / INSERT with custom WHERE clauses                                    │
+│     → Derived queries don't support INSERT/UPDATE at all                         │
+│                                                                                  │
+│  Solution → JPQL with @Query annotation                                          │
+│             Write the query yourself using entity/class names,                    │
+│             not table/column names. DB-independent.                               │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### What Is JPQL and Why Is It Called So?
+
+**JPQL** stands for **Java Persistence Query Language**. It is a query language defined by the JPA specification that lets you write queries against **entity objects** (Java classes) rather than **database tables**. Hibernate (or any JPA provider) then translates the JPQL into the actual SQL dialect of the underlying database.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  JPQL vs SQL — Key Difference:                                                   │
+│                                                                                  │
+│  SQL works on TABLES and COLUMNS:                                                │
+│    SELECT e.emp_name, e.emp_salary                                               │
+│    FROM employee_table e                                                         │
+│    WHERE e.emp_department = 'IT'                                                 │
+│         ↑ table name        ↑ column name                                        │
+│                                                                                  │
+│  JPQL works on ENTITIES and FIELDS:                                              │
+│    SELECT e.name, e.salary                                                       │
+│    FROM Employee e                                                               │
+│    WHERE e.department = 'IT'                                                     │
+│         ↑ entity class name  ↑ Java field name                                   │
+│                                                                                  │
+│  JPQL is DATABASE INDEPENDENT because:                                           │
+│    - You write against Java entities, not DB tables                              │
+│    - Hibernate translates JPQL → SQL for YOUR specific database                  │
+│    - Same JPQL works on MySQL, PostgreSQL, Oracle, H2, etc.                      │
+│    - Hibernate handles dialect differences (LIMIT vs ROWNUM, etc.)               │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**How JPQL works on Entity Objects:**
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                  │
+│  Java Entity:                         Database Table:                            │
+│  ┌────────────────────┐               ┌────────────────────────────┐             │
+│  │ @Entity            │               │ employees                  │             │
+│  │ @Table(name =      │    Hibernate  │                            │             │
+│  │   "employees")     │   translates  │ id BIGINT PRIMARY KEY      │             │
+│  │ class Employee {   │  ──────────>  │ emp_name VARCHAR(100)      │             │
+│  │   Long id;         │               │ emp_email VARCHAR(200)     │             │
+│  │   String name;     │               │ department VARCHAR(50)     │             │
+│  │   String email;    │               │ salary DOUBLE              │             │
+│  │   String department│               │                            │             │
+│  │   Double salary;   │               └────────────────────────────┘             │
+│  │ }                  │                                                          │
+│  └────────────────────┘                                                          │
+│                                                                                  │
+│  JPQL query:                                                                     │
+│    SELECT e FROM Employee e WHERE e.department = :dept                            │
+│           ↑        ↑                  ↑                                           │
+│       alias   Entity class name   Java field name                                │
+│                                                                                  │
+│  Hibernate reads the @Entity and @Column annotations and translates to:          │
+│                                                                                  │
+│  SQL (MySQL):                                                                    │
+│    SELECT e.id, e.emp_name, e.emp_email, e.department, e.salary                  │
+│    FROM employees e                                                              │
+│    WHERE e.department = ?                                                        │
+│              ↑                                                                   │
+│         actual DB column name                                                    │
+│                                                                                  │
+│  SQL (Oracle) — same JPQL produces Oracle-specific SQL:                          │
+│    SELECT e.id, e.emp_name, e.emp_email, e.department, e.salary                  │
+│    FROM employees e                                                              │
+│    WHERE e.department = ?                                                        │
+│                                                                                  │
+│  JPQL never changes. Only the generated SQL changes per DB dialect.              │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+When to use JPQL vs Derived Query:
+
+  ┌───────────────────────────────────┬────────────────────────────────────────────┐
+  │ Use Derived Query when:           │ Use JPQL when:                             │
+  ├───────────────────────────────────┼────────────────────────────────────────────┤
+  │ Simple 1-3 conditions             │ Complex conditions (4+ conditions)         │
+  │ Single entity, no JOINs           │ JOINs across multiple entities             │
+  │ Equality / comparison operators   │ Aggregate functions (SUM, AVG, COUNT)      │
+  │ findByName, findBySalaryGreater   │ GROUP BY, HAVING clauses                   │
+  │ Method name stays readable        │ Subqueries                                 │
+  │ No projections needed             │ Specific column projections                │
+  │ No update/insert with WHERE       │ Bulk UPDATE/DELETE with WHERE              │
+  │ No GROUP BY / HAVING              │ Constructor expressions (DTO projections)  │
+  └───────────────────────────────────┴────────────────────────────────────────────┘
+```
+
+---
+
+### @Query and @Param Annotations
+
+`@Query` is the annotation you place on a repository method to provide a custom JPQL (or native SQL) query instead of letting Spring derive it from the method name.
+
+`@Param` binds a method parameter to a **named parameter** in the JPQL query.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Method Structure with @Query and @Param:                                        │
+│                                                                                  │
+│  @Query("SELECT e FROM Employee e WHERE e.department = :dept AND e.salary > :sal")│
+│  List<Employee> findHighEarnersByDept(@Param("dept") String department,           │
+│                                       @Param("salary") Double salary);           │
+│                                                                                  │
+│  ┌─────────┐   ┌──────────────────────────┐   ┌──────────────┐                  │
+│  │ @Query   │   │ JPQL string              │   │ Return type  │                  │
+│  │          │   │ uses :namedParams        │   │ determines   │                  │
+│  │          │   │ works on entity names    │   │ result shape │                  │
+│  └────┬─────┘   └────────────┬─────────────┘   └──────┬───────┘                  │
+│       │                      │                         │                          │
+│       v                      v                         v                          │
+│  Tells Spring:          Hibernate                List<Employee>                   │
+│  "Don't derive          translates               = multiple rows                  │
+│   from method name.     to SQL at                Employee                         │
+│   Use this JPQL."       runtime.                 = single row                     │
+│                                                  Optional<Employee>               │
+│  ┌─────────┐                                     = 0 or 1 row                     │
+│  │ @Param   │                                    Long / long                      │
+│  │          │                                    = count / aggregate               │
+│  └────┬─────┘                                    Boolean                           │
+│       │                                          = exists check                    │
+│       v                                                                           │
+│  Binds method argument                                                            │
+│  to :namedParam in JPQL                                                           │
+│  @Param("dept") → :dept                                                           │
+│  @Param("sal")  → :sal                                                            │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Two ways to bind parameters:**
+
+```text
+1. Named Parameters (recommended):
+   @Query("SELECT e FROM Employee e WHERE e.name = :name")
+   List<Employee> findByName(@Param("name") String name);
+   → :name is bound to the method argument via @Param("name")
+
+2. Positional Parameters:
+   @Query("SELECT e FROM Employee e WHERE e.name = ?1 AND e.department = ?2")
+   List<Employee> findByNameAndDept(String name, String department);
+   → ?1 = first argument (name), ?2 = second argument (department)
+   → No @Param needed, but less readable. Order matters!
+```
+
+**Complete code examples with Entity, Repository, Service, and generated SQL:**
+
+```java
+// Entity
+@Entity
+@Table(name = "employees")
+public class Employee {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "emp_name")
+    private String name;
+
+    private String email;
+    private String department;
+    private Double salary;
+    private Boolean active;
+    private LocalDate joiningDate;
+    // getters, setters, constructors
+}
+```
+
+```java
+// Repository with @Query examples
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+
+    // 1. Simple SELECT with named parameter
+    @Query("SELECT e FROM Employee e WHERE e.department = :dept")
+    List<Employee> findByDept(@Param("dept") String department);
+    // JPQL: SELECT e FROM Employee e WHERE e.department = :dept
+    // SQL:  SELECT e.id, e.emp_name, e.email, e.department, e.salary, e.active, e.joining_date
+    //       FROM employees e WHERE e.department = ?
+
+    // 2. Multiple conditions with named parameters
+    @Query("SELECT e FROM Employee e WHERE e.department = :dept AND e.salary > :minSalary")
+    List<Employee> findHighEarners(@Param("dept") String department,
+                                   @Param("minSalary") Double salary);
+    // SQL: SELECT ... FROM employees e WHERE e.department = ? AND e.salary > ?
+
+    // 3. LIKE with named parameter
+    @Query("SELECT e FROM Employee e WHERE e.name LIKE %:keyword%")
+    List<Employee> searchByName(@Param("keyword") String keyword);
+    // SQL: SELECT ... FROM employees e WHERE e.emp_name LIKE '%keyword%'
+
+    // 4. IN clause
+    @Query("SELECT e FROM Employee e WHERE e.department IN :departments")
+    List<Employee> findByDepartments(@Param("departments") List<String> departments);
+    // SQL: SELECT ... FROM employees e WHERE e.department IN (?, ?, ?)
+
+    // 5. BETWEEN
+    @Query("SELECT e FROM Employee e WHERE e.salary BETWEEN :min AND :max")
+    List<Employee> findBySalaryRange(@Param("min") Double min, @Param("max") Double max);
+    // SQL: SELECT ... FROM employees e WHERE e.salary BETWEEN ? AND ?
+
+    // 6. ORDER BY in JPQL
+    @Query("SELECT e FROM Employee e WHERE e.department = :dept ORDER BY e.salary DESC")
+    List<Employee> findByDeptOrderedBySalary(@Param("dept") String department);
+    // SQL: SELECT ... FROM employees e WHERE e.department = ? ORDER BY e.salary DESC
+
+    // 7. Aggregate — COUNT
+    @Query("SELECT COUNT(e) FROM Employee e WHERE e.department = :dept")
+    long countByDept(@Param("dept") String department);
+    // SQL: SELECT COUNT(e.id) FROM employees e WHERE e.department = ?
+
+    // 8. Aggregate — AVG
+    @Query("SELECT AVG(e.salary) FROM Employee e WHERE e.department = :dept")
+    Double averageSalaryByDept(@Param("dept") String department);
+    // SQL: SELECT AVG(e.salary) FROM employees e WHERE e.department = ?
+
+    // 9. DISTINCT
+    @Query("SELECT DISTINCT e.department FROM Employee e")
+    List<String> findAllDepartments();
+    // SQL: SELECT DISTINCT e.department FROM employees e
+
+    // 10. Single result
+    @Query("SELECT e FROM Employee e WHERE e.email = :email")
+    Optional<Employee> findByEmail(@Param("email") String email);
+    // SQL: SELECT ... FROM employees e WHERE e.email = ?
+
+    // 11. Positional parameter (no @Param)
+    @Query("SELECT e FROM Employee e WHERE e.name = ?1 AND e.department = ?2")
+    List<Employee> findByNameAndDept(String name, String department);
+    // SQL: SELECT ... FROM employees e WHERE e.emp_name = ? AND e.department = ?
+}
+```
+
+**Return type — Single object vs List:**
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Return Type Rules:                                                              │
+│                                                                                  │
+│  1. If query CAN return MULTIPLE rows → use List<Employee>                       │
+│     @Query("SELECT e FROM Employee e WHERE e.department = :dept")                │
+│     List<Employee> findByDept(@Param("dept") String department);                 │
+│                                                                                  │
+│  2. If query ALWAYS returns 0 or 1 row → use Employee or Optional<Employee>      │
+│     @Query("SELECT e FROM Employee e WHERE e.email = :email")                    │
+│     Optional<Employee> findByEmail(@Param("email") String email);                │
+│                                                                                  │
+│  3. If query returns a single VALUE → use that type directly                     │
+│     @Query("SELECT COUNT(e) FROM Employee e WHERE e.department = :dept")         │
+│     long countByDept(@Param("dept") String department);                          │
+│                                                                                  │
+│     @Query("SELECT AVG(e.salary) FROM Employee e")                               │
+│     Double averageSalary();                                                      │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**What happens with mismatched return types:**
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  SCENARIO 1: Query returns MULTIPLE rows, but return type is single object       │
+│                                                                                  │
+│  @Query("SELECT e FROM Employee e WHERE e.department = :dept")                   │
+│  Employee findSingleByDept(@Param("dept") String dept);                          │
+│                                                                                  │
+│  If dept = 'IT' returns 5 employees:                                             │
+│  → javax.persistence.NonUniqueResultException:                                   │
+│    "query did not return a unique result: 5"                                     │
+│  → RUNTIME ERROR! Application crashes.                                           │
+│                                                                                  │
+│  If dept = 'UNKNOWN' returns 0 employees:                                        │
+│  → Returns NULL (or empty Optional if return type is Optional<Employee>)         │
+│                                                                                  │
+│  If dept = 'CEO-Office' returns exactly 1 employee:                              │
+│  → Returns that single Employee. Works fine.                                     │
+│                                                                                  │
+│──────────────────────────────────────────────────────────────────────────────────│
+│  SCENARIO 2: Query returns 0 or 1 row, but return type is List                   │
+│                                                                                  │
+│  @Query("SELECT e FROM Employee e WHERE e.email = :email")                       │
+│  List<Employee> findByEmail(@Param("email") String email);                       │
+│                                                                                  │
+│  If email matches 1 row:                                                         │
+│  → Returns List with 1 element. Works fine.                                      │
+│                                                                                  │
+│  If email matches 0 rows:                                                        │
+│  → Returns EMPTY list (not null). Works fine.                                    │
+│                                                                                  │
+│  CONCLUSION: Using List<T> is ALWAYS SAFE.                                       │
+│  Using single T is ONLY safe when you're 100% sure query returns 0 or 1 row.    │
+│                                                                                  │
+│  ┌────────────────────────────┬──────────────────────────────────────────────┐    │
+│  │ Return Type                │ Behavior                                     │    │
+│  ├────────────────────────────┼──────────────────────────────────────────────┤    │
+│  │ List<Employee>             │ Always safe. 0 rows = empty list.            │    │
+│  │ Employee                   │ >1 row = NonUniqueResultException.           │    │
+│  │                            │ 0 rows = null.                               │    │
+│  │ Optional<Employee>         │ >1 row = NonUniqueResultException.           │    │
+│  │                            │ 0 rows = Optional.empty().                   │    │
+│  │ Stream<Employee>           │ Always safe. Must be closed.                 │    │
+│  └────────────────────────────┴──────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Service and Controller:**
+
+```java
+@Service
+public class EmployeeService {
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    public List<Employee> getHighEarners(String department, Double minSalary) {
+        return employeeRepository.findHighEarners(department, minSalary);
+        // JPQL: SELECT e FROM Employee e WHERE e.department = :dept AND e.salary > :minSalary
+        // SQL:  SELECT e.id, e.emp_name, e.email, e.department, e.salary, e.active, e.joining_date
+        //       FROM employees e
+        //       WHERE e.department = 'IT' AND e.salary > 50000
+    }
+
+    public Double getAverageSalary(String department) {
+        return employeeRepository.averageSalaryByDept(department);
+        // JPQL: SELECT AVG(e.salary) FROM Employee e WHERE e.department = :dept
+        // SQL:  SELECT AVG(e.salary) FROM employees e WHERE e.department = 'IT'
+    }
+}
+
+@RestController
+@RequestMapping("/api/employees")
+public class EmployeeController {
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    @GetMapping("/high-earners")
+    public List<Employee> getHighEarners(
+        @RequestParam String department,
+        @RequestParam Double minSalary
+    ) {
+        return employeeService.getHighEarners(department, minSalary);
+    }
+}
+```
+
+```text
+Complete flow — @Query with JPQL:
+
+  Controller: getHighEarners("IT", 50000)
+       │
+       v
+  Service: employeeRepository.findHighEarners("IT", 50000)
+       │
+       v
+  Spring Proxy sees @Query annotation on the method
+  → Does NOT parse the method name (ignores PartTree)
+  → Uses the JPQL string directly
+       │
+       v
+  @Param("dept") = "IT"  → binds to :dept in JPQL
+  @Param("minSalary") = 50000 → binds to :minSalary in JPQL
+       │
+       v
+  JPQL: SELECT e FROM Employee e WHERE e.department = :dept AND e.salary > :minSalary
+       │
+       v
+  Hibernate reads entity annotations:
+    Employee class → employees table
+    e.department → e.department column
+    e.salary → e.salary column
+    e.name → e.emp_name column (@Column(name = "emp_name"))
+       │
+       v
+  Generated SQL (MySQL dialect):
+    SELECT e.id, e.emp_name, e.email, e.department, e.salary, e.active, e.joining_date
+    FROM employees e
+    WHERE e.department = 'IT' AND e.salary > 50000
+       │
+       v
+  JDBC executes → ResultSet → mapped to List<Employee> → returned
+```
+
+---
+
+### JOIN with JPQL — OneToOne Mapping Example
+
+JPQL supports `JOIN` to query across related entities. Let's use a `UserDetails` (parent) and `Address` (child) with `@OneToOne` mapping.
+
+**Entities:**
+
+```java
+@Entity
+@Table(name = "user_details")
+public class UserDetails {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String username;
+    private String email;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "address_id", referencedColumnName = "id")
+    private Address address;
+
+    // getters, setters, constructors
+}
+
+@Entity
+@Table(name = "addresses")
+public class Address {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String street;
+    private String city;
+    private String country;
+    private String zipCode;
+
+    // getters, setters, constructors
+}
+```
+
+```text
+Database Tables:
+
+  user_details                          addresses
+  ┌────┬──────────┬──────────────┬────────────┐   ┌────┬──────────────┬──────────┬─────────┬──────────┐
+  │ id │ username │ email        │ address_id │   │ id │ street       │ city     │ country │ zip_code │
+  ├────┼──────────┼──────────────┼────────────┤   ├────┼──────────────┼──────────┼─────────┼──────────┤
+  │  1 │ alice    │ alice@ex.com │     10     │──>│ 10 │ 123 Main St  │ New York │ USA     │ 10001    │
+  │  2 │ bob      │ bob@ex.com   │     11     │──>│ 11 │ 456 Oak Ave  │ London   │ UK      │ SW1A 1AA │
+  │  3 │ charlie  │ char@ex.com  │     12     │──>│ 12 │ 789 Pine Rd  │ Mumbai   │ India   │ 400001   │
+  └────┴──────────┴──────────────┴────────────┘   └────┴──────────────┴──────────┴─────────┴──────────┘
+```
+
+**Repository with JOIN JPQL:**
+
+```java
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // 1. JOIN — get UserDetails with Address for a username
+    @Query("SELECT u FROM UserDetails u JOIN u.address a WHERE u.username = :username")
+    UserDetails findUserWithAddressByUsername(@Param("username") String username);
+    // JPQL: SELECT u FROM UserDetails u JOIN u.address a WHERE u.username = :username
+    // SQL:  SELECT u.id, u.username, u.email, u.address_id
+    //       FROM user_details u
+    //       INNER JOIN addresses a ON u.address_id = a.id
+    //       WHERE u.username = ?
+
+    // 2. JOIN — filter by child entity field (city)
+    @Query("SELECT u FROM UserDetails u JOIN u.address a WHERE a.city = :city")
+    List<UserDetails> findUsersByCity(@Param("city") String city);
+    // JPQL: SELECT u FROM UserDetails u JOIN u.address a WHERE a.city = :city
+    // SQL:  SELECT u.id, u.username, u.email, u.address_id
+    //       FROM user_details u
+    //       INNER JOIN addresses a ON u.address_id = a.id
+    //       WHERE a.city = ?
+
+    // 3. JOIN FETCH — eager load address in one query (avoids N+1)
+    @Query("SELECT u FROM UserDetails u JOIN FETCH u.address WHERE u.username = :username")
+    UserDetails findUserWithAddressFetched(@Param("username") String username);
+    // JPQL: SELECT u FROM UserDetails u JOIN FETCH u.address WHERE u.username = :username
+    // SQL:  SELECT u.id, u.username, u.email, u.address_id,
+    //              a.id, a.street, a.city, a.country, a.zip_code
+    //       FROM user_details u
+    //       INNER JOIN addresses a ON u.address_id = a.id
+    //       WHERE u.username = ?
+    //       ↑ ONE query loads BOTH user AND address
+
+    // 4. LEFT JOIN — include users even if they don't have an address
+    @Query("SELECT u FROM UserDetails u LEFT JOIN u.address a WHERE a.country = :country OR a IS NULL")
+    List<UserDetails> findUsersByCountryIncludingNoAddress(@Param("country") String country);
+    // SQL:  SELECT u.id, u.username, u.email, u.address_id
+    //       FROM user_details u
+    //       LEFT JOIN addresses a ON u.address_id = a.id
+    //       WHERE a.country = ? OR u.address_id IS NULL
+
+    // 5. Multiple conditions on both entities
+    @Query("SELECT u FROM UserDetails u JOIN u.address a " +
+           "WHERE u.username LIKE %:keyword% AND a.country = :country")
+    List<UserDetails> searchUsers(@Param("keyword") String keyword,
+                                  @Param("country") String country);
+    // SQL:  SELECT u.* FROM user_details u
+    //       INNER JOIN addresses a ON u.address_id = a.id
+    //       WHERE u.username LIKE '%keyword%' AND a.country = ?
+}
+```
+
+```text
+JOIN vs JOIN FETCH — Important Difference:
+
+  ┌────────────────────────────────────────────────────────────────────────────────┐
+  │  JOIN (regular):                                                              │
+  │    @Query("SELECT u FROM UserDetails u JOIN u.address a WHERE a.city = :city")│
+  │                                                                                │
+  │    SQL 1: SELECT u.* FROM user_details u                                       │
+  │           JOIN addresses a ON u.address_id = a.id                              │
+  │           WHERE a.city = 'New York'                                            │
+  │    → Returns UserDetails but address is NOT loaded yet (lazy proxy)            │
+  │                                                                                │
+  │    SQL 2: SELECT a.* FROM addresses WHERE id = ?  (triggered on access)        │
+  │    → Lazy load fires when you call user.getAddress()                           │
+  │    → N+1 problem if you load many users!                                       │
+  │                                                                                │
+  │  JOIN FETCH:                                                                   │
+  │    @Query("SELECT u FROM UserDetails u JOIN FETCH u.address WHERE ...")         │
+  │                                                                                │
+  │    SQL: SELECT u.*, a.* FROM user_details u                                    │
+  │         JOIN addresses a ON u.address_id = a.id                                │
+  │         WHERE ...                                                              │
+  │    → Returns UserDetails WITH address already loaded in ONE query              │
+  │    → No N+1 problem. Address is populated immediately.                         │
+  └────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Service and Controller:**
+
+```java
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository userDetailsRepository;
+
+    public UserDetails getUserWithAddress(String username) {
+        return userDetailsRepository.findUserWithAddressFetched(username);
+        // JPQL: SELECT u FROM UserDetails u JOIN FETCH u.address WHERE u.username = :username
+        // SQL:  SELECT u.id, u.username, u.email, u.address_id,
+        //              a.id, a.street, a.city, a.country, a.zip_code
+        //       FROM user_details u
+        //       INNER JOIN addresses a ON u.address_id = a.id
+        //       WHERE u.username = 'alice'
+        //
+        // Result: UserDetails { id=1, username="alice", email="alice@ex.com",
+        //                       address=Address { street="123 Main St", city="New York", ... } }
+    }
+}
+
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/{username}")
+    public UserDetails getUser(@PathVariable String username) {
+        return userService.getUserWithAddress(username);
+    }
+}
+```
+
+---
+
+### Returning Specific Fields — List<Object[]> and DTO Constructor Expression
+
+When you need fields from **multiple entities** (or only a few columns), you don't have to return the full entity. JPQL supports two approaches: `List<Object[]>` and **constructor expression** (DTO projection).
+
+#### Approach 1: List<Object[]>
+
+Each row is an `Object[]` where each element corresponds to one selected field, in order.
+
+```java
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // Select specific fields from UserDetails and Address
+    @Query("SELECT u.username, a.country FROM UserDetails u JOIN u.address a")
+    List<Object[]> findUsernameAndCountry();
+    // JPQL: SELECT u.username, a.country FROM UserDetails u JOIN u.address a
+    // SQL:  SELECT u.username, a.country
+    //       FROM user_details u
+    //       INNER JOIN addresses a ON u.address_id = a.id
+    //
+    // Result:  List<Object[]>
+    //   [0] = Object[] { "alice",   "USA"   }
+    //   [1] = Object[] { "bob",     "UK"    }
+    //   [2] = Object[] { "charlie", "India" }
+
+    // With WHERE condition
+    @Query("SELECT u.username, u.email, a.city, a.country " +
+           "FROM UserDetails u JOIN u.address a WHERE a.country = :country")
+    List<Object[]> findUserInfoByCountry(@Param("country") String country);
+    // SQL:  SELECT u.username, u.email, a.city, a.country
+    //       FROM user_details u
+    //       INNER JOIN addresses a ON u.address_id = a.id
+    //       WHERE a.country = ?
+}
+```
+
+```java
+// Service — extracting values from Object[]
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository userDetailsRepository;
+
+    public void printUsernameAndCountry() {
+        List<Object[]> results = userDetailsRepository.findUsernameAndCountry();
+
+        for (Object[] row : results) {
+            String username = (String) row[0];   // first field in SELECT
+            String country  = (String) row[1];   // second field in SELECT
+            System.out.println(username + " → " + country);
+        }
+        // Output:
+        //   alice → USA
+        //   bob → UK
+        //   charlie → India
+    }
+}
+```
+
+```text
+Object[] mapping — positional:
+
+  SELECT u.username, a.country FROM UserDetails u JOIN u.address a
+         ↑ index 0    ↑ index 1
+
+  Object[] row = { "alice", "USA" }
+                    row[0]  row[1]
+
+  Conventions:
+  - Order in SELECT determines index in Object[]
+  - You must cast each element manually: (String) row[0]
+  - No type safety — compiler won't catch wrong casts
+  - Fragile — if you reorder SELECT fields, all array indexes break
+  - Use for quick ad-hoc queries, NOT for production APIs
+
+  ┌──────────────────────────────────────────────────────────────┐
+  │  Drawbacks of List<Object[]>:                                │
+  │  - No compile-time type safety                               │
+  │  - Manual casting: (String) row[0], (Double) row[1]          │
+  │  - Index-based access is error-prone                         │
+  │  - Refactoring the SELECT breaks consuming code              │
+  │  - Not self-documenting — what is row[0]?                    │
+  │                                                              │
+  │  Better alternative → DTO Constructor Expression             │
+  └──────────────────────────────────────────────────────────────┘
+```
+
+#### Approach 2: Constructor Expression with DTO (Recommended)
+
+Instead of `Object[]`, you can tell JPQL to directly call a **DTO constructor** using the `NEW` keyword. JPQL maps the selected fields to the constructor parameters.
+
+**Step 1: Create the DTO class:**
+
+```java
+// DTO — must have a matching constructor
+public class UserCountryDTO {
+    private String username;
+    private String country;
+
+    // Constructor — parameters must match JPQL SELECT fields in order and type
+    public UserCountryDTO(String username, String country) {
+        this.username = username;
+        this.country = country;
+    }
+
+    // getters (and setters if needed)
+    public String getUsername() { return username; }
+    public String getCountry() { return country; }
+}
+```
+
+**Step 2: Use `NEW` in JPQL with fully qualified class name:**
+
+```java
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // Constructor expression — directly creates DTOs in JPQL
+    @Query("SELECT NEW com.example.dto.UserCountryDTO(u.username, a.country) " +
+           "FROM UserDetails u JOIN u.address a")
+    List<UserCountryDTO> findUserCountryDTOs();
+    // JPQL: SELECT NEW com.example.dto.UserCountryDTO(u.username, a.country)
+    //       FROM UserDetails u JOIN u.address a
+    // SQL:  SELECT u.username, a.country
+    //       FROM user_details u
+    //       INNER JOIN addresses a ON u.address_id = a.id
+    //
+    // Result: List<UserCountryDTO>  ← type-safe! Not Object[]
+    //   [0] = UserCountryDTO { username="alice",   country="USA"   }
+    //   [1] = UserCountryDTO { username="bob",     country="UK"    }
+    //   [2] = UserCountryDTO { username="charlie", country="India" }
+
+    // With WHERE condition
+    @Query("SELECT NEW com.example.dto.UserCountryDTO(u.username, a.country) " +
+           "FROM UserDetails u JOIN u.address a WHERE a.country = :country")
+    List<UserCountryDTO> findUserCountryByCountry(@Param("country") String country);
+
+    // More fields — use a different DTO
+    @Query("SELECT NEW com.example.dto.UserDetailDTO(u.username, u.email, a.city, a.country) " +
+           "FROM UserDetails u JOIN u.address a WHERE a.country = :country")
+    List<UserDetailDTO> findDetailedUsers(@Param("country") String country);
+}
+```
+
+```java
+// DTO with more fields
+public class UserDetailDTO {
+    private String username;
+    private String email;
+    private String city;
+    private String country;
+
+    public UserDetailDTO(String username, String email, String city, String country) {
+        this.username = username;
+        this.email = email;
+        this.city = city;
+        this.country = country;
+    }
+    // getters
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Constructor Expression Conventions:                                             │
+│                                                                                  │
+│  1. Use keyword NEW followed by FULLY QUALIFIED class name:                      │
+│     NEW com.example.dto.UserCountryDTO(u.username, a.country)                    │
+│         ↑ full package path (cannot use short name)                              │
+│                                                                                  │
+│  2. The DTO class MUST have a constructor matching the parameter types:           │
+│     JPQL: NEW ...DTO(u.username, a.country) → String, String                     │
+│     Java: public UserCountryDTO(String username, String country)                 │
+│     → Types and ORDER must match exactly                                         │
+│                                                                                  │
+│  3. The DTO does NOT need to be an @Entity — it's a plain POJO/record            │
+│                                                                                  │
+│  4. Return type is List<DTO> — fully type-safe                                   │
+│                                                                                  │
+│  5. The generated SQL is the SAME as Object[] approach — only the Java           │
+│     mapping is different (constructor call vs raw array)                          │
+│                                                                                  │
+│  6. You can use Java records too:                                                │
+│     public record UserCountryDTO(String username, String country) {}             │
+│     → Constructor is auto-generated by the record                                │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+Object[] vs DTO Constructor Expression:
+
+  ┌────────────────────────────────┬────────────────────────────────────────────┐
+  │ List<Object[]>                 │ List<UserCountryDTO> (constructor expr.)   │
+  ├────────────────────────────────┼────────────────────────────────────────────┤
+  │ No type safety                 │ Full type safety at compile time           │
+  │ Manual cast: (String) row[0]  │ Direct getter: dto.getUsername()            │
+  │ Index-based, fragile           │ Named fields, self-documenting             │
+  │ No extra class needed          │ Need a DTO class with matching constructor │
+  │ Quick prototyping              │ Production-ready                            │
+  │ Breaks if SELECT order changes │ Breaks only if constructor changes         │
+  └────────────────────────────────┴────────────────────────────────────────────┘
+```
+
+**Service using DTO approach:**
+
+```java
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository userDetailsRepository;
+
+    // Type-safe — no casting needed
+    public List<UserCountryDTO> getUserCountries() {
+        return userDetailsRepository.findUserCountryDTOs();
+        // Each element is a UserCountryDTO, not Object[]
+        // dto.getUsername(), dto.getCountry() — clean and safe
+    }
+}
+
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/countries")
+    public List<UserCountryDTO> getUserCountries() {
+        return userService.getUserCountries();
+        // JSON: [{"username":"alice","country":"USA"}, {"username":"bob","country":"UK"}, ...]
+    }
+}
+```
+
+---
+
+### @Modifying Annotation
+
+`@Modifying` tells Spring Data JPA that the `@Query` is **not** a SELECT query — it is an **INSERT**, **UPDATE**, or **DELETE** that modifies data.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Why @Modifying is needed:                                                       │
+│                                                                                  │
+│  By default, Spring assumes @Query contains a SELECT statement.                  │
+│  It tries to execute it as a read query and map the ResultSet to entities.        │
+│                                                                                  │
+│  If you put an UPDATE/DELETE inside @Query without @Modifying:                    │
+│  → Spring tries to read results from an UPDATE statement                         │
+│  → Exception: "Expecting a SELECT query"                                         │
+│  → or: "Not supported for DML operations"                                        │
+│                                                                                  │
+│  @Modifying tells Spring:                                                        │
+│    "This is a DML (Data Manipulation Language) query."                            │
+│    "Execute it with executeUpdate(), not executeQuery()."                         │
+│    "The return value is the number of affected rows (int), not entities."         │
+│                                                                                  │
+│  ┌───────────────────────────────────────────────────────────────────────┐        │
+│  │  Without @Modifying:                                                  │        │
+│  │    @Query("UPDATE Employee e SET e.salary = :sal WHERE e.id = :id")   │        │
+│  │    → Spring calls: entityManager.createQuery(jpql).getResultList()    │        │
+│  │    → ERROR: not a SELECT!                                             │        │
+│  │                                                                       │        │
+│  │  With @Modifying:                                                     │        │
+│  │    @Modifying                                                         │        │
+│  │    @Query("UPDATE Employee e SET e.salary = :sal WHERE e.id = :id")   │        │
+│  │    → Spring calls: entityManager.createQuery(jpql).executeUpdate()    │        │
+│  │    → Returns int = number of rows updated                             │        │
+│  └───────────────────────────────────────────────────────────────────────┘        │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Code examples:**
+
+```java
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+
+    // UPDATE — bulk salary update
+    @Modifying
+    @Query("UPDATE Employee e SET e.salary = :newSalary WHERE e.department = :dept")
+    int updateSalaryByDepartment(@Param("newSalary") Double newSalary,
+                                 @Param("dept") String department);
+    // JPQL: UPDATE Employee e SET e.salary = :newSalary WHERE e.department = :dept
+    // SQL:  UPDATE employees SET salary = ? WHERE department = ?
+    // Returns: int = number of rows updated (e.g., 15)
+
+    // UPDATE — single field
+    @Modifying
+    @Query("UPDATE Employee e SET e.active = false WHERE e.id = :id")
+    int deactivateEmployee(@Param("id") Long id);
+    // SQL: UPDATE employees SET active = FALSE WHERE id = ?
+    // Returns: 1 (one row updated) or 0 (no match)
+
+    // DELETE — bulk delete
+    @Modifying
+    @Query("DELETE FROM Employee e WHERE e.department = :dept AND e.active = false")
+    int deleteInactiveByDepartment(@Param("dept") String department);
+    // JPQL: DELETE FROM Employee e WHERE e.department = :dept AND e.active = false
+    // SQL:  DELETE FROM employees WHERE department = ? AND active = FALSE
+    // Returns: int = number of rows deleted
+
+    // UPDATE — multiple fields
+    @Modifying
+    @Query("UPDATE Employee e SET e.salary = :salary, e.department = :dept WHERE e.id = :id")
+    int updateSalaryAndDepartment(@Param("salary") Double salary,
+                                  @Param("dept") String department,
+                                  @Param("id") Long id);
+    // SQL: UPDATE employees SET salary = ?, department = ? WHERE id = ?
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @Modifying — Flow Diagram:                                                      │
+│                                                                                  │
+│  Service calls: employeeRepository.updateSalaryByDepartment(60000, "IT")         │
+│       │                                                                          │
+│       v                                                                          │
+│  Spring Proxy sees @Modifying + @Query                                           │
+│       │                                                                          │
+│       v                                                                          │
+│  Calls: entityManager.createQuery(jpql).executeUpdate()                          │
+│       │         (NOT getResultList() — because @Modifying)                       │
+│       v                                                                          │
+│  Hibernate translates JPQL → SQL:                                                │
+│    UPDATE employees SET salary = 60000 WHERE department = 'IT'                   │
+│       │                                                                          │
+│       v                                                                          │
+│  JDBC executes → returns int (number of rows affected)                           │
+│       │                                                                          │
+│       v                                                                          │
+│  Returns 15 → "15 employees in IT department had their salary updated"           │
+│                                                                                  │
+│  IMPORTANT: This bypasses the Persistence Context entirely!                      │
+│  The DB is updated, but cached entities in L1 cache are STALE.                   │
+│  (More on this below)                                                            │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### What Happens When You Use INSERT/UPDATE/DELETE Inside @Query
+
+When you write a modifying JPQL query (UPDATE, DELETE) inside `@Query`, the SQL goes **directly to the database**, bypassing the normal JPA entity lifecycle.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Normal JPA flow (without @Query/@Modifying):                                    │
+│                                                                                  │
+│    Service: employee.setSalary(60000);                                           │
+│       │                                                                          │
+│       v                                                                          │
+│    Persistence Context detects dirty field (salary changed)                      │
+│       │                                                                          │
+│       v                                                                          │
+│    At flush: Hibernate generates UPDATE SQL                                      │
+│       │                                                                          │
+│       v                                                                          │
+│    DB updated AND L1 cache entity is in sync (both have salary=60000)            │
+│                                                                                  │
+│──────────────────────────────────────────────────────────────────────────────────│
+│  @Modifying @Query flow (JPQL UPDATE/DELETE):                                    │
+│                                                                                  │
+│    Service: employeeRepository.updateSalaryByDepartment(60000, "IT");            │
+│       │                                                                          │
+│       v                                                                          │
+│    Hibernate sends UPDATE SQL directly to DB                                     │
+│    SQL: UPDATE employees SET salary = 60000 WHERE department = 'IT'              │
+│       │                                                                          │
+│       v                                                                          │
+│    DB is updated (salary = 60000 for all IT employees)                           │
+│    BUT Persistence Context is NOT updated!                                       │
+│    L1 cache still has old salary values!                                          │
+│       │                                                                          │
+│       v                                                                          │
+│    If you now call findById(id) for an IT employee:                              │
+│    → Returns STALE data from L1 cache (old salary)                               │
+│    → NOT the 60000 you just set!                                                 │
+│    ← This is the PERSISTENCE CONTEXT STALENESS problem.                          │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+Why does this happen?
+
+  @Modifying @Query executes: entityManager.createQuery(jpql).executeUpdate()
+  This sends SQL DIRECTLY to the database.
+  It does NOT go through the Persistence Context's dirty checking mechanism.
+  The L1 cache has no idea the database changed.
+
+  Think of it as:
+    You opened a Word document.
+    Someone else edited the file directly on disk.
+    Your open document still shows the OLD content.
+    You need to RELOAD (clear cache) to see the new content.
+```
+
+---
+
+### @Transactional with @Modifying @Query
+
+Yes, `@Transactional` is **required** for all `@Modifying` queries. Without it, you get a `TransactionRequiredException`.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Why @Transactional is needed for @Modifying:                                    │
+│                                                                                  │
+│  1. executeUpdate() requires an active transaction                               │
+│     → Without it: TransactionRequiredException at runtime                        │
+│                                                                                  │
+│  2. UPDATE/DELETE must be atomic                                                 │
+│     → If bulk UPDATE fails halfway, all changes must roll back                   │
+│                                                                                  │
+│  3. Same reason as derived delete — modifying data needs a transaction           │
+│                                                                                  │
+│  Where to put @Transactional:                                                    │
+│    Option A: On the Service method (RECOMMENDED)                                 │
+│    Option B: On the Repository method                                            │
+│    → Either works, but Service is preferred (business transaction boundary)      │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```java
+// Service — @Transactional is MANDATORY
+@Service
+public class EmployeeService {
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @Transactional   // ← REQUIRED for @Modifying queries
+    public int updateSalaryForDepartment(String department, Double newSalary) {
+        return employeeRepository.updateSalaryByDepartment(newSalary, department);
+        // SQL: UPDATE employees SET salary = ? WHERE department = ?
+    }
+
+    @Transactional   // ← REQUIRED
+    public int removeInactiveEmployees(String department) {
+        return employeeRepository.deleteInactiveByDepartment(department);
+        // SQL: DELETE FROM employees WHERE department = ? AND active = FALSE
+    }
+
+    // WITHOUT @Transactional → RUNTIME ERROR:
+    // org.springframework.dao.InvalidDataAccessApiUsageException:
+    //   Executing an update/delete query;
+    //   nested exception is javax.persistence.TransactionRequiredException
+}
+```
+
+---
+
+### Persistence Context Staleness — flushAutomatically and clearAutomatically
+
+Since `@Modifying @Query` bypasses the Persistence Context, entities cached in the L1 cache become **stale** (outdated). Spring Data JPA provides two attributes on `@Modifying` to handle this.
+
+**The Problem:**
+
+```java
+@Service
+public class EmployeeService {
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @Transactional
+    public void demonstrateStaleness() {
+
+        // STEP 1: Load employee into Persistence Context (L1 cache)
+        Employee emp = employeeRepository.findById(1L).orElseThrow();
+        System.out.println("Before: " + emp.getSalary());  // prints: 50000
+        // SQL: SELECT * FROM employees WHERE id = 1
+        // L1 cache: { Employee(id=1, salary=50000) }
+
+        // STEP 2: Bulk update salary via @Modifying @Query
+        employeeRepository.updateSalaryByDepartment(80000.0, "IT");
+        // SQL: UPDATE employees SET salary = 80000 WHERE department = 'IT'
+        // DB now has: salary = 80000 for employee id=1
+        // BUT L1 cache STILL has: salary = 50000   ← STALE!
+
+        // STEP 3: Read the same employee again
+        Employee emp2 = employeeRepository.findById(1L).orElseThrow();
+        System.out.println("After: " + emp2.getSalary());  // prints: 50000 ← WRONG!
+        // Hibernate returns from L1 cache (no SQL executed)
+        // L1 cache hit: Employee(id=1, salary=50000) — the STALE value
+        // The DB has 80000 but we see 50000!
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  The Staleness Problem — Visualized:                                             │
+│                                                                                  │
+│  STEP 1: findById(1)                                                             │
+│                                                                                  │
+│    Persistence Context (L1 Cache)        Database                                │
+│    ┌─────────────────────────┐           ┌─────────────────────────┐             │
+│    │ Employee(id=1)          │           │ employees               │             │
+│    │   salary = 50000  ✓     │    ==     │   id=1, salary=50000 ✓  │             │
+│    │   (in sync with DB)     │           │                         │             │
+│    └─────────────────────────┘           └─────────────────────────┘             │
+│                                                                                  │
+│  STEP 2: updateSalaryByDepartment(80000, "IT")  ← @Modifying @Query             │
+│                                                                                  │
+│    Persistence Context (L1 Cache)        Database                                │
+│    ┌─────────────────────────┐           ┌─────────────────────────┐             │
+│    │ Employee(id=1)          │           │ employees               │             │
+│    │   salary = 50000  ✗     │    !=     │   id=1, salary=80000 ✓  │             │
+│    │   (STALE — out of sync!)│           │   (updated by SQL)      │             │
+│    └─────────────────────────┘           └─────────────────────────┘             │
+│                                                                                  │
+│  STEP 3: findById(1) again                                                       │
+│    → Hibernate checks L1 cache first                                             │
+│    → Cache HIT: Employee(id=1, salary=50000)                                     │
+│    → Returns STALE entity without going to DB!                                   │
+│    → You see 50000 instead of 80000!                                             │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Solution 1: clearAutomatically = true
+
+`@Modifying(clearAutomatically = true)` tells Spring to **clear the entire Persistence Context** (L1 cache) AFTER the modifying query executes. This forces subsequent reads to go to the database.
+
+```java
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+
+    @Modifying(clearAutomatically = true)   // ← clears L1 cache AFTER update
+    @Query("UPDATE Employee e SET e.salary = :newSalary WHERE e.department = :dept")
+    int updateSalaryByDepartment(@Param("newSalary") Double newSalary,
+                                 @Param("dept") String department);
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  clearAutomatically = true — What happens:                                       │
+│                                                                                  │
+│  STEP 1: findById(1) → loads Employee(salary=50000) into L1 cache               │
+│                                                                                  │
+│  STEP 2: updateSalaryByDepartment(80000, "IT")                                   │
+│    2a. SQL: UPDATE employees SET salary = 80000 WHERE department = 'IT'           │
+│    2b. entityManager.clear()  ← ALL entities evicted from L1 cache               │
+│                                                                                  │
+│    Persistence Context (L1 Cache)        Database                                │
+│    ┌─────────────────────────┐           ┌─────────────────────────┐             │
+│    │       (EMPTY)           │           │ employees               │             │
+│    │   All entities cleared  │           │   id=1, salary=80000 ✓  │             │
+│    └─────────────────────────┘           └─────────────────────────┘             │
+│                                                                                  │
+│  STEP 3: findById(1)                                                             │
+│    → L1 cache is EMPTY (was cleared)                                             │
+│    → Hibernate MUST go to DB                                                     │
+│    → SQL: SELECT * FROM employees WHERE id = 1                                   │
+│    → Returns Employee(salary=80000) ← CORRECT!                                   │
+│                                                                                  │
+│  WARNING: clear() evicts ALL entities, not just the updated ones.                │
+│  Any other loaded entities are also gone (must be re-fetched).                   │
+│  Any unsaved changes to other entities are LOST!                                 │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Solution 2: flushAutomatically = true
+
+`@Modifying(flushAutomatically = true)` tells Spring to **flush the Persistence Context** BEFORE the modifying query executes. This ensures any pending dirty changes are written to the DB before the bulk update runs.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  flushAutomatically = true — Why it's needed:                                    │
+│                                                                                  │
+│  Problem scenario WITHOUT flushAutomatically:                                    │
+│                                                                                  │
+│  STEP 1: Load employee and modify in-memory                                     │
+│    Employee emp = findById(1);   // salary = 50000                               │
+│    emp.setDepartment("Finance"); // dirty change in L1 cache                     │
+│    // L1 cache: Employee(id=1, department="Finance") — NOT flushed to DB yet     │
+│    // DB still has: department = "IT"                                             │
+│                                                                                  │
+│  STEP 2: Run @Modifying query                                                   │
+│    updateSalaryByDepartment(80000, "IT");                                        │
+│    SQL: UPDATE employees SET salary = 80000 WHERE department = 'IT'              │
+│    → This updates employee id=1 in DB (because DB still has department='IT')     │
+│    → But we wanted to move them to Finance first!                                │
+│    → The in-memory change was LOST — it wasn't flushed before the bulk update   │
+│                                                                                  │
+│  With flushAutomatically = true:                                                 │
+│  STEP 1: Same as above                                                           │
+│  STEP 2: Before running the @Modifying query:                                    │
+│    → entityManager.flush()  ← writes pending changes to DB                       │
+│    → SQL: UPDATE employees SET department = 'Finance' WHERE id = 1               │
+│    → NOW the DB has department = 'Finance' for emp id=1                          │
+│    → Then: UPDATE employees SET salary = 80000 WHERE department = 'IT'           │
+│    → Employee id=1 is NOT affected (department is now Finance)                   │
+│    → Correct behavior!                                                           │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```java
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+
+    @Modifying(flushAutomatically = true)   // ← flushes BEFORE update
+    @Query("UPDATE Employee e SET e.salary = :newSalary WHERE e.department = :dept")
+    int updateSalaryByDepartment(@Param("newSalary") Double newSalary,
+                                 @Param("dept") String department);
+}
+```
+
+#### Using Both Together (Recommended for @Modifying)
+
+```java
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Employee e SET e.salary = :newSalary WHERE e.department = :dept")
+    int updateSalaryByDepartment(@Param("newSalary") Double newSalary,
+                                 @Param("dept") String department);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("DELETE FROM Employee e WHERE e.department = :dept AND e.active = false")
+    int deleteInactiveByDepartment(@Param("dept") String department);
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Complete flow with BOTH flushAutomatically + clearAutomatically:                 │
+│                                                                                  │
+│  Service method:                                                                 │
+│    emp = findById(1);               // load into L1 cache                        │
+│    emp.setDepartment("Finance");    // dirty change (in L1, not DB)              │
+│    updateSalaryByDepartment(80000, "IT");  // @Modifying query                   │
+│       │                                                                          │
+│       v                                                                          │
+│  STEP 1: flushAutomatically = true → entityManager.flush()                       │
+│    SQL: UPDATE employees SET department = 'Finance' WHERE id = 1                 │
+│    → Pending dirty changes written to DB first                                   │
+│       │                                                                          │
+│       v                                                                          │
+│  STEP 2: Execute the @Modifying query                                            │
+│    SQL: UPDATE employees SET salary = 80000 WHERE department = 'IT'              │
+│    → Runs against the LATEST DB state (department='Finance' for emp 1)           │
+│       │                                                                          │
+│       v                                                                          │
+│  STEP 3: clearAutomatically = true → entityManager.clear()                       │
+│    → L1 cache wiped. All entities detached.                                      │
+│       │                                                                          │
+│       v                                                                          │
+│  STEP 4: Any subsequent findById(1) goes to DB (fresh data)                      │
+│    SQL: SELECT * FROM employees WHERE id = 1                                     │
+│    → Returns: Employee(department='Finance', salary=50000)                        │
+│    → Correct! (emp 1 was moved to Finance BEFORE the IT salary update)           │
+│                                                                                  │
+│  Timeline:                                                                       │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────┐  ┌──────────┐  ┌──────────────┐  │
+│  │ flush()  │→│ UPDATE   │→│ clear()       │→│ findById │→│ Returns      │  │
+│  │ dirty    │  │ salary   │  │ L1 cache     │  │ goes to  │  │ fresh data   │  │
+│  │ changes  │  │ = 80000  │  │ emptied      │  │ DB       │  │ from DB      │  │
+│  └──────────┘  └──────────┘  └──────────────┘  └──────────┘  └──────────────┘  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Complete Service example with all the pieces:**
+
+```java
+@Service
+public class EmployeeService {
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @Transactional
+    public void correctBulkUpdate() {
+
+        // 1. Load employee — enters L1 cache
+        Employee emp = employeeRepository.findById(1L).orElseThrow();
+        System.out.println("Before: " + emp.getSalary());  // 50000
+        // SQL: SELECT * FROM employees WHERE id = 1
+        // L1 cache: { Employee(id=1, salary=50000) }
+
+        // 2. Bulk update via @Modifying(flushAutomatically=true, clearAutomatically=true)
+        int updated = employeeRepository.updateSalaryByDepartment(80000.0, "IT");
+        System.out.println("Updated: " + updated + " rows");
+        // flush() runs first (no dirty changes here, so no extra SQL)
+        // SQL: UPDATE employees SET salary = 80000 WHERE department = 'IT'
+        // clear() runs after → L1 cache is EMPTY
+
+        // 3. Read again — must go to DB because cache was cleared
+        Employee emp2 = employeeRepository.findById(1L).orElseThrow();
+        System.out.println("After: " + emp2.getSalary());  // 80000 ← CORRECT!
+        // SQL: SELECT * FROM employees WHERE id = 1
+        // Returns fresh data from DB
+    }
+}
+```
+
+```text
+Summary of @Modifying attributes:
+
+  ┌──────────────────────────┬─────────────────────────────────────────────────────┐
+  │ Attribute                │ What it does                                        │
+  ├──────────────────────────┼─────────────────────────────────────────────────────┤
+  │ (no attributes)          │ @Modifying                                          │
+  │                          │ → Just executes the query. No flush, no clear.     │
+  │                          │ → L1 cache may be STALE after the query.           │
+  │                          │ → Pending dirty changes may not be in DB yet.      │
+  ├──────────────────────────┼─────────────────────────────────────────────────────┤
+  │ flushAutomatically=true  │ entityManager.flush() called BEFORE the query.     │
+  │                          │ → Writes pending dirty changes to DB first.        │
+  │                          │ → Ensures bulk query operates on latest DB state.  │
+  │                          │ → L1 cache still stale AFTER the query.            │
+  ├──────────────────────────┼─────────────────────────────────────────────────────┤
+  │ clearAutomatically=true  │ entityManager.clear() called AFTER the query.      │
+  │                          │ → Evicts ALL entities from L1 cache.               │
+  │                          │ → Subsequent reads go to DB (fresh data).          │
+  │                          │ → WARNING: unsaved changes to other entities LOST! │
+  ├──────────────────────────┼─────────────────────────────────────────────────────┤
+  │ BOTH = true              │ flush() BEFORE + clear() AFTER.                    │
+  │ (RECOMMENDED)            │ → Safest option. Flush pending → execute query →   │
+  │                          │   clear cache → all subsequent reads are fresh.    │
+  └──────────────────────────┴─────────────────────────────────────────────────────┘
+```
+
+---
+
+### Pagination in JPQL Queries Using Pageable
+
+Just like derived queries, you can add `Pageable` as a parameter to any `@Query` method. Spring Data JPA appends `LIMIT` and `OFFSET` to the generated SQL.
+
+**Conventions:**
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│  Pagination in @Query Conventions:                                                 │
+│                                                                                    │
+│  1. Add Pageable as the LAST parameter of the method                               │
+│  2. Do NOT include LIMIT/OFFSET in the JPQL — Spring adds them automatically      │
+│  3. Return type: Page<T>, Slice<T>, or List<T>                                    │
+│  4. If return type is Page<T>, Spring needs a COUNT query:                         │
+│     - Spring auto-generates a count query from your JPQL                          │
+│     - OR you can provide a custom count query via @Query(countQuery = "...")       │
+│  5. The method name does NOT matter for @Query — naming is free                   │
+│  6. Pageable contains both pagination (page, size) and sort info                  │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Code examples:**
+
+```java
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+
+    // Paginated JPQL query — returns Page
+    @Query("SELECT e FROM Employee e WHERE e.department = :dept")
+    Page<Employee> findByDeptPaginated(@Param("dept") String department, Pageable pageable);
+    // JPQL: SELECT e FROM Employee e WHERE e.department = :dept
+    // SQL 1: SELECT ... FROM employees e WHERE e.department = ? LIMIT ? OFFSET ?
+    // SQL 2: SELECT COUNT(e) FROM employees e WHERE e.department = ?  (auto-generated count)
+
+    // With custom count query (for complex JOINs where auto-count is expensive)
+    @Query(value = "SELECT e FROM Employee e JOIN e.department d WHERE d.name = :dept",
+           countQuery = "SELECT COUNT(e) FROM Employee e JOIN e.department d WHERE d.name = :dept")
+    Page<Employee> findByDeptWithCustomCount(@Param("dept") String department, Pageable pageable);
+
+    // Complex conditions + pagination
+    @Query("SELECT e FROM Employee e WHERE e.salary > :minSalary AND e.active = true")
+    Page<Employee> findActiveHighEarners(@Param("minSalary") Double minSalary, Pageable pageable);
+    // SQL 1: SELECT ... FROM employees e WHERE e.salary > ? AND e.active = TRUE LIMIT ? OFFSET ?
+    // SQL 2: SELECT COUNT(e) FROM employees e WHERE e.salary > ? AND e.active = TRUE
+
+    // Slice — no count query
+    @Query("SELECT e FROM Employee e WHERE e.department = :dept")
+    Slice<Employee> findByDeptSliced(@Param("dept") String department, Pageable pageable);
+    // SQL: SELECT ... FROM employees e WHERE e.department = ? LIMIT (size+1) OFFSET ?
+
+    // List — no count, no hasNext
+    @Query("SELECT e FROM Employee e WHERE e.department = :dept")
+    List<Employee> findByDeptList(@Param("dept") String department, Pageable pageable);
+    // SQL: SELECT ... FROM employees e WHERE e.department = ? LIMIT ? OFFSET ?
+}
+```
+
+```java
+// Service
+@Service
+public class EmployeeService {
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    public Page<Employee> getByDepartmentPaginated(String department, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return employeeRepository.findByDeptPaginated(department, pageable);
+        // SQL 1: SELECT e.id, e.emp_name, e.email, e.department, e.salary, e.active, e.joining_date
+        //        FROM employees e
+        //        WHERE e.department = 'IT'
+        //        LIMIT 10 OFFSET 0
+        //
+        // SQL 2: SELECT COUNT(e.id) FROM employees e WHERE e.department = 'IT'
+        //
+        // Returns Page<Employee> with content + totalElements + totalPages
+    }
+}
+
+// Controller
+@RestController
+@RequestMapping("/api/employees")
+public class EmployeeController {
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    @GetMapping("/department")
+    public Page<Employee> getByDepartment(
+        @RequestParam String department,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+    ) {
+        return employeeService.getByDepartmentPaginated(department, page, size);
+    }
+}
+```
+
+```text
+Auto-generated count query:
+
+  Your JPQL:
+    SELECT e FROM Employee e WHERE e.department = :dept
+
+  Spring auto-generates count:
+    SELECT COUNT(e) FROM Employee e WHERE e.department = :dept
+
+  For simple queries, auto-generation works perfectly.
+  For complex JOINs, you may need a custom countQuery to avoid performance issues:
+
+    @Query(
+      value = "SELECT e FROM Employee e JOIN FETCH e.address WHERE e.department = :dept",
+      countQuery = "SELECT COUNT(e) FROM Employee e WHERE e.department = :dept"
+    )
+    Page<Employee> findByDept(@Param("dept") String dept, Pageable pageable);
+    // The countQuery skips the JOIN — faster count
+```
+
+---
+
+### Sorting in JPQL Queries Using Sort Object
+
+You can pass `Sort` as a parameter to JPQL `@Query` methods for dynamic sorting. Spring appends `ORDER BY` to the generated SQL.
+
+**Conventions:**
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────────┐
+│  Sorting in @Query Conventions:                                                    │
+│                                                                                    │
+│  1. Add Sort as the LAST parameter                                                │
+│  2. Do NOT include ORDER BY in the JPQL — Spring adds it from Sort parameter      │
+│     (Unless you want a FIXED sort, then include ORDER BY in JPQL)                 │
+│  3. Sort properties must match ENTITY field names (not column names)              │
+│  4. You CAN have ORDER BY in JPQL AND Sort parameter both:                        │
+│     JPQL ORDER BY is applied first, then Sort parameter appended                  │
+│     (but generally avoid mixing — confusing)                                       │
+│  5. For JPQL queries, Spring uses JpaSort.unsafe() for SQL functions:             │
+│     Sort.by("LENGTH(name)") → ERROR (Spring tries to validate as property)       │
+│     JpaSort.unsafe("LENGTH(name)") → works (bypasses validation)                 │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Code examples:**
+
+```java
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+
+    // JPQL with dynamic Sort
+    @Query("SELECT e FROM Employee e WHERE e.department = :dept")
+    List<Employee> findByDeptSorted(@Param("dept") String department, Sort sort);
+    // Sort.by("salary") → SQL: ... ORDER BY e.salary ASC
+    // Sort.by(Direction.DESC, "name") → SQL: ... ORDER BY e.emp_name DESC
+
+    // Multiple conditions with Sort
+    @Query("SELECT e FROM Employee e WHERE e.salary > :minSalary AND e.active = true")
+    List<Employee> findActiveHighEarnersSorted(@Param("minSalary") Double salary, Sort sort);
+}
+```
+
+```java
+// Service
+@Service
+public class EmployeeService {
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    // Single sort — ascending
+    public List<Employee> sortByName(String department) {
+        Sort sort = Sort.by("name");
+        return employeeRepository.findByDeptSorted(department, sort);
+        // JPQL: SELECT e FROM Employee e WHERE e.department = :dept
+        // SQL:  SELECT ... FROM employees e WHERE e.department = 'IT' ORDER BY e.emp_name ASC
+    }
+
+    // Single sort — descending
+    public List<Employee> sortBySalaryDesc(String department) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "salary");
+        return employeeRepository.findByDeptSorted(department, sort);
+        // SQL: SELECT ... FROM employees e WHERE e.department = 'IT' ORDER BY e.salary DESC
+    }
+
+    // Multiple sorts — different directions
+    public List<Employee> multiSort(String department) {
+        Sort sort = Sort.by(
+            Sort.Order.asc("department"),
+            Sort.Order.desc("salary"),
+            Sort.Order.asc("name")
+        );
+        return employeeRepository.findByDeptSorted(department, sort);
+        // SQL: SELECT ... FROM employees e
+        //      WHERE e.department = 'IT'
+        //      ORDER BY e.department ASC, e.salary DESC, e.emp_name ASC
+    }
+}
+```
+
+```text
+Sort in @Query vs Sort in Derived Query — identical behavior:
+
+  Both use the same Sort object.
+  Both generate the same ORDER BY clause.
+  The only difference is WHERE the base query comes from:
+
+  ┌──────────────────────────────┬──────────────────────────────────────┐
+  │ Derived Query                │ @Query                               │
+  ├──────────────────────────────┼──────────────────────────────────────┤
+  │ Base query from method name  │ Base query from JPQL string          │
+  │ Sort appended to generated   │ Sort appended to JPQL-generated SQL  │
+  │ query                        │                                      │
+  │ findByDept(dept, Sort)       │ @Query("SELECT e FROM Employee e     │
+  │                              │   WHERE e.department = :dept")       │
+  │                              │ findX(@Param("dept") dept, Sort)     │
+  └──────────────────────────────┴──────────────────────────────────────┘
+```
+
+---
+
+### Pagination with Sorting in JPQL Queries
+
+Combine `Pageable` (which includes `Sort`) with `@Query` to get paginated AND sorted results from a JPQL query.
+
+**Code examples:**
+
+```java
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+
+    // Pageable includes Sort — one parameter for both
+    @Query("SELECT e FROM Employee e WHERE e.department = :dept")
+    Page<Employee> findByDeptPagedAndSorted(@Param("dept") String department, Pageable pageable);
+
+    // Complex query with pagination + sorting
+    @Query("SELECT e FROM Employee e WHERE e.salary BETWEEN :min AND :max AND e.active = true")
+    Page<Employee> findActiveBySalaryRange(@Param("min") Double min,
+                                           @Param("max") Double max,
+                                           Pageable pageable);
+
+    // JOIN with pagination + sorting
+    @Query("SELECT u FROM UserDetails u JOIN u.address a WHERE a.country = :country")
+    Page<UserDetails> findUsersByCountryPaged(@Param("country") String country, Pageable pageable);
+}
+```
+
+```java
+// Service
+@Service
+public class EmployeeService {
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    // Pagination + single sort
+    public Page<Employee> searchPaged(String department, int page, int size) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "salary");
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return employeeRepository.findByDeptPagedAndSorted(department, pageable);
+        // JPQL: SELECT e FROM Employee e WHERE e.department = :dept
+        //
+        // SQL 1 (data):
+        //   SELECT e.id, e.emp_name, e.email, e.department, e.salary, e.active, e.joining_date
+        //   FROM employees e
+        //   WHERE e.department = 'IT'
+        //   ORDER BY e.salary DESC
+        //   LIMIT 10 OFFSET 0
+        //
+        // SQL 2 (count):
+        //   SELECT COUNT(e.id) FROM employees e WHERE e.department = 'IT'
+    }
+
+    // Pagination + multiple sorts with different directions
+    public Page<Employee> advancedSearchPaged(String department, int page, int size) {
+        Sort sort = Sort.by(
+            Sort.Order.asc("name"),
+            Sort.Order.desc("salary")
+        );
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return employeeRepository.findByDeptPagedAndSorted(department, pageable);
+        // SQL 1: SELECT ... FROM employees e
+        //        WHERE e.department = 'IT'
+        //        ORDER BY e.emp_name ASC, e.salary DESC
+        //        LIMIT 10 OFFSET 0
+        //
+        // SQL 2: SELECT COUNT(e.id) FROM employees e WHERE e.department = 'IT'
+    }
+
+    // Shorthand — direction applied to all properties
+    public Page<Employee> simplePagedSort(String department, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.Direction.DESC, "salary", "name");
+
+        return employeeRepository.findByDeptPagedAndSorted(department, pageable);
+        // SQL: ... ORDER BY e.salary DESC, e.emp_name DESC LIMIT 10 OFFSET 0
+    }
+}
+
+// Controller
+@RestController
+@RequestMapping("/api/employees")
+public class EmployeeController {
+
+    @Autowired
+    private EmployeeService employeeService;
+
+    // GET /api/employees/search?department=IT&page=0&size=10
+    @GetMapping("/search")
+    public Page<Employee> search(
+        @RequestParam String department,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+    ) {
+        return employeeService.searchPaged(department, page, size);
+    }
+}
+```
+
+```text
+Complete flow — Pagination + Sorting in @Query JPQL:
+
+  Client: GET /api/employees/search?department=IT&page=2&size=5
+     │
+     v
+  Controller: extracts params → calls service
+     │
+     v
+  Service:
+    Sort sort = Sort.by(Order.desc("salary"), Order.asc("name"));
+    Pageable pageable = PageRequest.of(2, 5, sort);
+    employeeRepository.findByDeptPagedAndSorted("IT", pageable);
+     │
+     v
+  Spring Proxy:
+    Sees @Query annotation → uses JPQL string (not method name parsing)
+    JPQL: SELECT e FROM Employee e WHERE e.department = :dept
+    Appends Sort → ORDER BY e.salary DESC, e.emp_name ASC
+    Appends Pagination → LIMIT 5 OFFSET 10
+     │
+     v
+  Hibernate generates SQL:
+    SQL 1: SELECT e.id, e.emp_name, e.email, e.department, e.salary,
+                  e.active, e.joining_date
+           FROM employees e
+           WHERE e.department = 'IT'
+           ORDER BY e.salary DESC, e.emp_name ASC
+           LIMIT 5 OFFSET 10
+    SQL 2: SELECT COUNT(e.id) FROM employees e WHERE e.department = 'IT'
+     │
+     v
+  Results:
+    Page<Employee> {
+      content: [emp11, emp12, emp13, emp14, emp15],
+      totalElements: 47,
+      totalPages: 10,        ← ceil(47/5) = 10
+      number: 2,             ← current page (0-indexed)
+      size: 5,
+      sort: { sorted: true, orders: [
+        {property: "salary", direction: "DESC"},
+        {property: "name", direction: "ASC"}
+      ]}
+    }
+     │
+     v
+  Controller returns → Jackson serializes to JSON → Client receives response
+```
+
+```text
+Summary — Derived Query vs JPQL for Pagination and Sorting:
+
+  ┌──────────────────────────────────────┬──────────────────────────────────────┐
+  │ Feature                              │ Derived Query vs JPQL @Query         │
+  ├──────────────────────────────────────┼──────────────────────────────────────┤
+  │ Pageable parameter                   │ Same — add as last parameter         │
+  │ Sort parameter                       │ Same — add as last parameter         │
+  │ PageRequest.of(page, size, sort)     │ Same — works for both                │
+  │ Return type: Page, Slice, List       │ Same — all supported                 │
+  │ Page triggers COUNT query            │ Same — yes for both                  │
+  │ Custom count query                   │ Derived: auto only                   │
+  │                                      │ JPQL: @Query(countQuery = "...")     │
+  │ Where base query comes from          │ Derived: method name parsed          │
+  │                                      │ JPQL: @Query string                  │
+  │ LIMIT/OFFSET generation              │ Same — Spring adds automatically     │
+  │ ORDER BY generation from Sort        │ Same — Spring appends automatically  │
+  └──────────────────────────────────────┴──────────────────────────────────────┘
+```
+
+---
+
+### The N+1 Problem in JPA, What Is the N+1 Problem?
+
+The N+1 problem is a **performance anti-pattern** where loading N parent entities triggers N additional SQL queries to load their child entities — resulting in **1 + N total queries** instead of a single query.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  N+1 Problem — The Core Issue:                                                   │
+│                                                                                  │
+│  You want: "Give me all users and their addresses"                               │
+│                                                                                  │
+│  What SHOULD happen (1 query):                                                   │
+│    SQL: SELECT u.*, a.* FROM user_details u                                      │
+│         JOIN user_addresses a ON u.id = a.user_id                                │
+│    → 1 query, all data loaded                                                    │
+│                                                                                  │
+│  What ACTUALLY happens with N+1 (1 + N queries):                                 │
+│    SQL 1: SELECT u.* FROM user_details               ← 1 query for parents      │
+│           → Returns 5 users                                                      │
+│                                                                                  │
+│    SQL 2: SELECT a.* FROM user_addresses WHERE user_id = 1  ← child for user 1  │
+│    SQL 3: SELECT a.* FROM user_addresses WHERE user_id = 2  ← child for user 2  │
+│    SQL 4: SELECT a.* FROM user_addresses WHERE user_id = 3  ← child for user 3  │
+│    SQL 5: SELECT a.* FROM user_addresses WHERE user_id = 4  ← child for user 4  │
+│    SQL 6: SELECT a.* FROM user_addresses WHERE user_id = 5  ← child for user 5  │
+│           → 5 additional queries (one per parent)                                │
+│                                                                                  │
+│    Total: 1 + 5 = 6 queries instead of 1!                                       │
+│                                                                                  │
+│  If N = 1000 users → 1001 queries!                                               │
+│  If N = 10000 users → 10001 queries!                                             │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**When does it happen and in which mapping?**
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  N+1 happens in ANY relationship mapping with collections:                       │
+│                                                                                  │
+│  @OneToMany  → MOST COMMON. Parent has List<Child>.                              │
+│  @ManyToMany → Parent has Set<Child> via join table.                             │
+│  @ManyToOne  → Less common, but possible with eager fetch on the "many" side.    │
+│  @OneToOne   → Possible with lazy proxy, but rare (only 1 extra query per row).  │
+│                                                                                  │
+│  The problem is worst with @OneToMany and @ManyToMany because each parent        │
+│  has a COLLECTION of children — each collection triggers a separate SQL query.   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Does it happen on EAGER or LAZY?**
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  N+1 can happen with BOTH FetchType.EAGER and FetchType.LAZY:                    │
+│                                                                                  │
+│  EAGER (FetchType.EAGER):                                                        │
+│    N+1 happens IMMEDIATELY when you load the parent.                             │
+│    Hibernate loads the parent → then fires N queries for children automatically. │
+│    You can't avoid it — children are loaded whether you need them or not.        │
+│    N+1 is HIDDEN — you don't explicitly call getChildren(), but queries fire.    │
+│                                                                                  │
+│  LAZY (FetchType.LAZY) — default for @OneToMany / @ManyToMany:                  │
+│    N+1 happens WHEN YOU ACCESS the children collection.                          │
+│    Loading the parent fires 1 query. Children are proxied (not loaded).          │
+│    When you call user.getAddresses() for each user → N queries fire.            │
+│    N+1 is VISIBLE — you can see it when you iterate and access children.        │
+│                                                                                  │
+│  KEY POINT: Lazy doesn't SOLVE N+1. It only DEFERS it.                          │
+│  If you eventually access all children, you still get N+1 queries.              │
+│  Lazy is better ONLY if you DON'T always need the children.                     │
+│                                                                                  │
+│  ┌──────────────┬──────────────────────────┬────────────────────────────────┐    │
+│  │ FetchType    │ When N+1 fires           │ Can you avoid the N queries?  │    │
+│  ├──────────────┼──────────────────────────┼────────────────────────────────┤    │
+│  │ EAGER        │ Immediately on load      │ No — always fires N queries   │    │
+│  │ LAZY         │ When you access children │ Yes — if you never access     │    │
+│  │              │                          │ children, no extra queries    │    │
+│  └──────────────┴──────────────────────────┴────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Performance impact:**
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Performance Impact of N+1:                                                      │
+│                                                                                  │
+│  1. DATABASE ROUND-TRIPS:                                                        │
+│     Each query = 1 network round-trip to the database.                           │
+│     1001 queries = 1001 round-trips over the network.                            │
+│     Even if each query takes 1ms → total = 1+ second just in network latency.   │
+│                                                                                  │
+│  2. CONNECTION POOL EXHAUSTION:                                                   │
+│     Each query holds a DB connection.                                            │
+│     With many concurrent requests, the connection pool drains.                   │
+│     Other requests wait → timeouts → application becomes unresponsive.           │
+│                                                                                  │
+│  3. DATABASE CPU/IO:                                                             │
+│     1001 separate queries = 1001 query plans, 1001 index lookups.               │
+│     1 JOIN query = 1 query plan, 1 optimized scan.                              │
+│     The database does far more work with N+1.                                    │
+│                                                                                  │
+│  4. MEMORY PRESSURE:                                                             │
+│     With EAGER, all children loaded into memory even if not needed.              │
+│     1000 parents × 10 children each = 10,000 entities in L1 cache.              │
+│                                                                                  │
+│  5. LATENCY IN API RESPONSE:                                                     │
+│     REST API that returns paginated users with addresses:                        │
+│     Without N+1 fix: 200ms+ response time.                                      │
+│     With N+1 fix (JOIN FETCH): 5-20ms response time.                            │
+│     10x-100x performance difference!                                             │
+│                                                                                  │
+│  Example:                                                                        │
+│    N = 100 parents, each with 5 children                                         │
+│    Without fix: 1 + 100 = 101 SQL queries                                        │
+│    With JOIN FETCH: 1 SQL query                                                  │
+│    With @BatchSize(25): 1 + 4 = 5 SQL queries                                   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### N+1 with Eager Loading — Multiple Parents with Child Collections
+
+When you load multiple parent entities that have `FetchType.EAGER` on a `@OneToMany` relationship, Hibernate fires 1 query for the parents and then N additional queries — one per parent — to load the children.
+
+**Entities:**
+
+```java
+@Entity
+@Table(name = "user_details")
+public class UserDetails {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+    private String email;
+
+    @OneToMany(mappedBy = "userDetails", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<UserAddress> userAddressList = new ArrayList<>();
+    //                                              ↑ EAGER = load children IMMEDIATELY
+
+    // getters, setters, constructors
+}
+
+@Entity
+@Table(name = "user_addresses")
+public class UserAddress {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String street;
+    private String city;
+    private String country;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private UserDetails userDetails;
+
+    // getters, setters, constructors
+}
+```
+
+```text
+Database:
+
+  user_details                           user_addresses
+  ┌────┬────────┬──────────────┐         ┌────┬──────────────┬──────────┬─────────┬─────────┐
+  │ id │ name   │ email        │         │ id │ street       │ city     │ country │ user_id │
+  ├────┼────────┼──────────────┤         ├────┼──────────────┼──────────┼─────────┼─────────┤
+  │  1 │ Alice  │ alice@ex.com │         │ 10 │ 123 Main St  │ New York │ USA     │    1    │
+  │  2 │ Bob    │ bob@ex.com   │         │ 11 │ 456 Oak Ave  │ Boston   │ USA     │    1    │
+  │  3 │ Charlie│ char@ex.com  │         │ 12 │ 789 Pine Rd  │ London   │ UK      │    2    │
+  └────┴────────┴──────────────┘         │ 13 │ 321 Elm St   │ Mumbai   │ India   │    3    │
+                                          │ 14 │ 654 Birch Dr │ Delhi    │ India   │    3    │
+                                          └────┴──────────────┴──────────┴─────────┴─────────┘
+```
+
+```java
+// Repository
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+    // Using built-in findAll()
+}
+
+// Service
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository userDetailsRepository;
+
+    public List<UserDetails> getAllUsers() {
+        return userDetailsRepository.findAll();
+        // You expect 1 query. You get 1 + 3 = 4 queries!
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  N+1 with FetchType.EAGER — What Hibernate does:                                 │
+│                                                                                  │
+│  You call: userDetailsRepository.findAll()                                       │
+│                                                                                  │
+│  QUERY 1 (the "1" in N+1) — Load all parents:                                   │
+│    SQL: SELECT ud.id, ud.name, ud.email                                          │
+│         FROM user_details ud                                                     │
+│    → Returns 3 users: [Alice(1), Bob(2), Charlie(3)]                             │
+│                                                                                  │
+│  Now Hibernate sees FetchType.EAGER on userAddressList.                          │
+│  It MUST load addresses NOW, before returning results.                           │
+│                                                                                  │
+│  QUERY 2 (N=1) — Load addresses for Alice (user_id = 1):                        │
+│    SQL: SELECT ua.id, ua.street, ua.city, ua.country, ua.user_id                 │
+│         FROM user_addresses ua                                                   │
+│         WHERE ua.user_id = 1                                                     │
+│    → Returns 2 addresses [10, 11]                                                │
+│                                                                                  │
+│  QUERY 3 (N=2) — Load addresses for Bob (user_id = 2):                          │
+│    SQL: SELECT ua.id, ua.street, ua.city, ua.country, ua.user_id                 │
+│         FROM user_addresses ua                                                   │
+│         WHERE ua.user_id = 2                                                     │
+│    → Returns 1 address [12]                                                      │
+│                                                                                  │
+│  QUERY 4 (N=3) — Load addresses for Charlie (user_id = 3):                      │
+│    SQL: SELECT ua.id, ua.street, ua.city, ua.country, ua.user_id                 │
+│         FROM user_addresses ua                                                   │
+│         WHERE ua.user_id = 3                                                     │
+│    → Returns 2 addresses [13, 14]                                                │
+│                                                                                  │
+│  TOTAL: 1 + 3 = 4 queries for 3 parents.                                        │
+│  If you had 1000 users → 1 + 1000 = 1001 queries!                               │
+│                                                                                  │
+│  Timeline:                                                                       │
+│  ┌────────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐                      │
+│  │ SELECT     │  │ SELECT   │  │ SELECT   │  │ SELECT   │                      │
+│  │ all users  │→│ addr for │→│ addr for │→│ addr for │                      │
+│  │ (1 query)  │  │ Alice    │  │ Bob      │  │ Charlie  │                      │
+│  └────────────┘  └──────────┘  └──────────┘  └──────────┘                      │
+│       "1"             N=1           N=2           N=3                            │
+│                                                                                  │
+│  This happens AUTOMATICALLY with EAGER. You don't call getAddresses().          │
+│  Hibernate fires N queries silently behind the scenes.                           │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### N+1 with JPQL JOIN — UserDetails → UserAddress (@OneToMany, Lazy)
+
+Now let's use `FetchType.LAZY` (default for @OneToMany) and a JPQL `JOIN` query. The N+1 still happens — just **deferred** to when you access the collection.
+
+**Entities (with LAZY this time):**
+
+```java
+@Entity
+@Table(name = "user_details")
+public class UserDetails {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+    private String email;
+
+    @OneToMany(mappedBy = "userDetails", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<UserAddress> userAddressList = new ArrayList<>();
+    //                                              ↑ LAZY = don't load until accessed
+
+    // getters, setters
+}
+```
+
+```java
+// Repository
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    @Query("SELECT ud FROM UserDetails ud JOIN ud.userAddressList ad WHERE ud.name = :userFirstName")
+    List<UserDetails> findUserDetailsWithAddress(@Param("userFirstName") String userFirstName);
+}
+```
+
+```java
+// Service — N+1 happens here
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository userDetailsRepository;
+
+    @Transactional(readOnly = true)
+    public List<UserDetails> getUsersWithAddresses(String name) {
+        List<UserDetails> users = userDetailsRepository.findUserDetailsWithAddress(name);
+        // QUERY 1: SELECT ud.* FROM user_details ud
+        //          JOIN user_addresses ad ON ud.id = ad.user_id
+        //          WHERE ud.name = 'Alice'
+        // → Returns 1 user (Alice) — addresses NOT loaded yet (LAZY proxy)
+
+        // Now we iterate and access the addresses:
+        for (UserDetails user : users) {
+            List<UserAddress> addresses = user.getUserAddressList();
+            // ↑ LAZY proxy triggered! Hibernate fires a query NOW.
+            System.out.println(user.getName() + " has " + addresses.size() + " addresses");
+        }
+        // If findUserDetailsWithAddress returned 5 users:
+        //   QUERY 2: SELECT * FROM user_addresses WHERE user_id = 1
+        //   QUERY 3: SELECT * FROM user_addresses WHERE user_id = 2
+        //   QUERY 4: SELECT * FROM user_addresses WHERE user_id = 3
+        //   QUERY 5: SELECT * FROM user_addresses WHERE user_id = 4
+        //   QUERY 6: SELECT * FROM user_addresses WHERE user_id = 5
+        //   → 5 extra queries! (N+1 problem)
+
+        return users;
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  N+1 with JPQL JOIN (FetchType.LAZY):                                            │
+│                                                                                  │
+│  JPQL: SELECT ud FROM UserDetails ud JOIN ud.userAddressList ad                  │
+│        WHERE ud.name = :userFirstName                                            │
+│                                                                                  │
+│  NOTE: JPQL "JOIN" is used ONLY for filtering (WHERE clause).                    │
+│        It does NOT load the child collection!                                    │
+│        The addresses are still LAZY proxies after this query.                    │
+│                                                                                  │
+│  QUERY 1 (the "1"):                                                              │
+│    SQL: SELECT ud.id, ud.name, ud.email                                          │
+│         FROM user_details ud                                                     │
+│         INNER JOIN user_addresses ad ON ud.id = ad.user_id                       │
+│         WHERE ud.name = 'Alice'                                                  │
+│    → Returns UserDetails(Alice) with userAddressList = LAZY PROXY (not loaded)   │
+│                                                                                  │
+│  When you call: user.getUserAddressList().size()                                 │
+│                                                                                  │
+│  QUERY 2 (N=1):                                                                 │
+│    SQL: SELECT ua.id, ua.street, ua.city, ua.country, ua.user_id                 │
+│         FROM user_addresses ua                                                   │
+│         WHERE ua.user_id = 1                                                     │
+│    → Loads addresses for Alice                                                   │
+│                                                                                  │
+│  If the query returned multiple users (e.g., 3 users named "Alice"):            │
+│                                                                                  │
+│  QUERY 3 (N=2): SELECT ... FROM user_addresses WHERE user_id = 2                │
+│  QUERY 4 (N=3): SELECT ... FROM user_addresses WHERE user_id = 3                │
+│                                                                                  │
+│  TOTAL: 1 + 3 = 4 queries.                                                      │
+│                                                                                  │
+│  Flow:                                                                           │
+│  ┌─────────────────┐      ┌──────────────────┐                                  │
+│  │ JPQL JOIN query  │      │ Returns users    │                                  │
+│  │ (1 SQL query)    │ ──>  │ with LAZY proxy  │                                  │
+│  │                  │      │ for addresses    │                                  │
+│  └─────────────────┘      └────────┬─────────┘                                  │
+│                                     │                                            │
+│                            for each user:                                        │
+│                            user.getUserAddressList()                              │
+│                                     │                                            │
+│                        ┌────────────┼────────────┐                               │
+│                        v            v            v                                │
+│                  ┌──────────┐ ┌──────────┐ ┌──────────┐                          │
+│                  │ SELECT   │ │ SELECT   │ │ SELECT   │                          │
+│                  │ addr for │ │ addr for │ │ addr for │                          │
+│                  │ user 1   │ │ user 2   │ │ user 3   │                          │
+│                  └──────────┘ └──────────┘ └──────────┘                          │
+│                      N=1          N=2          N=3                                │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Solution 1: JOIN FETCH — Load Everything in One Query
+
+`JOIN FETCH` tells Hibernate: "Not only JOIN for filtering, but also **FETCH** (load) the child collection into memory in the SAME query." This eliminates all N extra queries.
+
+```java
+// Repository — using JOIN FETCH
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    @Query("SELECT ud FROM UserDetails ud JOIN FETCH ud.userAddressList ad WHERE ud.name = :userFirstName")
+    List<UserDetails> findUserDetailsWithAddress(@Param("userFirstName") String userFirstName);
+    //                                    ↑ FETCH keyword added
+}
+```
+
+```java
+// Service — NO more N+1!
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository userDetailsRepository;
+
+    @Transactional(readOnly = true)
+    public List<UserDetails> getUsersWithAddresses(String name) {
+        List<UserDetails> users = userDetailsRepository.findUserDetailsWithAddress(name);
+        // ONLY 1 QUERY! All addresses loaded in the same query.
+
+        for (UserDetails user : users) {
+            List<UserAddress> addresses = user.getUserAddressList();
+            // ↑ NO lazy proxy trigger! Addresses are ALREADY loaded.
+            // NO additional SQL query fired here.
+            System.out.println(user.getName() + " has " + addresses.size() + " addresses");
+        }
+
+        return users;
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  JOIN FETCH — How it solves N+1:                                                 │
+│                                                                                  │
+│  JPQL: SELECT ud FROM UserDetails ud                                             │
+│        JOIN FETCH ud.userAddressList ad                                          │
+│        WHERE ud.name = :userFirstName                                            │
+│                                                                                  │
+│  SINGLE SQL QUERY generated:                                                     │
+│    SELECT ud.id, ud.name, ud.email,                                              │
+│           ad.id, ad.street, ad.city, ad.country, ad.user_id                      │
+│    FROM user_details ud                                                          │
+│    INNER JOIN user_addresses ad ON ud.id = ad.user_id                            │
+│    WHERE ud.name = 'Alice'                                                       │
+│                                                                                  │
+│  Result set (raw SQL rows):                                                      │
+│  ┌──────┬───────┬──────────────┬──────┬──────────────┬──────────┬─────────┐      │
+│  │ud.id │ud.name│ ud.email     │ ad.id│ ad.street    │ ad.city  │ad.country│     │
+│  ├──────┼───────┼──────────────┼──────┼──────────────┼──────────┼─────────┤      │
+│  │  1   │ Alice │ alice@ex.com │  10  │ 123 Main St  │ New York │ USA     │      │
+│  │  1   │ Alice │ alice@ex.com │  11  │ 456 Oak Ave  │ Boston   │ USA     │      │
+│  └──────┴───────┴──────────────┴──────┴──────────────┴──────────┴─────────┘      │
+│                                                                                  │
+│  Hibernate de-duplicates and builds:                                             │
+│    UserDetails(id=1, name="Alice") {                                             │
+│      userAddressList: [                                                          │
+│        UserAddress(id=10, street="123 Main St", city="New York"),                │
+│        UserAddress(id=11, street="456 Oak Ave", city="Boston")                   │
+│      ]                                                                           │
+│    }                                                                             │
+│                                                                                  │
+│  TOTAL QUERIES: 1  (instead of 1 + N)                                            │
+│                                                                                  │
+│  Before (JOIN):       1 + N queries    │   After (JOIN FETCH):  1 query          │
+│  ┌──────────────┐     ┌──────────┐     │   ┌─────────────────────────┐           │
+│  │ SELECT users │ ──> │ SELECT   │×N   │   │ SELECT users + addresses│           │
+│  └──────────────┘     │ addresses│     │   │ in ONE query            │           │
+│                       └──────────┘     │   └─────────────────────────┘           │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+JOIN vs JOIN FETCH — Comparison:
+
+  ┌──────────────────────────────────────┬────────────────────────────────────────┐
+  │ JOIN (regular)                       │ JOIN FETCH                             │
+  ├──────────────────────────────────────┼────────────────────────────────────────┤
+  │ Used for filtering (WHERE clause)    │ Used for filtering AND loading         │
+  │ Children are NOT loaded              │ Children ARE loaded in the same query  │
+  │ Children remain LAZY proxies         │ Children are fully initialized         │
+  │ Accessing children = N extra queries │ Accessing children = 0 extra queries   │
+  │ SELECT returns parent columns only   │ SELECT returns parent + child columns  │
+  │ N+1 problem remains                  │ N+1 problem SOLVED                     │
+  └──────────────────────────────────────┴────────────────────────────────────────┘
+
+  NOTE: JOIN FETCH cannot be used with Pageable directly.
+  Hibernate warns: "firstResult/maxResults specified with collection fetch; applying in memory!"
+  For pagination + JOIN FETCH, use a two-query approach or @EntityGraph.
+```
+
+---
+
+### Solution 2: @BatchSize — Batch the N Queries Into Fewer Queries
+
+`@BatchSize(size = N)` tells Hibernate: "Instead of loading children one parent at a time, load children for N parents in a single query using `IN (?, ?, ?, ...)`."
+
+This doesn't reduce to 1 query like JOIN FETCH, but it reduces from N to ⌈N/batchSize⌉.
+
+```java
+@Entity
+@Table(name = "user_details")
+public class UserDetails {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+    private String email;
+
+    @OneToMany(mappedBy = "userDetails", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @BatchSize(size = 10)   // ← load addresses for 10 users at a time
+    private List<UserAddress> userAddressList = new ArrayList<>();
+
+    // getters, setters
+}
+```
+
+```java
+// Repository — regular JPQL JOIN (NOT JOIN FETCH)
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    @Query("SELECT ud FROM UserDetails ud JOIN ud.userAddressList ad WHERE ud.name = :userFirstName")
+    List<UserDetails> findUserDetailsWithAddress(@Param("userFirstName") String userFirstName);
+}
+```
+
+```java
+// Service
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository userDetailsRepository;
+
+    @Transactional(readOnly = true)
+    public List<UserDetails> getUsersWithAddresses(String name) {
+        List<UserDetails> users = userDetailsRepository.findUserDetailsWithAddress(name);
+        // QUERY 1: SELECT ud.* FROM user_details ud
+        //          JOIN user_addresses ad ON ud.id = ad.user_id
+        //          WHERE ud.name = 'Alice'
+        // → Returns users (addresses are still LAZY proxies)
+
+        for (UserDetails user : users) {
+            user.getUserAddressList().size();  // triggers batch load
+        }
+        // With @BatchSize(size = 10):
+        // If 25 users returned, instead of 25 individual queries:
+        //   QUERY 2: SELECT * FROM user_addresses WHERE user_id IN (1,2,3,4,5,6,7,8,9,10)
+        //   QUERY 3: SELECT * FROM user_addresses WHERE user_id IN (11,12,13,14,15,16,17,18,19,20)
+        //   QUERY 4: SELECT * FROM user_addresses WHERE user_id IN (21,22,23,24,25)
+        // Total: 1 + 3 = 4 queries instead of 1 + 25 = 26!
+
+        return users;
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @BatchSize(size = 10) — How it works:                                           │
+│                                                                                  │
+│  Without @BatchSize (N+1):                                                       │
+│    Query 1: SELECT users → 25 users                                              │
+│    Query 2: SELECT addresses WHERE user_id = 1                                   │
+│    Query 3: SELECT addresses WHERE user_id = 2                                   │
+│    ...                                                                           │
+│    Query 26: SELECT addresses WHERE user_id = 25                                 │
+│    TOTAL: 26 queries                                                             │
+│                                                                                  │
+│  With @BatchSize(size = 10):                                                     │
+│    Query 1: SELECT users → 25 users                                              │
+│    Query 2: SELECT addresses WHERE user_id IN (1,2,3,4,5,6,7,8,9,10)            │
+│    Query 3: SELECT addresses WHERE user_id IN (11,12,13,14,15,16,17,18,19,20)    │
+│    Query 4: SELECT addresses WHERE user_id IN (21,22,23,24,25)                   │
+│    TOTAL: 4 queries                                                              │
+│                                                                                  │
+│  Reduction: from 26 queries to 4 queries!                                        │
+│                                                                                  │
+│  Formula: Total queries = 1 + ⌈N / batchSize⌉                                   │
+│    N = 25, batchSize = 10 → 1 + ⌈25/10⌉ = 1 + 3 = 4                            │
+│    N = 100, batchSize = 25 → 1 + ⌈100/25⌉ = 1 + 4 = 5                          │
+│    N = 1000, batchSize = 50 → 1 + ⌈1000/50⌉ = 1 + 20 = 21                      │
+│                                                                                  │
+│  Timeline comparison:                                                            │
+│                                                                                  │
+│  Without @BatchSize (25 users):                                                  │
+│  ┌──────┐ ┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐...┌──┐                │
+│  │users │ │a1││a2││a3││a4││a5││a6││a7││a8││a9││10││11│   │25│                │
+│  └──────┘ └──┘└──┘└──┘└──┘└──┘└──┘└──┘└──┘└──┘└──┘└──┘...└──┘                │
+│  26 queries total                                                                │
+│                                                                                  │
+│  With @BatchSize(10):                                                            │
+│  ┌──────┐ ┌─────────────────┐ ┌─────────────────┐ ┌──────────┐                  │
+│  │users │ │ addr IN(1..10)  │ │ addr IN(11..20) │ │IN(21..25)│                  │
+│  └──────┘ └─────────────────┘ └─────────────────┘ └──────────┘                  │
+│  4 queries total                                                                 │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Does @BatchSize work with FetchType.EAGER?**
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @BatchSize + FetchType.EAGER — YES, it works!                                   │
+│                                                                                  │
+│  @OneToMany(mappedBy = "userDetails", fetch = FetchType.EAGER)                   │
+│  @BatchSize(size = 10)                                                           │
+│  private List<UserAddress> userAddressList;                                      │
+│                                                                                  │
+│  With EAGER, Hibernate loads children IMMEDIATELY after loading parents.         │
+│  Without @BatchSize: fires N individual queries (1 per parent).                  │
+│  With @BatchSize(10): batches the eager loading into chunks of 10.               │
+│                                                                                  │
+│  findAll() → 25 users                                                            │
+│                                                                                  │
+│  Without @BatchSize (EAGER):                                                     │
+│    Query 1: SELECT users                                                         │
+│    Query 2-26: SELECT addresses WHERE user_id = ? (× 25)                         │
+│    Total: 26                                                                     │
+│                                                                                  │
+│  With @BatchSize(10) + EAGER:                                                    │
+│    Query 1: SELECT users                                                         │
+│    Query 2: SELECT addresses WHERE user_id IN (1,2,...,10)   ← auto-triggered    │
+│    Query 3: SELECT addresses WHERE user_id IN (11,12,...,20) ← auto-triggered    │
+│    Query 4: SELECT addresses WHERE user_id IN (21,...,25)    ← auto-triggered    │
+│    Total: 4                                                                      │
+│                                                                                  │
+│  The difference from LAZY:                                                       │
+│  - EAGER + @BatchSize: batched queries fire IMMEDIATELY (no access needed)       │
+│  - LAZY + @BatchSize: batched queries fire when you ACCESS the collection        │
+│  - The SQL is the same — only the TIMING differs                                │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Solution 3: @EntityGraph — Override Fetch Strategy Per Query
+
+`@EntityGraph(attributePaths = "userAddressList")` tells JPA: "For this specific query, fetch `userAddressList` eagerly using a LEFT JOIN — regardless of the entity's FetchType annotation."
+
+This is placed on **repository methods** (both derived queries and @Query methods).
+
+```java
+// Repository — using @EntityGraph on a derived query
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // Derived query with @EntityGraph — eagerly fetches addresses in ONE query
+    @EntityGraph(attributePaths = "userAddressList")
+    List<UserDetails> findByName(String name);
+    // Without @EntityGraph:
+    //   SQL 1: SELECT ud.* FROM user_details ud WHERE ud.name = ?
+    //   SQL 2-N: SELECT ua.* FROM user_addresses ua WHERE ua.user_id = ?  (per user)
+    //
+    // With @EntityGraph:
+    //   SQL: SELECT ud.id, ud.name, ud.email,
+    //               ua.id, ua.street, ua.city, ua.country, ua.user_id
+    //        FROM user_details ud
+    //        LEFT JOIN user_addresses ua ON ud.id = ua.user_id
+    //        WHERE ud.name = ?
+    //   → 1 query! Addresses loaded via LEFT JOIN.
+
+    // @EntityGraph on findAll (override the built-in method)
+    @EntityGraph(attributePaths = "userAddressList")
+    @Override
+    List<UserDetails> findAll();
+    // SQL: SELECT ud.*, ua.*
+    //      FROM user_details ud
+    //      LEFT JOIN user_addresses ua ON ud.id = ua.user_id
+
+    // @EntityGraph on a @Query method — also works!
+    @EntityGraph(attributePaths = "userAddressList")
+    @Query("SELECT ud FROM UserDetails ud WHERE ud.name = :name")
+    List<UserDetails> findUsersByName(@Param("name") String name);
+    // SQL: SELECT ud.*, ua.*
+    //      FROM user_details ud
+    //      LEFT JOIN user_addresses ua ON ud.id = ua.user_id
+    //      WHERE ud.name = ?
+
+    // Multiple attribute paths — fetch multiple collections/associations
+    @EntityGraph(attributePaths = {"userAddressList", "orders"})
+    List<UserDetails> findByEmail(String email);
+    // SQL: SELECT ud.*, ua.*, o.*
+    //      FROM user_details ud
+    //      LEFT JOIN user_addresses ua ON ud.id = ua.user_id
+    //      LEFT JOIN orders o ON ud.id = o.user_id
+    //      WHERE ud.email = ?
+}
+```
+
+```java
+// Service — uses @EntityGraph method
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository userDetailsRepository;
+
+    @Transactional(readOnly = true)
+    public List<UserDetails> getUsersByName(String name) {
+        List<UserDetails> users = userDetailsRepository.findByName(name);
+        // ONLY 1 SQL query executed (LEFT JOIN includes addresses)
+
+        for (UserDetails user : users) {
+            // No lazy proxy trigger — addresses already loaded
+            System.out.println(user.getName() + " has "
+                + user.getUserAddressList().size() + " addresses");
+            // NO additional SQL! Everything loaded in the initial query.
+        }
+
+        return users;
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @EntityGraph — How it works:                                                    │
+│                                                                                  │
+│  @EntityGraph(attributePaths = "userAddressList")                                │
+│  List<UserDetails> findByName(String name);                                      │
+│                                                                                  │
+│  At query time, JPA sees the @EntityGraph and:                                   │
+│    1. Ignores the entity's FetchType (LAZY or EAGER — doesn't matter)            │
+│    2. Adds a LEFT JOIN for "userAddressList" to the generated SQL                │
+│    3. Fetches parent + child data in ONE query                                   │
+│                                                                                  │
+│  Generated SQL:                                                                  │
+│    SELECT ud.id, ud.name, ud.email,                                              │
+│           ua.id, ua.street, ua.city, ua.country, ua.user_id                      │
+│    FROM user_details ud                                                          │
+│    LEFT JOIN user_addresses ua ON ud.id = ua.user_id                             │
+│    WHERE ud.name = 'Alice'                                                       │
+│                                                                                  │
+│  NOTE: @EntityGraph uses LEFT JOIN (not INNER JOIN)                               │
+│  This means users WITHOUT addresses are also returned (with null address list).  │
+│  JOIN FETCH uses INNER JOIN by default — users without addresses are excluded.   │
+│                                                                                  │
+│  ┌─────────────────────────────┬───────────────────────────────────┐             │
+│  │ Without @EntityGraph        │ With @EntityGraph                  │             │
+│  ├─────────────────────────────┼───────────────────────────────────┤             │
+│  │ SQL 1: SELECT users         │ SQL 1: SELECT users LEFT JOIN     │             │
+│  │ SQL 2: SELECT addr user 1   │        addresses                  │             │
+│  │ SQL 3: SELECT addr user 2   │ (1 query total)                   │             │
+│  │ SQL 4: SELECT addr user 3   │                                   │             │
+│  │ (4 queries total)           │                                   │             │
+│  └─────────────────────────────┴───────────────────────────────────┘             │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Why JPA Tries to Optimize and What Happens with JOIN FETCH / @BatchSize / @EntityGraph
+
+JPA (Hibernate) defaults to **lazy loading** as an optimization strategy: don't load data you don't need. This is the right default for most cases. But when you DO need the related data, lazy loading backfires into the N+1 problem.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Why JPA defaults to LAZY (optimization):                                        │
+│                                                                                  │
+│  Scenario: Employee entity has 5 relationships:                                  │
+│    @OneToMany  addresses                                                         │
+│    @OneToMany  orders                                                            │
+│    @ManyToMany projects                                                          │
+│    @ManyToOne  department                                                        │
+│    @OneToOne   profilePicture                                                    │
+│                                                                                  │
+│  If ALL were EAGER:                                                              │
+│    findById(1) would fire:                                                       │
+│      SQL 1: SELECT employee WHERE id = 1                                         │
+│      SQL 2: SELECT addresses WHERE employee_id = 1                               │
+│      SQL 3: SELECT orders WHERE employee_id = 1                                  │
+│      SQL 4: SELECT projects via join table WHERE employee_id = 1                 │
+│      SQL 5: SELECT department WHERE id = ?                                       │
+│      SQL 6: SELECT profilePicture WHERE employee_id = 1                          │
+│    → 6 queries every time, even if you only need the employee's name!            │
+│                                                                                  │
+│  With LAZY (default for collections):                                            │
+│    findById(1) fires only:                                                       │
+│      SQL 1: SELECT employee WHERE id = 1                                         │
+│    → 1 query. Other data loaded ONLY when accessed.                              │
+│    → If API only needs employee name → no wasted queries.                        │
+│                                                                                  │
+│  JPA's philosophy: "Load the minimum. Fetch more on demand."                     │
+│  This is optimal for SINGLE entity access.                                       │
+│  It becomes a problem for BULK access (loading many parents + children).         │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**What each solution does to override JPA's default:**
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  What happens when you add JOIN FETCH / @BatchSize / @EntityGraph:               │
+│                                                                                  │
+│  JPA's default behavior (LAZY):                                                  │
+│    "Load parent. Create proxy for children. Load children only on access."       │
+│    → Minimal initial load, but N+1 on bulk access.                               │
+│                                                                                  │
+│  JOIN FETCH:                                                                     │
+│    "Override LAZY. Load parent AND children in ONE SQL with INNER JOIN."          │
+│    → Maximum efficiency for known data needs.                                    │
+│    → But: INNER JOIN excludes parents without children.                          │
+│    → But: Can't use with Pageable (pagination done in memory).                   │
+│    → But: Multiple JOIN FETCH on collections = Cartesian product.               │
+│                                                                                  │
+│  @BatchSize(size = N):                                                           │
+│    "Keep LAZY, but when children are accessed, load them in batches of N."       │
+│    → Doesn't change to 1 query, but reduces from N to ⌈N/batchSize⌉.            │
+│    → Works with LAZY and EAGER both.                                             │
+│    → Works with Pageable (no in-memory pagination issue).                        │
+│    → Transparent — no change to repository methods.                              │
+│    → But: Still more than 1 query.                                               │
+│                                                                                  │
+│  @EntityGraph(attributePaths = "..."):                                           │
+│    "Override LAZY for THIS specific query. Fetch specified paths via LEFT JOIN." │
+│    → Per-method control. Same entity, different fetch strategies per use case.   │
+│    → Uses LEFT JOIN (includes parents without children).                         │
+│    → Works with derived queries and @Query.                                      │
+│    → Works with Pageable.                                                        │
+│    → But: LEFT JOIN may return duplicate parents (use DISTINCT).                 │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Code comparison — all three solutions side by side:**
+
+```java
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // PROBLEM — N+1 with regular JOIN (children not loaded)
+    @Query("SELECT ud FROM UserDetails ud JOIN ud.userAddressList ad WHERE ud.name = :name")
+    List<UserDetails> findWithN1Problem(@Param("name") String name);
+    // SQL 1: SELECT ud.* ... INNER JOIN ... WHERE name = ?      (1 query)
+    // SQL 2..N: SELECT ua.* WHERE user_id = ?                    (N queries on access)
+
+    // SOLUTION 1: JOIN FETCH — 1 query total
+    @Query("SELECT ud FROM UserDetails ud JOIN FETCH ud.userAddressList WHERE ud.name = :name")
+    List<UserDetails> findWithJoinFetch(@Param("name") String name);
+    // SQL: SELECT ud.*, ua.* ... INNER JOIN ... WHERE name = ?   (1 query)
+
+    // SOLUTION 2: @BatchSize — defined on entity, no repo change needed
+    // Just use the same query as the N+1 version.
+    // @BatchSize(size=10) on the entity field handles the batching.
+
+    // SOLUTION 3: @EntityGraph — 1 query total (LEFT JOIN)
+    @EntityGraph(attributePaths = "userAddressList")
+    @Query("SELECT ud FROM UserDetails ud WHERE ud.name = :name")
+    List<UserDetails> findWithEntityGraph(@Param("name") String name);
+    // SQL: SELECT ud.*, ua.* ... LEFT JOIN ... WHERE name = ?    (1 query)
+}
+```
+
+```text
+Comparison table — all N+1 solutions:
+
+  Scenario: 100 parents, each with children, @BatchSize(size = 25)
+
+  ┌──────────────────────┬──────────┬────────────┬──────────────────────────────────┐
+  │ Approach             │ Queries  │ JOIN type  │ Trade-offs                        │
+  ├──────────────────────┼──────────┼────────────┼──────────────────────────────────┤
+  │ No fix (N+1)         │ 101      │ —          │ Worst performance                │
+  ├──────────────────────┼──────────┼────────────┼──────────────────────────────────┤
+  │ JOIN FETCH           │ 1        │ INNER JOIN │ Best performance.                │
+  │                      │          │            │ No Pageable support.             │
+  │                      │          │            │ Excludes parents w/o children.   │
+  │                      │          │            │ Cartesian product with multiple  │
+  │                      │          │            │ collection fetches.              │
+  ├──────────────────────┼──────────┼────────────┼──────────────────────────────────┤
+  │ @BatchSize(25)       │ 5        │ —          │ Good performance.                │
+  │                      │          │ (IN clause)│ Works with Pageable.             │
+  │                      │          │            │ Transparent (entity-level).      │
+  │                      │          │            │ Still multiple queries.           │
+  ├──────────────────────┼──────────┼────────────┼──────────────────────────────────┤
+  │ @EntityGraph         │ 1        │ LEFT JOIN  │ Best per-method control.         │
+  │                      │          │            │ Works with Pageable.             │
+  │                      │          │            │ Includes parents w/o children.   │
+  │                      │          │            │ May need DISTINCT for dupes.     │
+  └──────────────────────┴──────────┴────────────┴──────────────────────────────────┘
+
+  When to use which:
+
+  ┌──────────────────────────────────────────┬──────────────────────────────────────┐
+  │ Use Case                                 │ Best Solution                        │
+  ├──────────────────────────────────────────┼──────────────────────────────────────┤
+  │ Single collection, no pagination needed  │ JOIN FETCH                           │
+  │ Need pagination + eager child loading    │ @EntityGraph                         │
+  │ Global optimization, minimal code change │ @BatchSize                           │
+  │ Multiple collections on same entity      │ @BatchSize (avoid Cartesian product) │
+  │ Different fetch strategies per use case  │ @EntityGraph (per-method control)    │
+  └──────────────────────────────────────────┴──────────────────────────────────────┘
+```
+
+```text
+How JPA's optimization philosophy changes with each solution:
+
+  DEFAULT (LAZY — JPA's optimization):
+  ┌──────────────────────────────────────────────────────────────────┐
+  │  "I'll load the MINIMUM. If you need children, ask me later."   │
+  │                                                                  │
+  │  findAll() → SELECT users only                                   │
+  │  user.getAddresses() → SELECT addresses WHERE user_id = ?       │
+  │  user.getOrders() → SELECT orders WHERE user_id = ?             │
+  │                                                                  │
+  │  RESULT: Many small queries. Efficient if you don't need all    │
+  │  relationships. Terrible if you do.                              │
+  └──────────────────────────────────────────────────────────────────┘
+
+  JOIN FETCH — "Override LAZY, load everything NOW in ONE query":
+  ┌──────────────────────────────────────────────────────────────────┐
+  │  SELECT u.*, a.* FROM users u                                    │
+  │  INNER JOIN addresses a ON u.id = a.user_id                      │
+  │                                                                  │
+  │  You tell JPA: "I KNOW I need the addresses. Load them now."    │
+  │  JPA abandons its lazy strategy for this query.                  │
+  │  ONE big query instead of many small ones.                       │
+  └──────────────────────────────────────────────────────────────────┘
+
+  @BatchSize — "Keep LAZY, but be smarter about batch loading":
+  ┌──────────────────────────────────────────────────────────────────┐
+  │  SELECT users → 100 users loaded (addresses still lazy)          │
+  │  user[0].getAddresses() triggered →                              │
+  │    Instead of: SELECT WHERE user_id = 1 (just this one)         │
+  │    Hibernate: SELECT WHERE user_id IN (1,2,...,25) (batch of 25)│
+  │                                                                  │
+  │  You tell JPA: "Stay lazy, but when you DO load, do it in bulk."│
+  │  JPA optimizes the lazy loading itself.                          │
+  └──────────────────────────────────────────────────────────────────┘
+
+  @EntityGraph — "Override LAZY for THIS specific method":
+  ┌──────────────────────────────────────────────────────────────────┐
+  │  @EntityGraph(attributePaths = "userAddressList")                 │
+  │  List<UserDetails> findByName(name);                             │
+  │                                                                  │
+  │  SELECT u.*, a.* FROM users u                                    │
+  │  LEFT JOIN addresses a ON u.id = a.user_id                       │
+  │  WHERE u.name = ?                                                │
+  │                                                                  │
+  │  You tell JPA: "For findByName, I need addresses. Fetch them."  │
+  │  Other methods (findById, findAll) still use LAZY.               │
+  │  Per-method override of fetch strategy.                          │
+  └──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+
+### What Is @NamedQuery?
+
+`@NamedQuery` is a JPA annotation placed on the **entity class** (not the repository) that defines a **pre-compiled, named JPQL query**. The query is validated at application startup, giving you early error detection instead of runtime failures.
+
+```java
+@Entity
+@Table(name = "user_details")
+@NamedQuery(
+    name = "UserDetails.findByName",
+    query = "SELECT ud FROM UserDetails ud WHERE ud.name = :name"
+)
+@NamedQuery(
+    name = "UserDetails.findByEmailAndActive",
+    query = "SELECT ud FROM UserDetails ud WHERE ud.email = :email AND ud.active = true"
+)
+@NamedQuery(
+    name = "UserDetails.countByCountry",
+    query = "SELECT COUNT(ud) FROM UserDetails ud JOIN ud.userAddressList a WHERE a.country = :country"
+)
+public class UserDetails {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String name;
+    private String email;
+    private Boolean active;
+
+    @OneToMany(mappedBy = "userDetails", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<UserAddress> userAddressList = new ArrayList<>();
+
+    // getters, setters
+}
+```
+
+**Using @NamedQuery in a repository:**
+
+```java
+// Spring Data JPA automatically matches @NamedQuery by convention:
+//   Entity name + "." + method name = NamedQuery name
+//   UserDetails.findByName matches → @NamedQuery(name = "UserDetails.findByName")
+
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // Spring finds @NamedQuery(name = "UserDetails.findByName") and uses its JPQL
+    List<UserDetails> findByName(@Param("name") String name);
+    // JPQL (from @NamedQuery): SELECT ud FROM UserDetails ud WHERE ud.name = :name
+    // SQL: SELECT ud.* FROM user_details ud WHERE ud.name = ?
+
+    // Spring finds @NamedQuery(name = "UserDetails.findByEmailAndActive")
+    List<UserDetails> findByEmailAndActive(@Param("email") String email);
+    // JPQL (from @NamedQuery): SELECT ud FROM UserDetails ud
+    //                          WHERE ud.email = :email AND ud.active = true
+
+    // Spring finds @NamedQuery(name = "UserDetails.countByCountry")
+    long countByCountry(@Param("country") String country);
+    // JPQL (from @NamedQuery): SELECT COUNT(ud) FROM UserDetails ud
+    //                          JOIN ud.userAddressList a WHERE a.country = :country
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @NamedQuery — Resolution Order in Spring Data JPA:                              │
+│                                                                                  │
+│  When Spring sees a method in a repository, it looks for the query in this       │
+│  order:                                                                          │
+│                                                                                  │
+│  1. @Query annotation on the method → highest priority                           │
+│  2. @NamedQuery with name = "EntityName.methodName" → second priority            │
+│  3. Derive query from method name (PartTree) → fallback                         │
+│                                                                                  │
+│  If you have BOTH @Query on the method AND a matching @NamedQuery:               │
+│  → @Query wins. @NamedQuery is ignored.                                          │
+│                                                                                  │
+│  If you have a matching @NamedQuery AND the method name is derivable:            │
+│  → @NamedQuery wins. Spring doesn't parse the method name.                       │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Why should we use @NamedQuery?**
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Why use @NamedQuery:                                                            │
+│                                                                                  │
+│  1. STARTUP VALIDATION — queries are parsed and validated when the application   │
+│     starts. If there's a typo in the JPQL (e.g., wrong field name), you get     │
+│     an error at STARTUP, not at runtime when a user hits the API.                │
+│                                                                                  │
+│     @NamedQuery(query = "SELECT ud FROM UserDetails ud WHERE ud.naem = :name")   │
+│                                                                      ↑ typo!     │
+│     → Application FAILS TO START with: "Could not resolve property: naem"        │
+│     → You catch the error BEFORE deployment.                                     │
+│                                                                                  │
+│     Compare with @Query on repository:                                           │
+│     @Query also validates at startup → same benefit.                             │
+│                                                                                  │
+│  2. PRE-COMPILATION — Hibernate parses and compiles @NamedQuery ONCE at startup. │
+│     On subsequent calls, it reuses the compiled query plan.                      │
+│     @Query methods also get this benefit in practice.                            │
+│                                                                                  │
+│  3. CENTRALIZED on entity — queries live with the entity they operate on.        │
+│     Good for: seeing all queries for an entity in one place.                     │
+│     Bad for: entity class becomes cluttered with many @NamedQuery annotations.   │
+│                                                                                  │
+│  4. REUSABLE — multiple repository methods or EntityManager calls can use the    │
+│     same @NamedQuery by name.                                                    │
+│                                                                                  │
+│  5. LEGACY / JPA STANDARD — @NamedQuery is part of the JPA specification.        │
+│     Works with any JPA provider (Hibernate, EclipseLink, etc.).                  │
+│     @Query is Spring Data JPA specific (not portable to non-Spring apps).        │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+@NamedQuery vs @Query comparison:
+
+  ┌──────────────────────────────────────┬────────────────────────────────────────┐
+  │ @NamedQuery                          │ @Query                                 │
+  ├──────────────────────────────────────┼────────────────────────────────────────┤
+  │ Defined on the Entity class          │ Defined on the Repository method       │
+  │ JPA standard annotation              │ Spring Data JPA annotation             │
+  │ Validated at startup                 │ Validated at startup                   │
+  │ Pre-compiled once                    │ Pre-compiled once                      │
+  │ Name convention: Entity.methodName   │ Directly on the method (no naming)     │
+  │ Can clutter entity with many queries │ Query stays with the method (cleaner)  │
+  │ Reusable across multiple repos       │ Tied to one method                     │
+  │ Portable to non-Spring JPA apps      │ Spring-specific                        │
+  │ Matched by naming convention         │ Explicitly annotated                   │
+  │ Older, JPA 1.0+ standard             │ Modern, Spring Data convenience        │
+  ├──────────────────────────────────────┼────────────────────────────────────────┤
+  │ Most teams prefer @Query on the      │ ← RECOMMENDED for Spring Data JPA     │
+  │ repository. @NamedQuery is used in   │    projects. Query lives next to the   │
+  │ legacy codebases or pure JPA apps.   │    method that uses it.                │
+  └──────────────────────────────────────┴────────────────────────────────────────┘
+```
