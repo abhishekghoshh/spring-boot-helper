@@ -11837,3 +11837,5263 @@ public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> 
   │ legacy codebases or pure JPA apps.   │    method that uses it.                │
   └──────────────────────────────────────┴────────────────────────────────────────┘
 ```
+
+---
+
+
+### What Is a Native Query?
+
+A **Native Query** is a raw SQL query that you write directly in the database's SQL dialect (MySQL, PostgreSQL, Oracle, etc.) instead of JPQL. It bypasses Hibernate's entity-based query translation and sends the SQL **directly to the database**.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  JPQL vs Native Query — The Key Difference:                                      │
+│                                                                                  │
+│  JPQL:                                                                           │
+│    @Query("SELECT e FROM Employee e WHERE e.salary > :sal")                      │
+│    → Works on ENTITY names and FIELD names                                       │
+│    → Hibernate translates to SQL for YOUR database dialect                       │
+│    → DB-independent: same query works on MySQL, PostgreSQL, Oracle               │
+│    → Goes through Hibernate's query parser → entity model → SQL generator        │
+│                                                                                  │
+│  Native Query:                                                                   │
+│    @Query(value = "SELECT * FROM employees WHERE salary > :sal",                 │
+│           nativeQuery = true)                                                    │
+│    → Works on TABLE names and COLUMN names                                       │
+│    → SQL goes DIRECTLY to the database — no Hibernate translation               │
+│    → DB-DEPENDENT: query may break if you switch databases                      │
+│    → Bypasses Hibernate's query parser — you write the exact SQL                 │
+│                                                                                  │
+│  Flow comparison:                                                                │
+│                                                                                  │
+│  JPQL:                                                                           │
+│    @Query("SELECT e FROM Employee e")                                            │
+│       │                                                                          │
+│       v                                                                          │
+│    Hibernate JPQL Parser → reads entity metadata → generates SQL                │
+│       │                                                                          │
+│       v                                                                          │
+│    SQL: SELECT e.id, e.emp_name, e.salary FROM employees e                       │
+│       │                                                                          │
+│       v                                                                          │
+│    JDBC → Database                                                               │
+│                                                                                  │
+│  Native Query:                                                                   │
+│    @Query(value = "SELECT * FROM employees", nativeQuery = true)                 │
+│       │                                                                          │
+│       v                                                                          │
+│    Spring sends SQL DIRECTLY to JDBC (NO Hibernate JPQL parsing)                │
+│       │                                                                          │
+│       v                                                                          │
+│    JDBC → Database                                                               │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Native Query Is Plain SQL — Database Dependent
+
+Since native queries use raw SQL with actual table and column names, they are **tied to the specific database**. If you switch from MySQL to PostgreSQL (or vice versa), your native queries may break because SQL dialects differ.
+
+**Entity and Database Table:**
+
+```java
+@Entity
+@Table(name = "user_details")
+public class UserDetails {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "user_name")
+    private String name;
+
+    @Column(name = "email")
+    private String email;
+
+    @Column(name = "phone")
+    private String phone;
+
+    @Column(name = "active")
+    private Boolean active;
+
+    // getters, setters, constructors
+}
+```
+
+```text
+Database Table — user_details:
+
+  ┌────┬───────────┬──────────────────┬────────────────┬────────┐
+  │ id │ user_name │ email            │ phone          │ active │
+  ├────┼───────────┼──────────────────┼────────────────┼────────┤
+  │  1 │ Alice     │ alice@ex.com     │ +1-555-0101    │ true   │
+  │  2 │ Bob       │ bob@ex.com       │ +1-555-0102    │ true   │
+  │  3 │ Charlie   │ charlie@ex.com   │ +1-555-0103    │ false  │
+  │  4 │ Diana     │ diana@ex.com     │ +1-555-0104    │ true   │
+  └────┴───────────┴──────────────────┴────────────────┴────────┘
+```
+
+```java
+// Repository — Native Query uses TABLE and COLUMN names
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // JPQL — uses entity field name "name" (Java field)
+    @Query("SELECT u FROM UserDetails u WHERE u.name = :name")
+    List<UserDetails> findByNameJpql(@Param("name") String name);
+    // Hibernate generates: SELECT u.id, u.user_name, u.email, u.phone, u.active
+    //                      FROM user_details u WHERE u.user_name = ?
+
+    // Native Query — uses column name "user_name" (database column)
+    @Query(value = "SELECT * FROM user_details WHERE user_name = :name",
+           nativeQuery = true)
+    List<UserDetails> findByNameNative(@Param("name") String name);
+    // SQL sent directly: SELECT * FROM user_details WHERE user_name = ?
+    // NO Hibernate translation — this IS the final SQL.
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Why Native Query is DB-dependent — real examples:                                │
+│                                                                                  │
+│  MySQL:                                                                          │
+│    SELECT * FROM user_details LIMIT 10 OFFSET 0                                  │
+│    SELECT IF(active, 'Yes', 'No') FROM user_details                              │
+│    SELECT JSON_EXTRACT(metadata, '$.key') FROM user_details                      │
+│                                                                                  │
+│  PostgreSQL:                                                                     │
+│    SELECT * FROM user_details LIMIT 10 OFFSET 0  (same — lucky!)                │
+│    SELECT CASE WHEN active THEN 'Yes' ELSE 'No' END FROM user_details            │
+│    SELECT metadata->>'key' FROM user_details   (JSONB operator)                  │
+│                                                                                  │
+│  Oracle:                                                                         │
+│    SELECT * FROM user_details WHERE ROWNUM <= 10  (no LIMIT!)                    │
+│    SELECT DECODE(active, 1, 'Yes', 'No') FROM user_details                      │
+│    SELECT JSON_VALUE(metadata, '$.key') FROM user_details                        │
+│                                                                                  │
+│  If you wrote a MySQL native query with LIMIT and later switched to Oracle:      │
+│  → Query BREAKS at runtime. Oracle doesn't have LIMIT.                           │
+│                                                                                  │
+│  JPQL doesn't have this problem:                                                 │
+│    JPQL: SELECT u FROM UserDetails u  (with Pageable)                            │
+│    → MySQL:  ... LIMIT 10 OFFSET 0                                               │
+│    → Oracle: ... FETCH FIRST 10 ROWS ONLY                                        │
+│    → Hibernate handles the dialect difference automatically.                     │
+│                                                                                  │
+│  RULE: If your application might switch databases → prefer JPQL.                 │
+│        If your application is locked to one DB → native query is fine.           │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### No Caching, Lazy Loading, or Entity Lifecycle Management
+
+When you use a native query, Hibernate's **Persistence Context** features are limited. The result may be mapped to entities, but certain behaviors are bypassed or weakened.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  What Native Query BYPASSES:                                                     │
+│                                                                                  │
+│  1. NO JPQL QUERY CACHE:                                                         │
+│     JPQL queries can be cached by Hibernate's query cache (2nd-level cache).     │
+│     Native queries are NOT eligible for JPQL query caching.                      │
+│     Each call hits the database directly.                                        │
+│                                                                                  │
+│  2. LAZY LOADING MAY NOT WORK AS EXPECTED:                                       │
+│     If your native SELECT returns only some columns:                             │
+│       SELECT user_name, phone FROM user_details                                  │
+│     The result is NOT a managed entity — it's raw data.                          │
+│     Relationships like @OneToMany on UserDetails WON'T be lazy-loadable.        │
+│     There's no proxy — just raw column values.                                   │
+│                                                                                  │
+│     If SELECT * is used and mapped to entity → entity IS managed.               │
+│     Lazy loading works on managed entities returned from native queries.        │
+│                                                                                  │
+│  3. NO DIRTY CHECKING for partial results:                                       │
+│     If you return a DTO or Object[] from native query → no entity managed.      │
+│     Hibernate won't track changes. No automatic UPDATE on flush.                │
+│     If you return a full entity (SELECT *) → dirty checking works.              │
+│                                                                                  │
+│  4. NO AUTOMATIC SQL TRANSLATION:                                                │
+│     JPQL: Hibernate reads @Column(name="user_name") and maps field → column.    │
+│     Native: YOU must use the correct column names in the SQL.                    │
+│     If you rename a column in DB, JPQL auto-adjusts. Native breaks.             │
+│                                                                                  │
+│  5. NO ENTITY LIFECYCLE EVENTS for non-entity results:                           │
+│     @PrePersist, @PostLoad, @PreUpdate etc. fire for managed entities.           │
+│     If native query returns Object[] or DTO → no lifecycle events.              │
+│     If native query returns full entity (SELECT *) → @PostLoad fires.           │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```java
+// Demonstration — entity lifecycle with native vs JPQL
+@Entity
+@Table(name = "user_details")
+public class UserDetails {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "user_name")
+    private String name;
+
+    @Column(name = "email")
+    private String email;
+
+    @Column(name = "phone")
+    private String phone;
+
+    @Column(name = "active")
+    private Boolean active;
+
+    @OneToMany(mappedBy = "userDetails", fetch = FetchType.LAZY)
+    private List<UserAddress> userAddressList;
+
+    @PostLoad
+    public void onLoad() {
+        System.out.println("Entity loaded: " + this.name);
+    }
+
+    // getters, setters
+}
+```
+
+```java
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // Native — SELECT * → full entity → managed → lazy loading works, @PostLoad fires
+    @Query(value = "SELECT * FROM user_details WHERE active = true", nativeQuery = true)
+    List<UserDetails> findActiveNative();
+    // Returns managed entities. Lazy loading of userAddressList works.
+    // @PostLoad fires for each entity.
+
+    // Native — partial columns → NOT a managed entity → no lazy loading
+    @Query(value = "SELECT user_name, phone FROM user_details WHERE active = true",
+           nativeQuery = true)
+    List<Object[]> findNameAndPhoneNative();
+    // Returns Object[] — NOT entities.
+    // No lazy loading, no dirty checking, no @PostLoad.
+    // Just raw data: Object[0] = "Alice", Object[1] = "+1-555-0101"
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  JPQL vs Native — Feature Comparison:                                            │
+│                                                                                  │
+│  ┌────────────────────────────────┬──────────────────┬──────────────────────────┐│
+│  │ Feature                        │ JPQL             │ Native Query             ││
+│  ├────────────────────────────────┼──────────────────┼──────────────────────────┤│
+│  │ Query cache (2nd level)        │ ✓ Supported      │ ✗ Not supported          ││
+│  │ Lazy loading on full entity    │ ✓ Works          │ ✓ Works (SELECT *)       ││
+│  │ Lazy loading on partial result │ N/A              │ ✗ No proxy               ││
+│  │ Dirty checking (full entity)   │ ✓ Entity managed │ ✓ Entity managed         ││
+│  │ Dirty checking (partial cols)  │ N/A              │ ✗ Not managed            ││
+│  │ @PostLoad lifecycle event      │ ✓ Fires          │ ✓ Only for SELECT *      ││
+│  │ Auto column name resolution    │ ✓ From @Column   │ ✗ You write column names ││
+│  │ DB independence                │ ✓ Dialect handles│ ✗ DB-specific SQL        ││
+│  └────────────────────────────────┴──────────────────┴──────────────────────────┘│
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### When to Use Native Query Over JPQL
+
+#### 1. Database-Specific Features (JSONB, Full-Text Search, Window Functions)
+
+JPQL doesn't support database-specific operators like PostgreSQL's JSONB operators, MySQL's `MATCH AGAINST`, or SQL window functions. For these, you need native queries.
+
+```java
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // PostgreSQL JSONB — not possible in JPQL
+    @Query(value = "SELECT * FROM user_details WHERE metadata @> '{\"role\": \"admin\"}'::jsonb",
+           nativeQuery = true)
+    List<UserDetails> findAdminsByJsonMetadata();
+    // SQL: SELECT * FROM user_details WHERE metadata @> '{"role": "admin"}'::jsonb
+    // The @> operator (contains) and ::jsonb cast are PostgreSQL-specific.
+    // JPQL has NO equivalent for JSONB operators.
+
+    // PostgreSQL full-text search — not possible in JPQL
+    @Query(value = "SELECT * FROM user_details WHERE to_tsvector('english', user_name) @@ to_tsquery(:term)",
+           nativeQuery = true)
+    List<UserDetails> fullTextSearch(@Param("term") String term);
+    // SQL: SELECT * FROM user_details
+    //      WHERE to_tsvector('english', user_name) @@ to_tsquery('alice')
+
+    // SQL Window Function — not possible in JPQL
+    @Query(value = "SELECT *, ROW_NUMBER() OVER (ORDER BY user_name) as row_num FROM user_details",
+           nativeQuery = true)
+    List<Object[]> findWithRowNumber();
+    // SQL: SELECT *, ROW_NUMBER() OVER (ORDER BY user_name) as row_num FROM user_details
+    // Window functions (ROW_NUMBER, RANK, DENSE_RANK, LAG, LEAD) are not in JPQL.
+
+    // MySQL-specific — MATCH AGAINST for full-text search
+    @Query(value = "SELECT * FROM user_details WHERE MATCH(user_name) AGAINST(:keyword IN BOOLEAN MODE)",
+           nativeQuery = true)
+    List<UserDetails> mysqlFullTextSearch(@Param("keyword") String keyword);
+}
+```
+
+```text
+Database:
+
+  user_details
+  ┌────┬───────────┬──────────────────┬────────────────┬────────┬──────────────────────────┐
+  │ id │ user_name │ email            │ phone          │ active │ metadata (JSONB)         │
+  ├────┼───────────┼──────────────────┼────────────────┼────────┼──────────────────────────┤
+  │  1 │ Alice     │ alice@ex.com     │ +1-555-0101    │ true   │ {"role":"admin","lvl":5}  │
+  │  2 │ Bob       │ bob@ex.com       │ +1-555-0102    │ true   │ {"role":"user","lvl":2}   │
+  │  3 │ Charlie   │ charlie@ex.com   │ +1-555-0103    │ false  │ {"role":"admin","lvl":3}  │
+  └────┴───────────┴──────────────────┴────────────────┴────────┴──────────────────────────┘
+
+  findAdminsByJsonMetadata() → returns Alice (id=1) and Charlie (id=3)
+  because their metadata contains {"role": "admin"}
+```
+
+#### 2. Non-Entity Results — COUNT(*), JOINs Without Relationships
+
+JPQL can only query entities and their mapped relationships. If you need to JOIN two tables that have **no JPA relationship** (no `@OneToMany`, no `@ManyToOne`), or if you need aggregate queries that don't map to any entity, you need native queries.
+
+```java
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // COUNT(*) with GROUP BY — returns non-entity result
+    @Query(value = "SELECT active, COUNT(*) as total FROM user_details GROUP BY active",
+           nativeQuery = true)
+    List<Object[]> countByActiveStatus();
+    // SQL: SELECT active, COUNT(*) as total FROM user_details GROUP BY active
+    //
+    // Result:
+    //   Object[0] = { true, 3 }   → 3 active users
+    //   Object[1] = { false, 1 }  → 1 inactive user
+    //
+    // This COUNT(*) with GROUP BY returning raw columns doesn't map to an entity.
+
+    // JOIN tables WITHOUT any @Entity relationship
+    // Suppose "audit_logs" table exists but has NO @Entity or JPA relationship to user_details.
+    @Query(value = "SELECT u.user_name, a.action, a.timestamp " +
+                   "FROM user_details u " +
+                   "JOIN audit_logs a ON u.id = a.user_id " +
+                   "WHERE a.action = :action",
+           nativeQuery = true)
+    List<Object[]> findUserActionsFromAuditLog(@Param("action") String action);
+    // SQL: SELECT u.user_name, a.action, a.timestamp
+    //      FROM user_details u
+    //      JOIN audit_logs a ON u.id = a.user_id
+    //      WHERE a.action = 'LOGIN'
+    //
+    // JPQL CANNOT do this JOIN because there is no @ManyToOne or @OneToMany
+    // between UserDetails and AuditLog entities.
+    // Native query JOINs on raw foreign keys — no relationship mapping needed.
+
+    // Subquery with NOT EXISTS — complex logic
+    @Query(value = "SELECT u.* FROM user_details u " +
+                   "WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id)",
+           nativeQuery = true)
+    List<UserDetails> findUsersWithNoOrders();
+    // Returns users who have never placed an order.
+    // "orders" table may not have a JPA entity at all.
+}
+```
+
+```text
+Database tables (no JPA relationship between them):
+
+  user_details                           audit_logs (NO @Entity)
+  ┌────┬───────────┬──────────────────┐  ┌────┬─────────┬────────────┬─────────────────────┐
+  │ id │ user_name │ email            │  │ id │ user_id │ action     │ timestamp           │
+  ├────┼───────────┼──────────────────┤  ├────┼─────────┼────────────┼─────────────────────┤
+  │  1 │ Alice     │ alice@ex.com     │  │ 10 │    1    │ LOGIN      │ 2026-04-18 10:00:00 │
+  │  2 │ Bob       │ bob@ex.com       │  │ 11 │    1    │ LOGOUT     │ 2026-04-18 11:00:00 │
+  │  3 │ Charlie   │ charlie@ex.com   │  │ 12 │    2    │ LOGIN      │ 2026-04-18 09:00:00 │
+  └────┴───────────┴──────────────────┘  └────┴─────────┴────────────┴─────────────────────┘
+
+  findUserActionsFromAuditLog("LOGIN") returns:
+    Object[] { "Alice",   "LOGIN", "2026-04-18 10:00:00" }
+    Object[] { "Bob",     "LOGIN", "2026-04-18 09:00:00" }
+
+  JPQL cannot express: FROM UserDetails u JOIN audit_logs a ON u.id = a.user_id
+  because audit_logs is not mapped as a JPA relationship on UserDetails entity.
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Why JPQL can't do this:                                                         │
+│                                                                                  │
+│  JPQL JOIN requires a mapped relationship:                                       │
+│    "SELECT u FROM UserDetails u JOIN u.addresses a"                              │
+│                                      ↑                                           │
+│                                u.addresses must be a @OneToMany or               │
+│                                @ManyToMany field on the UserDetails entity.       │
+│                                                                                  │
+│  You CANNOT write in JPQL:                                                       │
+│    "SELECT u FROM UserDetails u JOIN AuditLog a ON u.id = a.userId"              │
+│    → Compilation error: "unexpected token: ON"                                   │
+│    → JPQL doesn't support arbitrary ON clauses for unrelated entities            │
+│      (JPA 2.1+ supports ON for additional conditions, but the entities           │
+│       must still be related via a mapped association)                             │
+│                                                                                  │
+│  Native query has no such restriction:                                           │
+│    "SELECT u.*, a.* FROM user_details u JOIN audit_logs a ON u.id = a.user_id"   │
+│    → Works! SQL can JOIN any tables by any column.                               │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 3. Query Efficiency — Bulk Operations Bypass Persistence Context
+
+JPQL `@Modifying` queries also bypass the entity lifecycle, but native queries are even more efficient for bulk operations because they skip JPQL parsing entirely. Additionally, JPQL keeps the Persistence Context updated (with `flushAutomatically`/`clearAutomatically`), adding overhead. Native queries go straight to the database.
+
+```java
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // Native bulk UPDATE — fastest possible, no JPQL parsing, no entity overhead
+    @Modifying
+    @Query(value = "UPDATE user_details SET active = false WHERE id IN (:ids)",
+           nativeQuery = true)
+    int bulkDeactivateNative(@Param("ids") List<Long> ids);
+    // SQL: UPDATE user_details SET active = false WHERE id IN (1, 2, 3, ...)
+    // → Sent directly to DB. No JPQL parsing. No Hibernate entity involvement.
+    // → Returns int = number of rows updated.
+
+    // Native bulk DELETE
+    @Modifying
+    @Query(value = "DELETE FROM user_details WHERE active = false AND " +
+                   "id NOT IN (SELECT user_id FROM orders)",
+           nativeQuery = true)
+    int deleteInactiveUsersWithNoOrders();
+    // SQL: DELETE FROM user_details WHERE active = false
+    //      AND id NOT IN (SELECT user_id FROM orders)
+    // → Complex subquery in DELETE — easier in native than JPQL.
+
+    // Native INSERT (JPQL doesn't support INSERT...VALUES at all)
+    @Modifying
+    @Query(value = "INSERT INTO user_details (user_name, email, phone, active) " +
+                   "VALUES (:name, :email, :phone, true)",
+           nativeQuery = true)
+    int insertUser(@Param("name") String name,
+                   @Param("email") String email,
+                   @Param("phone") String phone);
+    // SQL: INSERT INTO user_details (user_name, email, phone, active)
+    //      VALUES ('Alice', 'alice@ex.com', '+1-555-0101', true)
+    // JPQL does NOT support INSERT...VALUES. Only INSERT...SELECT.
+}
+```
+
+```java
+// Service — @Transactional required for @Modifying
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository userDetailsRepository;
+
+    @Transactional
+    public int deactivateUsers(List<Long> ids) {
+        return userDetailsRepository.bulkDeactivateNative(ids);
+        // Fastest path: SQL goes directly to DB.
+        // No JPQL parsing, no entity loading, no Persistence Context involvement.
+        // WARNING: L1 cache is STALE after this. Use clearAutomatically = true
+        // on @Modifying if you read these entities afterwards.
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Performance: JPQL @Modifying vs Native @Modifying:                              │
+│                                                                                  │
+│  JPQL @Modifying:                                                                │
+│    @Modifying                                                                    │
+│    @Query("UPDATE UserDetails u SET u.active = false WHERE u.id IN :ids")        │
+│       │                                                                          │
+│       v                                                                          │
+│    1. JPQL Parser → parses "UPDATE UserDetails u SET..."                         │
+│    2. Entity Metadata → resolves UserDetails → user_details table                │
+│    3. SQL Generator → generates: UPDATE user_details SET active = false ...       │
+│    4. (optional) flush() if flushAutomatically = true                            │
+│    5. JDBC → executes SQL on DB                                                  │
+│    6. (optional) clear() if clearAutomatically = true                            │
+│    → Overhead: JPQL parsing + entity metadata lookup + SQL generation            │
+│                                                                                  │
+│  Native @Modifying:                                                              │
+│    @Modifying                                                                    │
+│    @Query(value = "UPDATE user_details SET active = false WHERE id IN (:ids)",   │
+│           nativeQuery = true)                                                    │
+│       │                                                                          │
+│       v                                                                          │
+│    1. JDBC → executes SQL on DB directly                                         │
+│    → No JPQL parsing, no entity metadata lookup, no SQL generation               │
+│    → Fastest possible path                                                       │
+│                                                                                  │
+│  For single queries, the difference is negligible.                               │
+│  For bulk operations on millions of rows, native is noticeably faster.           │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### How to Use Native Query — @Query(value = "...", nativeQuery = true)
+
+The syntax is simple: add `nativeQuery = true` to the `@Query` annotation.
+
+```java
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // Basic native query — find all active users
+    @Query(value = "SELECT * FROM user_details WHERE active = true",
+           nativeQuery = true)
+    List<UserDetails> findAllActiveNative();
+    // SQL sent to DB: SELECT * FROM user_details WHERE active = true
+    // Result: mapped to List<UserDetails> entities
+
+    // Native query with named parameter
+    @Query(value = "SELECT * FROM user_details WHERE user_name = :name AND active = :active",
+           nativeQuery = true)
+    List<UserDetails> findByNameAndActiveNative(@Param("name") String name,
+                                                @Param("active") Boolean active);
+    // SQL: SELECT * FROM user_details WHERE user_name = 'Alice' AND active = true
+
+    // Native query with positional parameter
+    @Query(value = "SELECT * FROM user_details WHERE user_name = ?1 AND email = ?2",
+           nativeQuery = true)
+    UserDetails findByNameAndEmailNative(String name, String email);
+    // SQL: SELECT * FROM user_details WHERE user_name = 'Alice' AND email = 'alice@ex.com'
+
+    // Native query with LIKE
+    @Query(value = "SELECT * FROM user_details WHERE user_name LIKE %:keyword%",
+           nativeQuery = true)
+    List<UserDetails> searchByNameNative(@Param("keyword") String keyword);
+    // SQL: SELECT * FROM user_details WHERE user_name LIKE '%ali%'
+
+    // Native query returning single value
+    @Query(value = "SELECT COUNT(*) FROM user_details WHERE active = true",
+           nativeQuery = true)
+    long countActiveUsersNative();
+    // SQL: SELECT COUNT(*) FROM user_details WHERE active = true
+    // Returns: 3
+}
+```
+
+```java
+// Service
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository userDetailsRepository;
+
+    public List<UserDetails> getActiveUsers() {
+        return userDetailsRepository.findAllActiveNative();
+    }
+
+    public List<UserDetails> searchUsers(String keyword) {
+        return userDetailsRepository.searchByNameNative(keyword);
+    }
+
+    public long getActiveCount() {
+        return userDetailsRepository.countActiveUsersNative();
+    }
+}
+
+// Controller
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/active")
+    public List<UserDetails> getActive() {
+        return userService.getActiveUsers();
+    }
+
+    @GetMapping("/search")
+    public List<UserDetails> search(@RequestParam String keyword) {
+        return userService.searchUsers(keyword);
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @Query(nativeQuery = true) — How Spring processes it:                           │
+│                                                                                  │
+│  @Query(value = "SELECT * FROM user_details WHERE active = true",                │
+│         nativeQuery = true)                                                      │
+│  List<UserDetails> findAllActiveNative();                                        │
+│       │                                                                          │
+│       v                                                                          │
+│  Spring Proxy:                                                                   │
+│    sees nativeQuery = true                                                       │
+│    → Does NOT parse as JPQL                                                      │
+│    → Creates a NativeQuery via entityManager.createNativeQuery(sql, class)       │
+│       │                                                                          │
+│       v                                                                          │
+│  Hibernate:                                                                      │
+│    → Does NOT translate entity names → table names (already raw SQL)             │
+│    → Sends SQL directly to JDBC PreparedStatement                                │
+│       │                                                                          │
+│       v                                                                          │
+│  JDBC executes: SELECT * FROM user_details WHERE active = true                   │
+│       │                                                                          │
+│       v                                                                          │
+│  ResultSet returned → Hibernate maps columns to entity fields:                   │
+│    id → UserDetails.id                                                           │
+│    user_name → UserDetails.name (via @Column(name="user_name"))                  │
+│    email → UserDetails.email                                                     │
+│    phone → UserDetails.phone                                                     │
+│    active → UserDetails.active                                                   │
+│       │                                                                          │
+│       v                                                                          │
+│  Returns List<UserDetails> — managed entities in Persistence Context             │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### SELECT * — How Native Query Maps to Entity
+
+When you write `SELECT * FROM user_details` in a native query and the return type is `List<UserDetails>`, Hibernate uses the entity's `@Column` annotations to map each column from the ResultSet to the corresponding Java field.
+
+```java
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    @Query(value = "SELECT * FROM user_details", nativeQuery = true)
+    List<UserDetails> findAllNative();
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  SELECT * FROM user_details — Column to Entity mapping:                          │
+│                                                                                  │
+│  SQL Result (from SELECT *):                                                     │
+│  ┌────┬───────────┬──────────────────┬────────────────┬────────┐                 │
+│  │ id │ user_name │ email            │ phone          │ active │                 │
+│  ├────┼───────────┼──────────────────┼────────────────┼────────┤                 │
+│  │  1 │ Alice     │ alice@ex.com     │ +1-555-0101    │ true   │                 │
+│  │  2 │ Bob       │ bob@ex.com       │ +1-555-0102    │ true   │                 │
+│  └────┴───────────┴──────────────────┴────────────────┴────────┘                 │
+│                                                                                  │
+│  Hibernate reads the ResultSet column names and matches with @Column:            │
+│                                                                                  │
+│    ResultSet column    @Column annotation          Java field                    │
+│    ───────────────     ─────────────────────       ──────────                    │
+│    id              →   @Id                     →   Long id                       │
+│    user_name       →   @Column(name="user_name") → String name                  │
+│    email           →   @Column(name="email")   →   String email                 │
+│    phone           →   @Column(name="phone")   →   String phone                 │
+│    active          →   @Column(name="active")  →   Boolean active               │
+│                                                                                  │
+│  Result: Fully populated UserDetails entities.                                   │
+│  Entities are MANAGED in Persistence Context (L1 cache).                         │
+│  Dirty checking works. Lazy loading of relationships works.                      │
+│  @PostLoad lifecycle event fires.                                                │
+│                                                                                  │
+│  This is identical to what JPQL "SELECT u FROM UserDetails u" produces,          │
+│  except the SQL was written by YOU instead of generated by Hibernate.            │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```java
+// Service — entity is fully managed
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository userDetailsRepository;
+
+    @Transactional
+    public void demonstrateNativeSelectStar() {
+        List<UserDetails> users = userDetailsRepository.findAllNative();
+        // SELECT * returns all columns → full entity mapping
+
+        UserDetails alice = users.get(0);
+        System.out.println(alice.getName());   // "Alice" — field populated
+        System.out.println(alice.getEmail());   // "alice@ex.com" — field populated
+        System.out.println(alice.getPhone());   // "+1-555-0101" — field populated
+
+        // Entity is MANAGED → dirty checking works
+        alice.setName("Alice Updated");
+        // At transaction commit: Hibernate detects the change
+        // → SQL: UPDATE user_details SET user_name = 'Alice Updated' WHERE id = 1
+        // This happens automatically — same as with JPQL.
+
+        // Lazy loading of relationships also works
+        // alice.getUserAddressList() → triggers lazy SQL query
+    }
+}
+```
+
+---
+
+### Partial SELECT — Will It Map to Entity?
+
+If you write `SELECT user_name, phone FROM user_details` (only some columns, not all), it **CANNOT** be directly mapped to the `UserDetails` entity. Hibernate expects ALL columns to populate the entity. Missing columns cause an error or null values depending on the approach.
+
+```java
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // THIS WILL FAIL — partial columns, return type is entity
+    @Query(value = "SELECT user_name, phone FROM user_details", nativeQuery = true)
+    List<UserDetails> findNameAndPhoneAsEntity();  // ← RUNTIME ERROR!
+    // Hibernate tries to map ResultSet to UserDetails entity.
+    // ResultSet has only 2 columns: user_name, phone
+    // UserDetails needs: id, user_name, email, phone, active
+    // → Missing columns (id, email, active)
+    // → Exception: "Could not read entity" or "Column 'id' not found"
+    //
+    // Hibernate CANNOT create a managed entity without the @Id column (id).
+    // Even if other columns were nullable, the primary key is mandatory.
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Partial SELECT → Entity mapping — WHY it fails:                                 │
+│                                                                                  │
+│  SELECT user_name, phone FROM user_details                                       │
+│                                                                                  │
+│  ResultSet:                                                                      │
+│  ┌───────────┬────────────────┐                                                  │
+│  │ user_name │ phone          │                                                  │
+│  ├───────────┼────────────────┤                                                  │
+│  │ Alice     │ +1-555-0101    │                                                  │
+│  │ Bob       │ +1-555-0102    │                                                  │
+│  └───────────┴────────────────┘                                                  │
+│                                                                                  │
+│  Hibernate tries to build UserDetails:                                           │
+│    id     = ??? → NOT in ResultSet → ERROR! @Id is mandatory                     │
+│    name   = "Alice" → mapped from user_name column ✓                             │
+│    email  = ??? → NOT in ResultSet → null or error                               │
+│    phone  = "+1-555-0101" → mapped from phone column ✓                           │
+│    active = ??? → NOT in ResultSet → null or error                               │
+│                                                                                  │
+│  Without the @Id (primary key), Hibernate CANNOT:                                │
+│    - Register the entity in the Persistence Context                              │
+│    - Track changes (dirty checking)                                              │
+│    - Maintain identity (two entities with same id are the same object)           │
+│                                                                                  │
+│  RESULT: RuntimeException at query execution time.                               │
+│                                                                                  │
+│  Solutions for partial SELECT:                                                   │
+│    1. Use List<Object[]> as return type                                          │
+│    2. Use @SqlResultSetMapping + @NamedNativeQuery → DTO mapping                 │
+│    3. Use interface-based projection (Spring Data)                                │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Partial SELECT → DTO Using @SqlResultSetMapping + @NamedNativeQuery
+
+When you need to map partial columns to a DTO class, you can use the JPA standard approach: `@SqlResultSetMapping` with `@ConstructorResult` on the entity class, combined with `@NamedNativeQuery` that references the mapping.
+
+**Step 1: Create the DTO class:**
+
+```java
+// DTO — plain POJO, NOT an @Entity
+public class UserPhoneDTO {
+    private String userName;
+    private String phone;
+
+    // Constructor — parameter order and types must match @ColumnResult declarations
+    public UserPhoneDTO(String userName, String phone) {
+        this.userName = userName;
+        this.phone = phone;
+    }
+
+    // getters
+    public String getUserName() { return userName; }
+    public String getPhone() { return phone; }
+}
+```
+
+**Step 2: Add @SqlResultSetMapping and @NamedNativeQuery on the entity:**
+
+```java
+@Entity
+@Table(name = "user_details")
+@SqlResultSetMapping(
+    name = "UserPhoneDTOMapping",                          // ← mapping name (referenced by @NamedNativeQuery)
+    classes = @ConstructorResult(
+        targetClass = UserPhoneDTO.class,                  // ← DTO class to construct
+        columns = {
+            @ColumnResult(name = "user_name", type = String.class),  // ← 1st constructor param
+            @ColumnResult(name = "phone", type = String.class)       // ← 2nd constructor param
+        }
+    )
+)
+@NamedNativeQuery(
+    name = "UserDetails.findUserPhone",                     // ← query name (Entity.methodName convention)
+    query = "SELECT user_name, phone FROM user_details",    // ← raw SQL
+    resultSetMapping = "UserPhoneDTOMapping"                // ← links to @SqlResultSetMapping above
+)
+public class UserDetails {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "user_name")
+    private String name;
+
+    @Column(name = "email")
+    private String email;
+
+    @Column(name = "phone")
+    private String phone;
+
+    @Column(name = "active")
+    private Boolean active;
+
+    // getters, setters
+}
+```
+
+**Step 3: Repository method matches @NamedNativeQuery name:**
+
+```java
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // Spring matches "UserDetails.findUserPhone" → @NamedNativeQuery on entity
+    List<UserPhoneDTO> findUserPhone();
+    // The method name "findUserPhone" + entity name "UserDetails"
+    // → looks for @NamedNativeQuery(name = "UserDetails.findUserPhone")
+    // → executes: SELECT user_name, phone FROM user_details
+    // → maps result using @SqlResultSetMapping("UserPhoneDTOMapping")
+    // → calls: new UserPhoneDTO(resultSet.getString("user_name"), resultSet.getString("phone"))
+    // → returns List<UserPhoneDTO>
+
+    // With WHERE condition — add another @NamedNativeQuery
+    // (need to add on entity: @NamedNativeQuery(name="UserDetails.findUserPhoneByActive", ...))
+    List<UserPhoneDTO> findUserPhoneByActive(@Param("active") Boolean active);
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @SqlResultSetMapping + @NamedNativeQuery — Flow:                                │
+│                                                                                  │
+│  Entity class (UserDetails):                                                     │
+│    @SqlResultSetMapping(                                                         │
+│      name = "UserPhoneDTOMapping",                                               │
+│      classes = @ConstructorResult(                                                │
+│        targetClass = UserPhoneDTO.class,                                         │
+│        columns = { @ColumnResult(name="user_name"), @ColumnResult(name="phone") }│
+│      )                                                                           │
+│    )                                                                             │
+│    @NamedNativeQuery(                                                            │
+│      name = "UserDetails.findUserPhone",                                         │
+│      query = "SELECT user_name, phone FROM user_details",                        │
+│      resultSetMapping = "UserPhoneDTOMapping"                                    │
+│    )                                                                             │
+│                                                                                  │
+│  Repository: List<UserPhoneDTO> findUserPhone();                                 │
+│       │                                                                          │
+│       v                                                                          │
+│  Spring sees method "findUserPhone" on UserDetails repository                    │
+│    → Looks for @NamedNativeQuery(name = "UserDetails.findUserPhone") ✓           │
+│       │                                                                          │
+│       v                                                                          │
+│  Executes: SELECT user_name, phone FROM user_details                             │
+│       │                                                                          │
+│       v                                                                          │
+│  ResultSet:                                                                      │
+│    ┌───────────┬────────────────┐                                                │
+│    │ user_name │ phone          │                                                │
+│    ├───────────┼────────────────┤                                                │
+│    │ Alice     │ +1-555-0101    │                                                │
+│    │ Bob       │ +1-555-0102    │                                                │
+│    └───────────┴────────────────┘                                                │
+│       │                                                                          │
+│       v                                                                          │
+│  @ConstructorResult mapping:                                                     │
+│    new UserPhoneDTO("Alice", "+1-555-0101")    → UserPhoneDTO[0]                 │
+│    new UserPhoneDTO("Bob",   "+1-555-0102")    → UserPhoneDTO[1]                 │
+│       │                                                                          │
+│       v                                                                          │
+│  Returns: List<UserPhoneDTO> with 2 elements                                    │
+│                                                                                  │
+│  Column matching:                                                                │
+│    @ColumnResult(name = "user_name") → ResultSet column "user_name" → 1st param  │
+│    @ColumnResult(name = "phone")     → ResultSet column "phone"     → 2nd param  │
+│    ORDER in @ColumnResult = ORDER of constructor parameters                       │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**With a WHERE condition — multiple @NamedNativeQuery on the same entity:**
+
+```java
+@Entity
+@Table(name = "user_details")
+@SqlResultSetMapping(
+    name = "UserPhoneDTOMapping",
+    classes = @ConstructorResult(
+        targetClass = UserPhoneDTO.class,
+        columns = {
+            @ColumnResult(name = "user_name", type = String.class),
+            @ColumnResult(name = "phone", type = String.class)
+        }
+    )
+)
+@NamedNativeQuery(
+    name = "UserDetails.findUserPhone",
+    query = "SELECT user_name, phone FROM user_details",
+    resultSetMapping = "UserPhoneDTOMapping"
+)
+@NamedNativeQuery(
+    name = "UserDetails.findUserPhoneByActive",
+    query = "SELECT user_name, phone FROM user_details WHERE active = :active",
+    resultSetMapping = "UserPhoneDTOMapping"
+)
+public class UserDetails {
+    // ... fields same as above
+}
+```
+
+```java
+// Service
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository userDetailsRepository;
+
+    public List<UserPhoneDTO> getAllUserPhones() {
+        List<UserPhoneDTO> results = userDetailsRepository.findUserPhone();
+        // SQL: SELECT user_name, phone FROM user_details
+        // → List<UserPhoneDTO> — type-safe, no manual casting
+
+        for (UserPhoneDTO dto : results) {
+            System.out.println(dto.getUserName() + " → " + dto.getPhone());
+            // Alice → +1-555-0101
+            // Bob → +1-555-0102
+        }
+        return results;
+    }
+}
+
+// Controller
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/phones")
+    public List<UserPhoneDTO> getPhones() {
+        return userService.getAllUserPhones();
+        // JSON: [{"userName":"Alice","phone":"+1-555-0101"}, {"userName":"Bob","phone":"+1-555-0102"}]
+    }
+}
+```
+
+---
+
+### Partial SELECT → List<Object[]> and Manual DTO Conversion
+
+A simpler (but less type-safe) approach is to return `List<Object[]>` from the repository and convert to the DTO manually in the service layer.
+
+```java
+// Repository — returns raw Object[]
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    @Query(value = "SELECT user_name, phone FROM user_details",
+           nativeQuery = true)
+    List<Object[]> findUserNameAndPhoneRaw();
+    // SQL: SELECT user_name, phone FROM user_details
+    //
+    // Result: List<Object[]>
+    //   Object[0] = { "Alice",   "+1-555-0101" }
+    //   Object[1] = { "Bob",     "+1-555-0102" }
+    //   Object[2] = { "Charlie", "+1-555-0103" }
+
+    @Query(value = "SELECT user_name, phone FROM user_details WHERE active = :active",
+           nativeQuery = true)
+    List<Object[]> findUserNameAndPhoneByActiveRaw(@Param("active") Boolean active);
+}
+```
+
+```java
+// DTO class — same as before
+public class UserPhoneDTO {
+    private String userName;
+    private String phone;
+
+    public UserPhoneDTO(String userName, String phone) {
+        this.userName = userName;
+        this.phone = phone;
+    }
+
+    public String getUserName() { return userName; }
+    public String getPhone() { return phone; }
+}
+```
+
+```java
+// Service — conversion happens HERE in the service layer
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository userDetailsRepository;
+
+    public List<UserPhoneDTO> getAllUserPhones() {
+        List<Object[]> rawResults = userDetailsRepository.findUserNameAndPhoneRaw();
+        // SQL: SELECT user_name, phone FROM user_details
+        //
+        // rawResults:
+        //   [0] = Object[] { "Alice",   "+1-555-0101" }
+        //   [1] = Object[] { "Bob",     "+1-555-0102" }
+
+        // Convert Object[] → UserPhoneDTO manually
+        List<UserPhoneDTO> dtos = rawResults.stream()
+            .map(row -> new UserPhoneDTO(
+                (String) row[0],    // user_name (index 0 matches SELECT order)
+                (String) row[1]     // phone     (index 1 matches SELECT order)
+            ))
+            .collect(Collectors.toList());
+
+        // dtos:
+        //   [0] = UserPhoneDTO { userName="Alice",   phone="+1-555-0101" }
+        //   [1] = UserPhoneDTO { userName="Bob",     phone="+1-555-0102" }
+
+        return dtos;
+    }
+
+    // Alternative — using a loop instead of stream
+    public List<UserPhoneDTO> getAllUserPhonesLoop() {
+        List<Object[]> rawResults = userDetailsRepository.findUserNameAndPhoneRaw();
+        List<UserPhoneDTO> dtos = new ArrayList<>();
+
+        for (Object[] row : rawResults) {
+            String userName = (String) row[0];
+            String phone = (String) row[1];
+            dtos.add(new UserPhoneDTO(userName, phone));
+        }
+
+        return dtos;
+    }
+}
+```
+
+```java
+// Controller
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/phones")
+    public List<UserPhoneDTO> getPhones() {
+        return userService.getAllUserPhones();
+        // JSON: [{"userName":"Alice","phone":"+1-555-0101"}, ...]
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Object[] mapping — positional (same as JPQL Object[]):                          │
+│                                                                                  │
+│  SELECT user_name, phone FROM user_details                                       │
+│         ↑ index 0   ↑ index 1                                                    │
+│                                                                                  │
+│  Object[] row = { "Alice", "+1-555-0101" }                                       │
+│                    row[0]   row[1]                                                │
+│                                                                                  │
+│  Conversion location: SERVICE LAYER                                              │
+│    Repository → returns List<Object[]>                                           │
+│    Service → converts Object[] → UserPhoneDTO                                    │
+│    Controller → receives List<UserPhoneDTO>                                      │
+│                                                                                  │
+│  Flow:                                                                           │
+│  ┌───────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │ Repository │    │  Service     │    │  Service     │    │ Controller   │      │
+│  │ returns    │ →  │  receives    │ →  │  converts    │ →  │ receives     │      │
+│  │ Object[]   │    │  Object[]    │    │  to DTO      │    │ DTO list     │      │
+│  └───────────┘    └──────────────┘    └──────────────┘    └──────────────┘      │
+│                                                                                  │
+│  Drawbacks of Object[] approach (same as with JPQL):                             │
+│  - No compile-time type safety                                                   │
+│  - Manual casting: (String) row[0]                                               │
+│  - Index-based, fragile: if SELECT order changes, all indexes break              │
+│  - Not self-documenting: what is row[0]?                                         │
+│                                                                                  │
+│  When to use Object[] vs @SqlResultSetMapping:                                   │
+│  ┌─────────────────────────────────┬───────────────────────────────────────────┐ │
+│  │ List<Object[]>                  │ @SqlResultSetMapping + @NamedNativeQuery  │ │
+│  ├─────────────────────────────────┼───────────────────────────────────────────┤ │
+│  │ Quick, simple                   │ More setup, more annotations              │ │
+│  │ No extra annotations on entity  │ Annotations on entity class               │ │
+│  │ Manual casting in service       │ Automatic DTO construction                │ │
+│  │ Fragile (index-based)           │ Robust (column-name based)                │ │
+│  │ Good for prototyping            │ Good for production                       │ │
+│  └─────────────────────────────────┴───────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Pagination and Sorting in Native Queries
+
+Native queries support both `Pageable` (pagination) and `Sort` (sorting), but with important differences from JPQL.
+
+**Pagination with PageRequest:**
+
+For pagination, you must provide a `countQuery` parameter because Spring **cannot auto-generate** a count query from raw SQL (it can for JPQL because it understands the entity model).
+
+```java
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // Paginated native query — countQuery is REQUIRED for Page<T> return type
+    @Query(value = "SELECT * FROM user_details WHERE active = true",
+           countQuery = "SELECT COUNT(*) FROM user_details WHERE active = true",
+           nativeQuery = true)
+    Page<UserDetails> findActiveUsersPaginated(Pageable pageable);
+    // SQL 1 (data):  SELECT * FROM user_details WHERE active = true LIMIT 10 OFFSET 0
+    // SQL 2 (count): SELECT COUNT(*) FROM user_details WHERE active = true
+    //
+    // countQuery is mandatory for Page<T>.
+    // Without it: Spring cannot derive COUNT from raw SQL → exception.
+
+    // With WHERE condition and parameters
+    @Query(value = "SELECT * FROM user_details WHERE user_name LIKE %:keyword%",
+           countQuery = "SELECT COUNT(*) FROM user_details WHERE user_name LIKE %:keyword%",
+           nativeQuery = true)
+    Page<UserDetails> searchUsersPaginated(@Param("keyword") String keyword, Pageable pageable);
+
+    // Slice — no countQuery needed (Slice doesn't need total count)
+    @Query(value = "SELECT * FROM user_details WHERE active = true",
+           nativeQuery = true)
+    Slice<UserDetails> findActiveUsersSliced(Pageable pageable);
+    // SQL: SELECT * FROM user_details WHERE active = true LIMIT 11 OFFSET 0
+    //      (fetches size+1 rows to determine hasNext)
+
+    // List — no countQuery needed
+    @Query(value = "SELECT * FROM user_details WHERE active = true",
+           nativeQuery = true)
+    List<UserDetails> findActiveUsersList(Pageable pageable);
+    // SQL: SELECT * FROM user_details WHERE active = true LIMIT 10 OFFSET 0
+}
+```
+
+**Sorting in Native Queries:**
+
+Sorting with the `Sort` parameter object does **NOT work** with native queries in most Spring Data JPA versions. Spring cannot validate sort properties against entity metadata for raw SQL. You must include `ORDER BY` directly in the SQL string.
+
+```java
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    // SORTING — include ORDER BY directly in the SQL (NOT via Sort parameter)
+    @Query(value = "SELECT * FROM user_details WHERE active = true ORDER BY user_name ASC",
+           nativeQuery = true)
+    List<UserDetails> findActiveUsersSortedByName();
+    // SQL: SELECT * FROM user_details WHERE active = true ORDER BY user_name ASC
+    // Sort is HARDCODED in the SQL. Not dynamic.
+
+    // Dynamic sorting — use Sort via Pageable (works for simple column names)
+    @Query(value = "SELECT * FROM user_details WHERE active = true",
+           countQuery = "SELECT COUNT(*) FROM user_details WHERE active = true",
+           nativeQuery = true)
+    Page<UserDetails> findActiveUsersSorted(Pageable pageable);
+    // When Pageable contains Sort info, Spring appends ORDER BY to the SQL.
+    // BUT: Sort property names must match COLUMN names (not entity field names).
+    //
+    // Sort.by("user_name") → works (user_name is the actual column name)
+    // Sort.by("name") → FAILS (name is the Java field, not the column name)
+    //
+    // This is the opposite of JPQL where you use Java field names for sorting.
+
+    // For complex sorting that can't be expressed via Pageable:
+    @Query(value = "SELECT * FROM user_details WHERE active = true " +
+                   "ORDER BY active DESC, user_name ASC",
+           nativeQuery = true)
+    List<UserDetails> findWithComplexSort();
+}
+```
+
+```java
+// Service
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository userDetailsRepository;
+
+    // Pagination only
+    public Page<UserDetails> getActiveUsersPaginated(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return userDetailsRepository.findActiveUsersPaginated(pageable);
+        // SQL 1: SELECT * FROM user_details WHERE active = true LIMIT 10 OFFSET 0
+        // SQL 2: SELECT COUNT(*) FROM user_details WHERE active = true
+    }
+
+    // Pagination + Sorting (dynamic via Pageable)
+    public Page<UserDetails> getActiveUsersPaginatedAndSorted(int page, int size) {
+        // IMPORTANT: Use COLUMN names for Sort, not Java field names!
+        Sort sort = Sort.by(Sort.Direction.DESC, "user_name");  // ← column name
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return userDetailsRepository.findActiveUsersSorted(pageable);
+        // SQL 1: SELECT * FROM user_details WHERE active = true
+        //        ORDER BY user_name DESC
+        //        LIMIT 10 OFFSET 0
+        // SQL 2: SELECT COUNT(*) FROM user_details WHERE active = true
+    }
+
+    // Multiple sort columns
+    public Page<UserDetails> getActiveUsersMultiSort(int page, int size) {
+        Sort sort = Sort.by(
+            Sort.Order.asc("user_name"),   // ← column name (not "name")
+            Sort.Order.desc("id")           // ← column name
+        );
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return userDetailsRepository.findActiveUsersSorted(pageable);
+        // SQL: SELECT * FROM user_details WHERE active = true
+        //      ORDER BY user_name ASC, id DESC
+        //      LIMIT 10 OFFSET 0
+    }
+
+    // Pagination with Object[] result (partial columns)
+    public List<Object[]> getUserPhonesPaginated(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return userDetailsRepository.findUserNameAndPhonePaginated(pageable);
+    }
+}
+
+// Controller
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/active")
+    public Page<UserDetails> getActiveUsers(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "user_name") String sortBy,
+        @RequestParam(defaultValue = "ASC") String direction
+    ) {
+        Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
+        // NOTE: sortBy must be a COLUMN name for native queries
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return userService.getActiveUsersPaginatedAndSorted(page, size);
+    }
+}
+```
+
+```java
+// Pagination with partial columns (Object[]) — needs countQuery too
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> {
+
+    @Query(value = "SELECT user_name, phone FROM user_details WHERE active = true",
+           countQuery = "SELECT COUNT(*) FROM user_details WHERE active = true",
+           nativeQuery = true)
+    Page<Object[]> findUserNameAndPhonePaginated(Pageable pageable);
+    // SQL 1: SELECT user_name, phone FROM user_details WHERE active = true LIMIT 10 OFFSET 0
+    // SQL 2: SELECT COUNT(*) FROM user_details WHERE active = true
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Pagination + Sorting in Native Query — Key Differences from JPQL:               │
+│                                                                                  │
+│  ┌──────────────────────────────────┬────────────────────────────────────────────┐│
+│  │ Feature                          │ JPQL                │ Native Query         ││
+│  ├──────────────────────────────────┼─────────────────────┼──────────────────────┤│
+│  │ Pageable parameter               │ ✓ Works             │ ✓ Works              ││
+│  │ countQuery                       │ Auto-generated      │ MUST be provided     ││
+│  │                                  │ (or custom)         │ for Page<T>          ││
+│  │ Sort via Pageable                │ Uses Java FIELD     │ Uses DB COLUMN       ││
+│  │                                  │ names               │ names                ││
+│  │ Sort via Sort parameter alone    │ ✓ Works             │ ✗ Often fails        ││
+│  │ ORDER BY in query string         │ ✓ Possible          │ ✓ Recommended for    ││
+│  │                                  │                     │ complex sorts        ││
+│  │ LIMIT/OFFSET generation          │ Auto from Pageable  │ Auto from Pageable   ││
+│  │ Slice<T> (no count)              │ ✓ Works             │ ✓ Works              ││
+│  │ Page<T> (with count)             │ ✓ Auto count        │ ✓ Needs countQuery   ││
+│  └──────────────────────────────────┴─────────────────────┴──────────────────────┘│
+│                                                                                  │
+│  CRITICAL DIFFERENCE — Sort property names:                                      │
+│                                                                                  │
+│  JPQL:   Sort.by("name")      → works (Java field name)                         │
+│  Native: Sort.by("name")      → FAILS (no column called "name")                 │
+│  Native: Sort.by("user_name") → works (actual column name)                      │
+│                                                                                  │
+│  CRITICAL DIFFERENCE — countQuery:                                               │
+│                                                                                  │
+│  JPQL:                                                                           │
+│    @Query("SELECT u FROM UserDetails u WHERE u.active = true")                   │
+│    Page<UserDetails> findActive(Pageable pageable);                              │
+│    → Spring auto-generates: SELECT COUNT(u) FROM UserDetails u WHERE ...         │
+│                                                                                  │
+│  Native:                                                                         │
+│    @Query(value = "SELECT * FROM user_details WHERE active = true",              │
+│           nativeQuery = true)                                                    │
+│    Page<UserDetails> findActive(Pageable pageable);                              │
+│    → Spring CANNOT auto-generate count from raw SQL → EXCEPTION                  │
+│    → You MUST provide: countQuery = "SELECT COUNT(*) FROM user_details ..."      │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+Complete flow — Native Query with Pagination + Sorting:
+
+  Client: GET /api/users/active?page=1&size=5&sortBy=user_name&direction=DESC
+     │
+     v
+  Controller: extracts params → creates Sort and Pageable
+    Sort sort = Sort.by(Sort.Direction.DESC, "user_name");   ← COLUMN name!
+    Pageable pageable = PageRequest.of(1, 5, sort);
+     │
+     v
+  Service: calls repository
+    userDetailsRepository.findActiveUsersSorted(pageable);
+     │
+     v
+  Spring Proxy:
+    sees @Query(nativeQuery = true) → treats as raw SQL
+    Original SQL: SELECT * FROM user_details WHERE active = true
+    Appends Sort → ORDER BY user_name DESC
+    Appends Pagination → LIMIT 5 OFFSET 5
+     │
+     v
+  SQL 1 (data):
+    SELECT * FROM user_details
+    WHERE active = true
+    ORDER BY user_name DESC
+    LIMIT 5 OFFSET 5
+     │
+  SQL 2 (count):
+    SELECT COUNT(*) FROM user_details WHERE active = true
+     │
+     v
+  Results:
+    Page<UserDetails> {
+      content: [user6, user7, user8, user9, user10],  ← page 1 (0-indexed)
+      pageNumber: 1,
+      pageSize: 5,
+      totalElements: 12,
+      totalPages: 3,
+      sort: Sort { orders: [Order(user_name, DESC)] }
+    }
+     │
+     v
+  Controller returns → Jackson serializes to JSON → Client receives response
+```
+
+```text
+Summary — When to use Native Query vs JPQL vs Derived Query:
+
+  ┌──────────────────────────────────┬──────────────────────────────────────────────┐
+  │ Scenario                         │ Best Approach                                │
+  ├──────────────────────────────────┼──────────────────────────────────────────────┤
+  │ Simple CRUD / findBy conditions  │ Derived Query (method name)                  │
+  │ Complex WHERE, JOINs on entities │ JPQL (@Query)                                │
+  │ DB-specific features (JSONB,     │ Native Query (@Query nativeQuery=true)        │
+  │   full-text, window functions)   │                                              │
+  │ JOIN tables without relationship │ Native Query                                 │
+  │ Bulk INSERT...VALUES             │ Native Query (JPQL can't do INSERT VALUES)   │
+  │ Bulk UPDATE/DELETE               │ Either (Native slightly faster)              │
+  │ Aggregates with GROUP BY         │ Native Query or JPQL (both work)             │
+  │ Partial columns → DTO            │ JPQL (NEW constructor) or Native (Object[],  │
+  │                                  │   @SqlResultSetMapping)                      │
+  │ Database portability needed      │ JPQL (DB-independent)                         │
+  │ Maximum performance              │ Native Query (no JPQL parsing overhead)       │
+  └──────────────────────────────────┴──────────────────────────────────────────────┘
+```
+
+---
+
+
+### What Is a Dynamic Native Query?
+
+A **dynamic native query** is a raw SQL query that is built **at runtime** in the service layer using `EntityManager`, rather than being defined statically in a repository with `@Query`. This lets you construct the SQL string conditionally based on method arguments — adding or removing WHERE clauses, JOIN conditions, ORDER BY, and LIMIT/OFFSET dynamically.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Static @Query (Repository) vs Dynamic Query (EntityManager):                    │
+│                                                                                  │
+│  Static — @Query on Repository:                                                  │
+│    @Query(value = "SELECT * FROM user_details WHERE active = true",              │
+│           nativeQuery = true)                                                    │
+│    List<UserDetails> findActive();                                               │
+│    → Query is FIXED at compile time. Cannot add/remove conditions dynamically.   │
+│    → If you need 10 different filter combinations, you need 10 methods.          │
+│                                                                                  │
+│  Dynamic — EntityManager in Service:                                             │
+│    String sql = "SELECT * FROM user_details WHERE 1=1";                          │
+│    if (name != null) sql += " AND user_name = :name";                            │
+│    if (active != null) sql += " AND active = :active";                           │
+│    Query query = entityManager.createNativeQuery(sql, UserDetails.class);        │
+│    → Query is BUILT at runtime based on which parameters are provided.           │
+│    → One method handles ANY combination of filters.                              │
+│                                                                                  │
+│  When to use Dynamic Native Query:                                               │
+│    - Search/filter APIs with many optional parameters                            │
+│    - Dynamic report generation where columns/conditions change                   │
+│    - Admin dashboards with configurable filters                                  │
+│    - Any scenario where the number of WHERE conditions is unknown at compile time│
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+Database Table — user_details (used in all examples below):
+
+  ┌────┬───────────┬──────────────────┬────────────────┬────────┐
+  │ id │ user_name │ email            │ phone          │ active │
+  ├────┼───────────┼──────────────────┼────────────────┼────────┤
+  │  1 │ Alice     │ alice@ex.com     │ +1-555-0101    │ true   │
+  │  2 │ Bob       │ bob@ex.com       │ +1-555-0102    │ true   │
+  │  3 │ Charlie   │ charlie@ex.com   │ +1-555-0103    │ false  │
+  │  4 │ Diana     │ diana@ex.com     │ +1-555-0104    │ true   │
+  │  5 │ Eve       │ eve@ex.com       │ +1-555-0105    │ false  │
+  │  6 │ Frank     │ frank@ex.com     │ +1-555-0106    │ true   │
+  │  7 │ Grace     │ grace@ex.com     │ +1-555-0107    │ true   │
+  │  8 │ Hank      │ hank@ex.com      │ +1-555-0108    │ false  │
+  └────┴───────────┴──────────────────┴────────────────┴────────┘
+```
+
+---
+
+### @PersistenceContext and EntityManager
+
+`@PersistenceContext` injects the JPA `EntityManager` — the core JPA interface for interacting with the Persistence Context. You use it in service classes to create and execute queries programmatically.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @PersistenceContext vs @Autowired for EntityManager:                             │
+│                                                                                  │
+│  @PersistenceContext                                                             │
+│  private EntityManager entityManager;                                            │
+│  → JPA standard annotation.                                                      │
+│  → Injects a PROXY that is bound to the current transaction's Persistence Context│
+│  → Thread-safe: each request gets its own Persistence Context.                   │
+│  → RECOMMENDED for EntityManager injection.                                      │
+│                                                                                  │
+│  @Autowired                                                                      │
+│  private EntityManager entityManager;                                            │
+│  → Spring-specific. Also works because Spring registers EntityManager as a bean. │
+│  → Same proxy behavior in practice.                                              │
+│  → But @PersistenceContext is the JPA-standard way.                              │
+│                                                                                  │
+│  Key EntityManager methods for native queries:                                   │
+│    entityManager.createNativeQuery(sql)                                          │
+│      → returns Query object for raw SQL                                          │
+│    entityManager.createNativeQuery(sql, EntityClass.class)                       │
+│      → returns Query object that maps results to an entity                       │
+│    query.setParameter("name", value)                                             │
+│      → binds a named parameter                                                   │
+│    query.setParameter(1, value)                                                  │
+│      → binds a positional parameter                                              │
+│    query.getResultList()                                                         │
+│      → executes SELECT, returns List                                             │
+│    query.getSingleResult()                                                       │
+│      → executes SELECT, returns single object                                    │
+│    query.executeUpdate()                                                         │
+│      → executes INSERT/UPDATE/DELETE, returns int (affected rows)                │
+│    query.setFirstResult(offset)                                                  │
+│      → sets the starting row (OFFSET)                                            │
+│    query.setMaxResults(limit)                                                    │
+│      → sets max rows to return (LIMIT)                                           │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Basic Dynamic Native Query — createNativeQuery + setParameter
+
+**Building a query dynamically based on which parameters are non-null:**
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Dynamic search — only filters that are non-null are added to the query.
+     * Any combination of name, email, active can be provided.
+     */
+    @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
+    public List<UserDetails> searchUsers(String name, String email, Boolean active) {
+
+        // Step 1: Start building the SQL string
+        StringBuilder sql = new StringBuilder("SELECT * FROM user_details WHERE 1=1");
+        //                                                                    ↑
+        //  "WHERE 1=1" is a trick so every subsequent condition can use "AND ..."
+        //  Without it, the first condition would need "WHERE" and others "AND".
+        //  1=1 is always true, so it doesn't affect results.
+
+        // Step 2: Conditionally add WHERE clauses
+        if (name != null && !name.isEmpty()) {
+            sql.append(" AND user_name = :name");
+        }
+        if (email != null && !email.isEmpty()) {
+            sql.append(" AND email = :email");
+        }
+        if (active != null) {
+            sql.append(" AND active = :active");
+        }
+
+        // Step 3: Create the native query with entity class mapping
+        Query query = entityManager.createNativeQuery(sql.toString(), UserDetails.class);
+        //                                             ↑ raw SQL       ↑ map to entity
+
+        // Step 4: Bind parameters (only the ones we added to the SQL)
+        if (name != null && !name.isEmpty()) {
+            query.setParameter("name", name);
+        }
+        if (email != null && !email.isEmpty()) {
+            query.setParameter("email", email);
+        }
+        if (active != null) {
+            query.setParameter("active", active);
+        }
+
+        // Step 5: Execute and return
+        return query.getResultList();
+    }
+}
+```
+
+```java
+// Controller
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    // GET /api/users/search?name=Alice
+    // GET /api/users/search?active=true
+    // GET /api/users/search?name=Alice&active=true
+    // GET /api/users/search?name=Alice&email=alice@ex.com&active=true
+    // All combinations work with the SAME endpoint!
+    @GetMapping("/search")
+    public List<UserDetails> search(
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String email,
+        @RequestParam(required = false) Boolean active
+    ) {
+        return userService.searchUsers(name, email, active);
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Dynamic Query Building — Example Scenarios:                                     │
+│                                                                                  │
+│  Scenario 1: searchUsers("Alice", null, null)                                    │
+│    Built SQL: SELECT * FROM user_details WHERE 1=1 AND user_name = :name         │
+│    Bound:     :name = "Alice"                                                    │
+│    Final SQL: SELECT * FROM user_details WHERE 1=1 AND user_name = 'Alice'       │
+│    Result:    [UserDetails(id=1, name="Alice", ...)]                             │
+│                                                                                  │
+│  Scenario 2: searchUsers(null, null, true)                                       │
+│    Built SQL: SELECT * FROM user_details WHERE 1=1 AND active = :active          │
+│    Bound:     :active = true                                                     │
+│    Final SQL: SELECT * FROM user_details WHERE 1=1 AND active = true             │
+│    Result:    [Alice, Bob, Diana, Frank, Grace] — 5 active users                 │
+│                                                                                  │
+│  Scenario 3: searchUsers("Bob", "bob@ex.com", true)                              │
+│    Built SQL: SELECT * FROM user_details WHERE 1=1                               │
+│               AND user_name = :name AND email = :email AND active = :active      │
+│    Bound:     :name = "Bob", :email = "bob@ex.com", :active = true               │
+│    Final SQL: SELECT * FROM user_details WHERE 1=1                               │
+│               AND user_name = 'Bob' AND email = 'bob@ex.com' AND active = true   │
+│    Result:    [UserDetails(id=2, name="Bob", ...)]                               │
+│                                                                                  │
+│  Scenario 4: searchUsers(null, null, null)                                       │
+│    Built SQL: SELECT * FROM user_details WHERE 1=1                               │
+│    Final SQL: SELECT * FROM user_details WHERE 1=1                               │
+│    Result:    All 8 users (no filters applied)                                   │
+│                                                                                  │
+│  ONE method handles ALL combinations — no need for multiple @Query methods!      │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Flow — Dynamic Native Query:                                                    │
+│                                                                                  │
+│  Controller: GET /api/users/search?name=Alice&active=true                        │
+│       │                                                                          │
+│       v                                                                          │
+│  Service: searchUsers("Alice", null, true)                                       │
+│       │                                                                          │
+│       v                                                                          │
+│  Build SQL string dynamically:                                                   │
+│    "SELECT * FROM user_details WHERE 1=1"                                        │
+│     + " AND user_name = :name"      ← name is non-null                           │
+│     (email is null → skipped)                                                    │
+│     + " AND active = :active"       ← active is non-null                         │
+│       │                                                                          │
+│       v                                                                          │
+│  entityManager.createNativeQuery(sql, UserDetails.class)                         │
+│       │                                                                          │
+│       v                                                                          │
+│  query.setParameter("name", "Alice")                                             │
+│  query.setParameter("active", true)                                              │
+│       │                                                                          │
+│       v                                                                          │
+│  query.getResultList()                                                           │
+│       │                                                                          │
+│       v                                                                          │
+│  Hibernate sends to DB:                                                          │
+│    SELECT * FROM user_details                                                    │
+│    WHERE 1=1 AND user_name = 'Alice' AND active = true                           │
+│       │                                                                          │
+│       v                                                                          │
+│  ResultSet → mapped to UserDetails entity (SELECT * → full entity)               │
+│       │                                                                          │
+│       v                                                                          │
+│  Returns List<UserDetails> → Controller → JSON response                          │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Returning Object[] instead of Entity (partial columns):**
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
+    public List<UserPhoneDTO> searchUserPhones(String name, Boolean active) {
+
+        // Select only specific columns — returns Object[], NOT entity
+        StringBuilder sql = new StringBuilder("SELECT user_name, phone FROM user_details WHERE 1=1");
+
+        if (name != null) {
+            sql.append(" AND user_name LIKE :name");
+        }
+        if (active != null) {
+            sql.append(" AND active = :active");
+        }
+
+        // No entity class → returns List<Object[]>
+        Query query = entityManager.createNativeQuery(sql.toString());
+        //                                             ↑ no second parameter = Object[] result
+
+        if (name != null) {
+            query.setParameter("name", "%" + name + "%");
+        }
+        if (active != null) {
+            query.setParameter("active", active);
+        }
+
+        List<Object[]> results = query.getResultList();
+
+        // Convert Object[] → DTO in service layer
+        return results.stream()
+            .map(row -> new UserPhoneDTO((String) row[0], (String) row[1]))
+            .collect(Collectors.toList());
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  createNativeQuery — Two Overloads:                                              │
+│                                                                                  │
+│  1. entityManager.createNativeQuery(sql, UserDetails.class)                      │
+│     → SQL must SELECT all entity columns (SELECT *)                              │
+│     → ResultSet mapped to entity automatically                                   │
+│     → Returns managed entities (dirty checking, lazy loading work)               │
+│     → getResultList() returns List<UserDetails>                                  │
+│                                                                                  │
+│  2. entityManager.createNativeQuery(sql)                                         │
+│     → SQL can select ANY columns                                                 │
+│     → ResultSet returned as raw Object[]                                         │
+│     → NOT managed entities — just raw data                                       │
+│     → getResultList() returns List<Object[]>                                     │
+│     → You convert to DTO manually in service layer                               │
+│                                                                                  │
+│  IMPORTANT — SQL Injection Protection:                                           │
+│    ALWAYS use setParameter() for user inputs.                                    │
+│    NEVER concatenate user values directly into SQL:                              │
+│                                                                                  │
+│    ✗ WRONG (SQL injection):                                                      │
+│      sql.append(" AND user_name = '" + name + "'");                              │
+│      → If name = "'; DROP TABLE user_details; --"                                │
+│      → SQL: ... AND user_name = ''; DROP TABLE user_details; --'                 │
+│      → TABLE DELETED!                                                            │
+│                                                                                  │
+│    ✓ CORRECT (parameterized):                                                    │
+│      sql.append(" AND user_name = :name");                                       │
+│      query.setParameter("name", name);                                           │
+│      → JDBC escapes the value. SQL injection impossible.                         │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Dynamic Native Query with Pagination and Sorting
+
+`EntityManager` provides `setFirstResult(offset)` and `setMaxResults(limit)` for pagination. For sorting, you append `ORDER BY` to the SQL string dynamically.
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Dynamic search with pagination and sorting.
+     * @param name     optional filter
+     * @param active   optional filter
+     * @param page     0-indexed page number
+     * @param size     page size
+     * @param sortBy   column name to sort by (e.g., "user_name", "id", "email")
+     * @param sortDir  sort direction ("ASC" or "DESC")
+     */
+    @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
+    public Page<UserDetails> searchUsersPaginated(String name, Boolean active,
+                                                   int page, int size,
+                                                   String sortBy, String sortDir) {
+
+        // === DATA QUERY ===
+        StringBuilder dataSql = new StringBuilder("SELECT * FROM user_details WHERE 1=1");
+
+        // === COUNT QUERY (for Page metadata) ===
+        StringBuilder countSql = new StringBuilder("SELECT COUNT(*) FROM user_details WHERE 1=1");
+
+        // Conditionally add WHERE clauses to BOTH queries
+        if (name != null && !name.isEmpty()) {
+            dataSql.append(" AND user_name LIKE :name");
+            countSql.append(" AND user_name LIKE :name");
+        }
+        if (active != null) {
+            dataSql.append(" AND active = :active");
+            countSql.append(" AND active = :active");
+        }
+
+        // Add ORDER BY (sorting) — only to data query, NOT count query
+        // IMPORTANT: Validate sortBy against a whitelist to prevent SQL injection!
+        List<String> allowedSortColumns = List.of("id", "user_name", "email", "phone", "active");
+        if (sortBy != null && allowedSortColumns.contains(sortBy)) {
+            String direction = "DESC".equalsIgnoreCase(sortDir) ? "DESC" : "ASC";
+            dataSql.append(" ORDER BY ").append(sortBy).append(" ").append(direction);
+        } else {
+            dataSql.append(" ORDER BY id ASC");  // default sort
+        }
+
+        // Create data query
+        Query dataQuery = entityManager.createNativeQuery(dataSql.toString(), UserDetails.class);
+
+        // Create count query
+        Query countQuery = entityManager.createNativeQuery(countSql.toString());
+
+        // Bind parameters to BOTH queries
+        if (name != null && !name.isEmpty()) {
+            dataQuery.setParameter("name", "%" + name + "%");
+            countQuery.setParameter("name", "%" + name + "%");
+        }
+        if (active != null) {
+            dataQuery.setParameter("active", active);
+            countQuery.setParameter("active", active);
+        }
+
+        // Apply pagination — OFFSET and LIMIT
+        dataQuery.setFirstResult(page * size);   // OFFSET = page * size
+        dataQuery.setMaxResults(size);            // LIMIT = size
+
+        // Execute both queries
+        List<UserDetails> content = dataQuery.getResultList();
+        long totalElements = ((Number) countQuery.getSingleResult()).longValue();
+
+        // Build and return Page object
+        Pageable pageable = PageRequest.of(page, size, Sort.by(
+            "DESC".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC,
+            sortBy != null ? sortBy : "id"
+        ));
+        return new PageImpl<>(content, pageable, totalElements);
+    }
+}
+```
+
+```java
+// Controller
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    // GET /api/users/search?active=true&page=0&size=3&sortBy=user_name&sortDir=DESC
+    @GetMapping("/search")
+    public Page<UserDetails> search(
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) Boolean active,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "id") String sortBy,
+        @RequestParam(defaultValue = "ASC") String sortDir
+    ) {
+        return userService.searchUsersPaginated(name, active, page, size, sortBy, sortDir);
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Dynamic Query with Pagination + Sorting — Scenario:                             │
+│                                                                                  │
+│  Request: GET /api/users/search?active=true&page=1&size=2&sortBy=user_name       │
+│                                                      &sortDir=ASC                │
+│                                                                                  │
+│  Built data SQL:                                                                 │
+│    SELECT * FROM user_details                                                    │
+│    WHERE 1=1 AND active = :active                                                │
+│    ORDER BY user_name ASC                                                        │
+│                                                                                  │
+│  After setParameter + pagination:                                                │
+│    SELECT * FROM user_details                                                    │
+│    WHERE 1=1 AND active = true                                                   │
+│    ORDER BY user_name ASC                                                        │
+│    LIMIT 2 OFFSET 2                                                              │
+│         ↑ size    ↑ page(1) × size(2)                                            │
+│                                                                                  │
+│  Built count SQL:                                                                │
+│    SELECT COUNT(*) FROM user_details                                             │
+│    WHERE 1=1 AND active = true                                                   │
+│    → Returns: 5 (Alice, Bob, Diana, Frank, Grace)                                │
+│                                                                                  │
+│  Active users sorted by name: Alice(1), Bob(2), Diana(4), Frank(6), Grace(7)    │
+│  Page 0 (OFFSET 0, LIMIT 2): [Alice, Bob]                                       │
+│  Page 1 (OFFSET 2, LIMIT 2): [Diana, Frank]  ← THIS page                        │
+│  Page 2 (OFFSET 4, LIMIT 2): [Grace]                                            │
+│                                                                                  │
+│  Response:                                                                       │
+│    Page<UserDetails> {                                                           │
+│      content: [Diana, Frank],                                                    │
+│      pageNumber: 1,                                                              │
+│      pageSize: 2,                                                                │
+│      totalElements: 5,                                                           │
+│      totalPages: 3                                                               │
+│    }                                                                             │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Pagination Methods — setFirstResult / setMaxResults:                            │
+│                                                                                  │
+│  query.setFirstResult(offset)                                                    │
+│    → Translates to SQL OFFSET                                                    │
+│    → Skips the first N rows                                                      │
+│    → Page 0: setFirstResult(0)   → OFFSET 0                                     │
+│    → Page 1: setFirstResult(10)  → OFFSET 10  (if size = 10)                    │
+│    → Page 2: setFirstResult(20)  → OFFSET 20                                    │
+│    → Formula: offset = page × size                                               │
+│                                                                                  │
+│  query.setMaxResults(limit)                                                      │
+│    → Translates to SQL LIMIT                                                     │
+│    → Returns at most N rows                                                      │
+│    → setMaxResults(10) → LIMIT 10                                                │
+│                                                                                  │
+│  Combined:                                                                       │
+│    query.setFirstResult(page * size);                                            │
+│    query.setMaxResults(size);                                                    │
+│    → SQL: ... LIMIT size OFFSET (page * size)                                    │
+│                                                                                  │
+│  Hibernate translates to DB-specific syntax:                                     │
+│    MySQL/PostgreSQL: LIMIT 10 OFFSET 20                                          │
+│    Oracle: OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY                               │
+│    SQL Server: OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY                           │
+│                                                                                  │
+│  NOTE: For COUNT query, do NOT set pagination — you want the TOTAL count.        │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Sorting — SQL Injection Protection for ORDER BY:                                │
+│                                                                                  │
+│  setParameter() CANNOT be used for ORDER BY column names:                        │
+│    query.setParameter("sort", "user_name")                                       │
+│    SQL: ... ORDER BY :sort → becomes ORDER BY 'user_name' → ERROR!               │
+│    Parameterized values are treated as STRING LITERALS, not column identifiers.  │
+│                                                                                  │
+│  You MUST concatenate column name into the SQL string:                            │
+│    sql.append(" ORDER BY ").append(sortBy).append(" ASC")                        │
+│                                                                                  │
+│  But this opens up SQL injection if sortBy comes from user input!                │
+│    sortBy = "user_name; DROP TABLE user_details; --"                             │
+│    SQL: ... ORDER BY user_name; DROP TABLE user_details; -- ASC                  │
+│                                                                                  │
+│  SOLUTION: Validate sortBy against a WHITELIST of allowed column names:          │
+│    List<String> allowed = List.of("id", "user_name", "email", "phone");          │
+│    if (allowed.contains(sortBy)) {                                               │
+│        sql.append(" ORDER BY ").append(sortBy);                                  │
+│    }                                                                             │
+│    → Only pre-approved column names can be used.                                 │
+│    → Unknown values are rejected.                                                │
+│    → SQL injection impossible.                                                   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Complex Queries Using Dynamic Native Query
+
+Dynamic native queries shine when you need complex search logic with optional JOINs, subqueries, GROUP BY, HAVING, or database-specific features — all built conditionally.
+
+**Example 1: Multi-table search with optional JOINs:**
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Complex search: filter by user fields AND optionally by address fields.
+     * If no address filters are provided, no JOIN is added (faster query).
+     */
+    @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
+    public List<UserDetails> advancedSearch(String name, Boolean active,
+                                             String city, String country) {
+
+        StringBuilder sql = new StringBuilder("SELECT DISTINCT u.* FROM user_details u");
+
+        // Only JOIN addresses if address filters are provided
+        boolean needsAddressJoin = (city != null && !city.isEmpty())
+                                || (country != null && !country.isEmpty());
+        if (needsAddressJoin) {
+            sql.append(" JOIN user_addresses a ON u.id = a.user_id");
+        }
+
+        sql.append(" WHERE 1=1");
+
+        if (name != null && !name.isEmpty()) {
+            sql.append(" AND u.user_name LIKE :name");
+        }
+        if (active != null) {
+            sql.append(" AND u.active = :active");
+        }
+        if (city != null && !city.isEmpty()) {
+            sql.append(" AND a.city = :city");
+        }
+        if (country != null && !country.isEmpty()) {
+            sql.append(" AND a.country = :country");
+        }
+
+        Query query = entityManager.createNativeQuery(sql.toString(), UserDetails.class);
+
+        if (name != null && !name.isEmpty()) {
+            query.setParameter("name", "%" + name + "%");
+        }
+        if (active != null) {
+            query.setParameter("active", active);
+        }
+        if (city != null && !city.isEmpty()) {
+            query.setParameter("city", city);
+        }
+        if (country != null && !country.isEmpty()) {
+            query.setParameter("country", country);
+        }
+
+        return query.getResultList();
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Complex Query — Dynamic JOIN Scenarios:                                         │
+│                                                                                  │
+│  Database Tables:                                                                │
+│                                                                                  │
+│  user_details                         user_addresses                             │
+│  ┌────┬───────────┬────────┐          ┌────┬──────────────┬──────────┬─────────┐ │
+│  │ id │ user_name │ active │          │ id │ street       │ city     │ country │ │
+│  ├────┼───────────┼────────┤          ├────┼──────────────┼──────────┼─────────┤ │
+│  │  1 │ Alice     │ true   │          │ 10 │ 123 Main St  │ New York │ USA     │ │
+│  │  2 │ Bob       │ true   │          │ 11 │ 456 Oak Ave  │ London   │ UK      │ │
+│  │  3 │ Charlie   │ false  │          │ 12 │ 789 Pine Rd  │ Mumbai   │ India   │ │
+│  └────┴───────────┴────────┘          └────┴──────────────┴──────────┴─────────┘ │
+│                                                                                  │
+│  Scenario 1: advancedSearch("Alice", null, null, null)                           │
+│    SQL: SELECT DISTINCT u.* FROM user_details u                                  │
+│         WHERE 1=1 AND u.user_name LIKE '%Alice%'                                 │
+│    → NO JOIN (address filters not provided → faster query)                       │
+│                                                                                  │
+│  Scenario 2: advancedSearch(null, true, "London", null)                          │
+│    SQL: SELECT DISTINCT u.* FROM user_details u                                  │
+│         JOIN user_addresses a ON u.id = a.user_id                                │
+│         WHERE 1=1 AND u.active = true AND a.city = 'London'                      │
+│    → JOIN added because city filter is present                                   │
+│                                                                                  │
+│  Scenario 3: advancedSearch("Bob", true, "London", "UK")                         │
+│    SQL: SELECT DISTINCT u.* FROM user_details u                                  │
+│         JOIN user_addresses a ON u.id = a.user_id                                │
+│         WHERE 1=1 AND u.user_name LIKE '%Bob%'                                   │
+│         AND u.active = true AND a.city = 'London' AND a.country = 'UK'           │
+│    → All filters applied, JOIN included                                          │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Example 2: Aggregation with GROUP BY and HAVING:**
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Dynamic report: count users per city, with optional filters.
+     * Returns aggregated data — not entities.
+     */
+    @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
+    public List<Object[]> getUserCountByCity(Boolean active, Integer minCount) {
+
+        StringBuilder sql = new StringBuilder(
+            "SELECT a.city, a.country, COUNT(DISTINCT u.id) as user_count " +
+            "FROM user_details u " +
+            "JOIN user_addresses a ON u.id = a.user_id " +
+            "WHERE 1=1"
+        );
+
+        if (active != null) {
+            sql.append(" AND u.active = :active");
+        }
+
+        sql.append(" GROUP BY a.city, a.country");
+
+        if (minCount != null && minCount > 0) {
+            sql.append(" HAVING COUNT(DISTINCT u.id) >= :minCount");
+        }
+
+        sql.append(" ORDER BY user_count DESC");
+
+        Query query = entityManager.createNativeQuery(sql.toString());
+
+        if (active != null) {
+            query.setParameter("active", active);
+        }
+        if (minCount != null && minCount > 0) {
+            query.setParameter("minCount", minCount);
+        }
+
+        return query.getResultList();
+        // Returns: List<Object[]>
+        //   Object[] { "New York", "USA", 15 }
+        //   Object[] { "London",   "UK",  12 }
+        //   Object[] { "Mumbai",   "India", 8 }
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Aggregation Query — Scenarios:                                                  │
+│                                                                                  │
+│  Scenario 1: getUserCountByCity(true, null)                                      │
+│    SQL: SELECT a.city, a.country, COUNT(DISTINCT u.id) as user_count             │
+│         FROM user_details u                                                      │
+│         JOIN user_addresses a ON u.id = a.user_id                                │
+│         WHERE 1=1 AND u.active = true                                            │
+│         GROUP BY a.city, a.country                                               │
+│         ORDER BY user_count DESC                                                 │
+│    → Counts active users per city, no minimum threshold                          │
+│                                                                                  │
+│  Scenario 2: getUserCountByCity(null, 10)                                        │
+│    SQL: SELECT a.city, a.country, COUNT(DISTINCT u.id) as user_count             │
+│         FROM user_details u                                                      │
+│         JOIN user_addresses a ON u.id = a.user_id                                │
+│         WHERE 1=1                                                                │
+│         GROUP BY a.city, a.country                                               │
+│         HAVING COUNT(DISTINCT u.id) >= 10                                        │
+│         ORDER BY user_count DESC                                                 │
+│    → All users, only cities with 10+ users                                       │
+│                                                                                  │
+│  Scenario 3: getUserCountByCity(true, 5)                                         │
+│    SQL: ... WHERE 1=1 AND u.active = true                                        │
+│         GROUP BY ... HAVING COUNT(...) >= 5                                       │
+│         ORDER BY user_count DESC                                                 │
+│    → Active users, only cities with 5+ active users                              │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Example 3: Dynamic UPDATE with EntityManager:**
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Dynamic bulk update — only SET the fields that are non-null.
+     */
+    @Transactional
+    public int dynamicUpdate(Long id, String newName, String newEmail, Boolean newActive) {
+
+        StringBuilder sql = new StringBuilder("UPDATE user_details SET ");
+        List<String> setClauses = new ArrayList<>();
+
+        if (newName != null) {
+            setClauses.add("user_name = :name");
+        }
+        if (newEmail != null) {
+            setClauses.add("email = :email");
+        }
+        if (newActive != null) {
+            setClauses.add("active = :active");
+        }
+
+        if (setClauses.isEmpty()) {
+            return 0;  // nothing to update
+        }
+
+        sql.append(String.join(", ", setClauses));
+        sql.append(" WHERE id = :id");
+
+        Query query = entityManager.createNativeQuery(sql.toString());
+
+        if (newName != null) {
+            query.setParameter("name", newName);
+        }
+        if (newEmail != null) {
+            query.setParameter("email", newEmail);
+        }
+        if (newActive != null) {
+            query.setParameter("active", newActive);
+        }
+        query.setParameter("id", id);
+
+        return query.executeUpdate();
+        // Returns int = number of rows affected (0 or 1)
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Dynamic UPDATE — Scenarios:                                                     │
+│                                                                                  │
+│  Scenario 1: dynamicUpdate(1, "Alice Updated", null, null)                       │
+│    SQL: UPDATE user_details SET user_name = :name WHERE id = :id                 │
+│    Final: UPDATE user_details SET user_name = 'Alice Updated' WHERE id = 1       │
+│    → Only name updated. Email and active unchanged.                              │
+│                                                                                  │
+│  Scenario 2: dynamicUpdate(2, null, "bob.new@ex.com", false)                     │
+│    SQL: UPDATE user_details SET email = :email, active = :active WHERE id = :id  │
+│    Final: UPDATE user_details SET email = 'bob.new@ex.com', active = false       │
+│           WHERE id = 2                                                           │
+│    → Email and active updated. Name unchanged.                                   │
+│                                                                                  │
+│  Scenario 3: dynamicUpdate(3, "Chuck", "chuck@ex.com", true)                     │
+│    SQL: UPDATE user_details SET user_name = :name, email = :email,               │
+│         active = :active WHERE id = :id                                          │
+│    Final: UPDATE user_details SET user_name = 'Chuck',                           │
+│           email = 'chuck@ex.com', active = true WHERE id = 3                     │
+│    → All three fields updated.                                                   │
+│                                                                                  │
+│  NOTE: executeUpdate() returns int, not entities.                                │
+│  The Persistence Context is NOT updated — cached entities are STALE.             │
+│  If you need fresh data after update, call entityManager.clear()                 │
+│  or entityManager.refresh(entity).                                               │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Summary — Dynamic Native Query Patterns
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Dynamic Native Query — Complete API:                                            │
+│                                                                                  │
+│  @PersistenceContext                                                             │
+│  private EntityManager entityManager;                                            │
+│                                                                                  │
+│  Creating:                                                                       │
+│    entityManager.createNativeQuery(sql)                  → List<Object[]>        │
+│    entityManager.createNativeQuery(sql, Entity.class)    → List<Entity>          │
+│                                                                                  │
+│  Binding parameters:                                                             │
+│    query.setParameter("name", value)     → named :name                           │
+│    query.setParameter(1, value)          → positional ?1                         │
+│                                                                                  │
+│  Pagination:                                                                     │
+│    query.setFirstResult(page * size)     → OFFSET                                │
+│    query.setMaxResults(size)             → LIMIT                                 │
+│                                                                                  │
+│  Executing:                                                                      │
+│    query.getResultList()                 → SELECT → List                          │
+│    query.getSingleResult()               → SELECT → single Object                │
+│    query.executeUpdate()                 → INSERT/UPDATE/DELETE → int             │
+│                                                                                  │
+│  Building dynamic SQL:                                                           │
+│    StringBuilder sql = new StringBuilder("SELECT ... WHERE 1=1");                │
+│    if (param != null) sql.append(" AND column = :param");                        │
+│    → Only non-null filters are added to the WHERE clause                        │
+│    → Always use setParameter() for values (prevents SQL injection)               │
+│    → Whitelist validate column names for ORDER BY (can't parameterize)           │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+When to use which query approach — Complete Decision Table:
+
+  ┌─────────────────────────────────────┬──────────────────────────────────────────┐
+  │ Scenario                            │ Best Approach                            │
+  ├─────────────────────────────────────┼──────────────────────────────────────────┤
+  │ Simple findBy with 1-2 conditions   │ Derived Query (method name)              │
+  │ Fixed complex query on entities     │ JPQL @Query on Repository                │
+  │ Fixed complex query on tables       │ Native @Query on Repository              │
+  │ DB-specific features (JSONB, etc.)  │ Native @Query on Repository              │
+  │ Optional filters (search/filter API)│ Dynamic Query with EntityManager         │
+  │ Dynamic ORDER BY from user input    │ Dynamic Query with EntityManager         │
+  │ Dynamic JOINs (conditional)         │ Dynamic Query with EntityManager         │
+  │ Dynamic GROUP BY / HAVING           │ Dynamic Query with EntityManager         │
+  │ Dynamic UPDATE (partial fields)     │ Dynamic Query with EntityManager         │
+  │ Report queries with many variations │ Dynamic Query with EntityManager         │
+  └─────────────────────────────────────┴──────────────────────────────────────────┘
+```
+
+---
+
+
+### What Is the Criteria API?
+
+The **Criteria API** is a programmatic, type-safe way to build JPA queries using Java objects instead of writing query strings (JPQL or raw SQL). It is part of the **JPA specification** (javax.persistence.criteria / jakarta.persistence.criteria) and is implemented by Hibernate.
+
+Instead of writing `"SELECT u FROM UserDetails u WHERE u.active = true"` as a string, you build the same query using method calls on `CriteriaBuilder`, `CriteriaQuery`, `Root`, `Predicate`, etc. The result is:
+- **Type-safe**: compile-time checks catch errors (no typos in field names if using metamodel)
+- **Database-independent**: uses JPA abstraction — Hibernate generates the correct SQL dialect
+- **Dynamic**: build queries programmatically, adding/removing conditions at runtime
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Query Approaches — Evolution:                                                   │
+│                                                                                  │
+│  1. Derived Query (method name)                                                  │
+│     findByActiveTrue()                                                           │
+│     → Simplest. Fixed at compile time. Spring parses the method name.            │
+│                                                                                  │
+│  2. JPQL (@Query)                                                                │
+│     @Query("SELECT u FROM UserDetails u WHERE u.active = :active")               │
+│     → String-based. Entity field names. DB-independent. Fixed query.             │
+│                                                                                  │
+│  3. Native Query (@Query nativeQuery=true)                                       │
+│     @Query(value = "SELECT * FROM user_details WHERE active = true",             │
+│            nativeQuery = true)                                                   │
+│     → String-based. DB column names. DB-dependent. Fixed query.                  │
+│                                                                                  │
+│  4. Dynamic Native Query (EntityManager + createNativeQuery)                     │
+│     StringBuilder sql = "SELECT * FROM user_details WHERE 1=1";                  │
+│     if (name != null) sql.append(" AND user_name = :name");                      │
+│     → String-based. DB column names. DB-dependent. DYNAMIC query.               │
+│                                                                                  │
+│  5. Criteria API (CriteriaBuilder + CriteriaQuery)          ← THIS SECTION      │
+│     CriteriaBuilder cb = entityManager.getCriteriaBuilder();                     │
+│     CriteriaQuery<UserDetails> cq = cb.createQuery(UserDetails.class);           │
+│     Root<UserDetails> root = cq.from(UserDetails.class);                         │
+│     cq.select(root).where(cb.equal(root.get("active"), true));                   │
+│     → Object-based. Java field names. DB-independent. DYNAMIC query.            │
+│     → Type-safe (especially with Metamodel). No raw SQL strings at all.          │
+│                                                                                  │
+│  KEY INSIGHT:                                                                    │
+│  Criteria API = Dynamic queries (like EntityManager native) + DB independence    │
+│                 (like JPQL) + Type safety (no strings at all with Metamodel)      │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+Database Tables (used in all examples below):
+
+  user_details                                          user_addresses
+  ┌────┬───────────┬──────────────────┬────────┐        ┌────┬─────────┬──────────┬─────────┬────────────┐
+  │ id │ user_name │ email            │ active │        │ id │ street  │ city     │ country │ user_id(FK)│
+  ├────┼───────────┼──────────────────┼────────┤        ├────┼─────────┼──────────┼─────────┼────────────┤
+  │  1 │ Alice     │ alice@ex.com     │ true   │        │ 10 │ Main St │ New York │ USA     │     1      │
+  │  2 │ Bob       │ bob@ex.com       │ true   │        │ 11 │ Oak Ave │ London   │ UK      │     2      │
+  │  3 │ Charlie   │ charlie@ex.com   │ false  │        │ 12 │ Pine Rd │ Mumbai   │ India   │     1      │
+  │  4 │ Diana     │ diana@ex.com     │ true   │        │ 13 │ Elm St  │ Paris    │ France  │     3      │
+  │  5 │ Eve       │ eve@ex.com       │ false  │        │ 14 │ Bay Dr  │ New York │ USA     │     4      │
+  │  6 │ Frank     │ frank@ex.com     │ true   │        └────┴─────────┴──────────┴─────────┴────────────┘
+  │  7 │ Grace     │ grace@ex.com     │ true   │
+  │  8 │ Hank      │ hank@ex.com      │ false  │
+  └────┴───────────┴──────────────────┴────────┘
+
+  Entity classes:
+
+  @Entity
+  @Table(name = "user_details")
+  public class UserDetails {
+      @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+      private Long id;
+
+      @Column(name = "user_name")
+      private String name;
+
+      @Column(name = "email")
+      private String email;
+
+      @Column(name = "active")
+      private Boolean active;
+
+      @OneToMany(mappedBy = "userDetails", fetch = FetchType.LAZY)
+      private List<UserAddress> addresses;
+      // getters, setters
+  }
+
+  @Entity
+  @Table(name = "user_addresses")
+  public class UserAddress {
+      @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+      private Long id;
+
+      @Column(name = "street")
+      private String street;
+
+      @Column(name = "city")
+      private String city;
+
+      @Column(name = "country")
+      private String country;
+
+      @ManyToOne(fetch = FetchType.LAZY)
+      @JoinColumn(name = "user_id")
+      private UserDetails userDetails;
+      // getters, setters
+  }
+```
+
+---
+
+### Native Query vs Criteria API — DB Dependency vs JPA Abstraction
+
+Dynamic Native Queries (using `EntityManager.createNativeQuery()`) let you build queries at runtime, but they are **database-dependent** — you write raw SQL with DB-specific column names, functions, and syntax. The Criteria API achieves the same dynamic query building but through **JPA abstraction** — you use Java field names, and Hibernate translates to the correct SQL dialect for your database.
+
+```java
+// APPROACH 1: Dynamic Native Query — database dependent
+@Service
+public class UserServiceNative {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
+    public List<UserDetails> searchUsers(String name, Boolean active) {
+
+        // Raw SQL — uses DB column names (user_name, not "name")
+        StringBuilder sql = new StringBuilder("SELECT * FROM user_details WHERE 1=1");
+
+        if (name != null) {
+            sql.append(" AND user_name LIKE :name");   // ← DB column name "user_name"
+        }
+        if (active != null) {
+            sql.append(" AND active = :active");       // ← DB column name "active"
+        }
+
+        Query query = entityManager.createNativeQuery(sql.toString(), UserDetails.class);
+
+        if (name != null) {
+            query.setParameter("name", "%" + name + "%");
+        }
+        if (active != null) {
+            query.setParameter("active", active);
+        }
+
+        return query.getResultList();
+    }
+    // Generated SQL (MySQL):
+    //   SELECT * FROM user_details WHERE 1=1 AND user_name LIKE '%Alice%' AND active = true
+    //
+    // If you switch to Oracle → still works (basic SQL is universal)
+    // But if you used MySQL-specific functions (LIMIT, IFNULL, etc.) → BREAKS on Oracle
+}
+```
+
+```java
+// APPROACH 2: Criteria API — database independent
+@Service
+public class UserServiceCriteria {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Transactional(readOnly = true)
+    public List<UserDetails> searchUsers(String name, Boolean active) {
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<UserDetails> cq = cb.createQuery(UserDetails.class);
+        Root<UserDetails> root = cq.from(UserDetails.class);
+
+        // Build predicates dynamically — uses JAVA FIELD names
+        List<Predicate> predicates = new ArrayList<>();
+
+        if (name != null) {
+            predicates.add(cb.like(root.get("name"), "%" + name + "%"));
+            //                          ↑ Java field name "name", NOT DB column "user_name"
+        }
+        if (active != null) {
+            predicates.add(cb.equal(root.get("active"), active));
+            //                           ↑ Java field name "active"
+        }
+
+        cq.select(root).where(predicates.toArray(new Predicate[0]));
+
+        return entityManager.createQuery(cq).getResultList();
+    }
+    // Generated SQL (MySQL dialect):
+    //   SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active
+    //   FROM user_details u1_0
+    //   WHERE u1_0.user_name LIKE '%Alice%' AND u1_0.active = true
+    //
+    // Generated SQL (Oracle dialect):
+    //   SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active
+    //   FROM user_details u1_0
+    //   WHERE u1_0.user_name LIKE '%Alice%' AND u1_0.active = 1
+    //                                                        ↑ Oracle uses 1/0 for boolean
+    //
+    // Hibernate handles the dialect difference automatically!
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Native Query vs Criteria API — Side by Side:                                    │
+│                                                                                  │
+│  ┌───────────────────────────────┬──────────────────────┬────────────────────────┐│
+│  │ Aspect                        │ Dynamic Native Query │ Criteria API           ││
+│  ├───────────────────────────────┼──────────────────────┼────────────────────────┤│
+│  │ Query language                │ Raw SQL strings      │ Java method calls      ││
+│  │ Column/field references       │ DB column names      │ Java field names       ││
+│  │                               │ ("user_name")        │ ("name")               ││
+│  │ DB independence               │ ✗ DB-specific SQL    │ ✓ Hibernate generates  ││
+│  │                               │                      │   dialect-specific SQL ││
+│  │ Type safety                   │ ✗ String-based       │ ✓ Compile-time checks  ││
+│  │                               │   (runtime errors)   │   (with Metamodel)     ││
+│  │ Dynamic query building        │ ✓ StringBuilder      │ ✓ Predicate list       ││
+│  │ SQL injection risk            │ ✗ Must use           │ ✓ Parameterized by     ││
+│  │                               │   setParameter()     │   design (no raw SQL)  ││
+│  │ DB-specific features          │ ✓ Full access        │ ✗ Limited to JPA spec  ││
+│  │ (JSONB, window functions)     │                      │                        ││
+│  │ Performance                   │ Slightly faster      │ Slightly slower        ││
+│  │                               │ (no JPQL parsing)    │ (builds AST → SQL)     ││
+│  │ Readability                   │ ✓ Familiar SQL       │ ✗ Verbose Java code    ││
+│  │ Maintainability               │ ✗ String fragile     │ ✓ Refactor-safe        ││
+│  └───────────────────────────────┴──────────────────────┴────────────────────────┘│
+│                                                                                  │
+│  WHEN TO USE CRITERIA API over Dynamic Native Query:                             │
+│    - Application must support multiple databases (MySQL + Oracle + PostgreSQL)   │
+│    - You want compile-time safety (catch typos in field names early)             │
+│    - You want to avoid SQL injection risk entirely (no string concatenation)     │
+│    - You are building complex dynamic queries with many optional conditions      │
+│                                                                                  │
+│  WHEN TO USE DYNAMIC NATIVE QUERY over Criteria API:                             │
+│    - You need DB-specific features (JSONB, full-text search, window functions)   │
+│    - You need maximum query performance (skip Criteria → JPQL → SQL translation)│
+│    - Your team prefers reading SQL over verbose Criteria API code                │
+│    - Application is locked to a single database                                  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  DB Portability — Criteria API vs Native Query:                                  │
+│                                                                                  │
+│  Scenario: Boolean column "active" — switching from MySQL to Oracle              │
+│                                                                                  │
+│  Native Query:                                                                   │
+│    MySQL:  "SELECT * FROM user_details WHERE active = true"   ← works            │
+│    Oracle: "SELECT * FROM user_details WHERE active = true"   ← ERROR!           │
+│            Oracle has no BOOLEAN type. Uses NUMBER(1): 0 or 1.                   │
+│    Fix:    "SELECT * FROM user_details WHERE active = 1"      ← Oracle-specific  │
+│    → You must maintain different SQL strings per database!                        │
+│                                                                                  │
+│  Criteria API:                                                                   │
+│    cb.equal(root.get("active"), true)                                            │
+│    MySQL:  → WHERE active = true      (Hibernate MySQL dialect)                  │
+│    Oracle: → WHERE active = 1         (Hibernate Oracle dialect)                 │
+│    → Same Java code. Hibernate handles the translation automatically.            │
+│                                                                                  │
+│  Scenario: Pagination — switching from MySQL to Oracle                           │
+│                                                                                  │
+│  Native Query:                                                                   │
+│    MySQL:  "SELECT * FROM user_details LIMIT 10 OFFSET 20"                       │
+│    Oracle: "SELECT * FROM user_details OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY"  │
+│    → Different syntax! Must rewrite.                                             │
+│                                                                                  │
+│  Criteria API:                                                                   │
+│    query.setFirstResult(20);                                                     │
+│    query.setMaxResults(10);                                                      │
+│    MySQL:  → LIMIT 10 OFFSET 20                                                  │
+│    Oracle: → OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY                             │
+│    → Same Java code. Hibernate generates dialect-specific pagination.            │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### How Criteria API Works — JPA Abstraction and Type Safety
+
+The Criteria API operates entirely at the **JPA entity level**, not the database level. You reference Java field names, Java types, and entity relationships. Hibernate's Criteria engine builds an internal AST (Abstract Syntax Tree), then translates it to SQL using the configured dialect.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Criteria API — How it generates SQL (internal flow):                            │
+│                                                                                  │
+│  Your Java code:                                                                 │
+│    CriteriaBuilder cb = entityManager.getCriteriaBuilder();                      │
+│    CriteriaQuery<UserDetails> cq = cb.createQuery(UserDetails.class);            │
+│    Root<UserDetails> root = cq.from(UserDetails.class);                          │
+│    cq.select(root).where(cb.equal(root.get("name"), "Alice"));                   │
+│    TypedQuery<UserDetails> query = entityManager.createQuery(cq);                │
+│    List<UserDetails> result = query.getResultList();                              │
+│       │                                                                          │
+│       v                                                                          │
+│  Step 1: CriteriaBuilder builds an AST (Abstract Syntax Tree)                   │
+│    SelectStatement                                                               │
+│      ├─ FROM: UserDetails (entity) → table "user_details"                        │
+│      ├─ SELECT: root (all fields)                                                │
+│      └─ WHERE: EqualPredicate                                                    │
+│                  ├─ left: root.get("name") → @Column(name="user_name")           │
+│                  └─ right: "Alice" (literal)                                     │
+│       │                                                                          │
+│       v                                                                          │
+│  Step 2: Hibernate reads entity metadata                                         │
+│    UserDetails.class:                                                            │
+│      @Table(name = "user_details")                                               │
+│      field "name" → @Column(name = "user_name")                                  │
+│      field "email" → @Column(name = "email")                                     │
+│      field "active" → @Column(name = "active")                                   │
+│       │                                                                          │
+│       v                                                                          │
+│  Step 3: SQL Generator (uses configured Dialect)                                 │
+│    Dialect = MySQL8Dialect                                                        │
+│    → SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                    │
+│      FROM user_details u1_0                                                      │
+│      WHERE u1_0.user_name = 'Alice'                                              │
+│       │                                                                          │
+│       v                                                                          │
+│  Step 4: JDBC PreparedStatement → executed on DB → ResultSet                     │
+│       │                                                                          │
+│       v                                                                          │
+│  Step 5: ResultSet → mapped to UserDetails entities (managed in L1 cache)        │
+│                                                                                  │
+│  KEY: You wrote "name" (Java field). Hibernate resolved it to "user_name" (DB).  │
+│  KEY: If you rename the DB column, only @Column annotation changes.              │
+│       Your Criteria code stays the same.                                         │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Type Safety — String-based vs Metamodel:**
+
+The Criteria API supports two ways to reference entity fields:
+
+```java
+// Option 1: String-based field reference (not fully type-safe)
+root.get("name")       // field name as String — typo causes runtime error
+root.get("naem")       // ← typo! Compiles fine. Fails at RUNTIME.
+
+// Option 2: JPA Metamodel (fully type-safe)
+root.get(UserDetails_.name)     // field reference as generated class constant
+root.get(UserDetails_.naem)     // ← typo! COMPILE ERROR. Caught immediately.
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  JPA Metamodel — Static type safety:                                             │
+│                                                                                  │
+│  Hibernate can generate a "metamodel" class for each entity at compile time.     │
+│  This class has static fields for every entity attribute.                        │
+│                                                                                  │
+│  Entity:                                          Generated Metamodel:           │
+│  @Entity                                          @StaticMetamodel(UserDetails)  │
+│  public class UserDetails {                       public class UserDetails_ {    │
+│      @Id                                              public static volatile     │
+│      private Long id;                                   SingularAttribute<       │
+│      @Column(name="user_name")                            UserDetails, Long> id; │
+│      private String name;                             public static volatile     │
+│      @Column(name="email")                              SingularAttribute<       │
+│      private String email;                                UserDetails,String>name│
+│      @Column(name="active")                           public static volatile     │
+│      private Boolean active;                            SingularAttribute<       │
+│  }                                                        UserDetails,String>    │
+│                                                           email;                 │
+│                                                       public static volatile     │
+│                                                         SingularAttribute<       │
+│                                                           UserDetails,Boolean>   │
+│                                                           active;                │
+│                                                   }                              │
+│                                                                                  │
+│  Usage with Metamodel:                                                           │
+│    cb.equal(root.get(UserDetails_.name), "Alice")                                │
+│    cb.greaterThan(root.get(UserDetails_.id), 5L)                                 │
+│                                                                                  │
+│  Benefits:                                                                       │
+│    - Typo in field name → COMPILE ERROR (not runtime)                            │
+│    - Type mismatch → COMPILE ERROR                                               │
+│      e.g., cb.equal(root.get(UserDetails_.name), 42) → error (String != int)    │
+│    - IDE autocomplete works — root.get(UserDetails_. → shows all fields          │
+│    - When entity field is renamed → refactoring updates Metamodel too            │
+│                                                                                  │
+│  NOTE: In examples below, we use String-based root.get("name") for simplicity.  │
+│  In production, prefer the Metamodel approach for type safety.                   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Type Safety Comparison:                                                         │
+│                                                                                  │
+│  ┌─────────────────────────────────┬──────────────────┬──────────────────────────┐│
+│  │ Approach                        │ Field Reference   │ Typo Detection           ││
+│  ├─────────────────────────────────┼──────────────────┼──────────────────────────┤│
+│  │ Native Query (raw SQL)          │ "user_name"      │ Runtime only             ││
+│  │ JPQL (@Query string)            │ "u.name"         │ Startup (Spring parses)  ││
+│  │ Criteria API (String-based)     │ root.get("name") │ Runtime (query exec)     ││
+│  │ Criteria API (Metamodel)        │ root.get(U_.name)│ COMPILE TIME             ││
+│  └─────────────────────────────────┴──────────────────┴──────────────────────────┘│
+│                                                                                  │
+│  Criteria API with Metamodel = SAFEST approach for dynamic queries               │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### CriteriaBuilder → CriteriaQuery → TypedQuery — The Three Steps
+
+Every Criteria API query follows this pattern:
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Criteria API — Three Step Pattern:                                              │
+│                                                                                  │
+│  Step 1: Get CriteriaBuilder from EntityManager                                  │
+│    CriteriaBuilder cb = entityManager.getCriteriaBuilder();                      │
+│    → CriteriaBuilder is a FACTORY for creating query components:                 │
+│      predicates (WHERE conditions), expressions, orderings, etc.                 │
+│                                                                                  │
+│  Step 2: Build CriteriaQuery using CriteriaBuilder                               │
+│    CriteriaQuery<UserDetails> cq = cb.createQuery(UserDetails.class);            │
+│    Root<UserDetails> root = cq.from(UserDetails.class);                          │
+│    cq.select(root).where(cb.equal(root.get("active"), true));                    │
+│    → CriteriaQuery defines the STRUCTURE of the query:                           │
+│      what to SELECT, FROM which entity, WHERE conditions, ORDER BY, GROUP BY     │
+│                                                                                  │
+│  Step 3: Create TypedQuery from CriteriaQuery and execute                        │
+│    TypedQuery<UserDetails> query = entityManager.createQuery(cq);                │
+│    List<UserDetails> results = query.getResultList();                             │
+│    → TypedQuery is the EXECUTABLE form — translates to SQL and runs it           │
+│                                                                                  │
+│  Flow diagram:                                                                   │
+│                                                                                  │
+│  EntityManager                                                                   │
+│       │                                                                          │
+│       ├─ .getCriteriaBuilder() ──→ CriteriaBuilder (factory)                     │
+│       │                                │                                         │
+│       │                                ├─ .createQuery(Class) → CriteriaQuery    │
+│       │                                ├─ .equal()    → Predicate                │
+│       │                                ├─ .like()     → Predicate                │
+│       │                                ├─ .and()      → Predicate                │
+│       │                                ├─ .or()       → Predicate                │
+│       │                                ├─ .asc()      → Order                    │
+│       │                                ├─ .desc()     → Order                    │
+│       │                                ├─ .count()    → Expression               │
+│       │                                └─ .sum()      → Expression               │
+│       │                                                                          │
+│       │   CriteriaQuery                                                          │
+│       │       │                                                                  │
+│       │       ├─ .from(Entity.class) → Root<Entity>                              │
+│       │       ├─ .select(root)                                                   │
+│       │       ├─ .where(predicates)                                              │
+│       │       ├─ .orderBy(orders)                                                │
+│       │       ├─ .groupBy(expressions)                                           │
+│       │       └─ .having(predicate)                                              │
+│       │                                                                          │
+│       └─ .createQuery(criteriaQuery) ──→ TypedQuery<T>                           │
+│                                              │                                   │
+│                                              ├─ .getResultList() → List<T>       │
+│                                              ├─ .getSingleResult() → T           │
+│                                              ├─ .setFirstResult(offset)          │
+│                                              ├─ .setMaxResults(limit)            │
+│                                              └─ .setParameter(name, value)       │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### CriteriaBuilder — All Comparison and Logical Operators
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  CriteriaBuilder — Comparison Operators:                                         │
+│                                                                                  │
+│  ┌──────────────────────────────────────────┬────────────────────────────────────┐│
+│  │ CriteriaBuilder Method                   │ SQL Equivalent                    ││
+│  ├──────────────────────────────────────────┼────────────────────────────────────┤│
+│  │ cb.equal(expr, value)                    │ column = value                    ││
+│  │ cb.notEqual(expr, value)                 │ column != value (column <> value) ││
+│  │ cb.greaterThan(expr, value)              │ column > value                    ││
+│  │ cb.greaterThanOrEqualTo(expr, value)     │ column >= value                   ││
+│  │ cb.lessThan(expr, value)                 │ column < value                    ││
+│  │ cb.lessThanOrEqualTo(expr, value)        │ column <= value                   ││
+│  │ cb.between(expr, low, high)              │ column BETWEEN low AND high       ││
+│  │ cb.like(expr, pattern)                   │ column LIKE pattern               ││
+│  │ cb.notLike(expr, pattern)                │ column NOT LIKE pattern           ││
+│  │ cb.isNull(expr)                          │ column IS NULL                    ││
+│  │ cb.isNotNull(expr)                       │ column IS NOT NULL                ││
+│  │ cb.in(expr)  or  expr.in(collection)     │ column IN (val1, val2, ...)       ││
+│  │ cb.isTrue(expr)                          │ column = true (or = 1)            ││
+│  │ cb.isFalse(expr)                         │ column = false (or = 0)           ││
+│  └──────────────────────────────────────────┴────────────────────────────────────┘│
+│                                                                                  │
+│  CriteriaBuilder — Logical Operators:                                            │
+│                                                                                  │
+│  ┌──────────────────────────────────────────┬────────────────────────────────────┐│
+│  │ CriteriaBuilder Method                   │ SQL Equivalent                    ││
+│  ├──────────────────────────────────────────┼────────────────────────────────────┤│
+│  │ cb.and(predicate1, predicate2)           │ cond1 AND cond2                   ││
+│  │ cb.or(predicate1, predicate2)            │ cond1 OR cond2                    ││
+│  │ cb.not(predicate)                        │ NOT cond                          ││
+│  │ cb.conjunction()                         │ 1=1 (always true — AND identity)  ││
+│  │ cb.disjunction()                         │ 1=0 (always false — OR identity)  ││
+│  └──────────────────────────────────────────┴────────────────────────────────────┘│
+│                                                                                  │
+│  CriteriaBuilder — Aggregate Functions:                                          │
+│                                                                                  │
+│  ┌──────────────────────────────────────────┬────────────────────────────────────┐│
+│  │ CriteriaBuilder Method                   │ SQL Equivalent                    ││
+│  ├──────────────────────────────────────────┼────────────────────────────────────┤│
+│  │ cb.count(expr)                           │ COUNT(column)                     ││
+│  │ cb.countDistinct(expr)                   │ COUNT(DISTINCT column)            ││
+│  │ cb.sum(expr)                             │ SUM(column)                       ││
+│  │ cb.avg(expr)                             │ AVG(column)                       ││
+│  │ cb.max(expr)                             │ MAX(column)                       ││
+│  │ cb.min(expr)                             │ MIN(column)                       ││
+│  │ cb.greatest(expr)                        │ GREATEST(column) (like max)       ││
+│  │ cb.least(expr)                           │ LEAST(column) (like min)          ││
+│  └──────────────────────────────────────────┴────────────────────────────────────┘│
+│                                                                                  │
+│  CriteriaBuilder — String Functions:                                             │
+│                                                                                  │
+│  ┌──────────────────────────────────────────┬────────────────────────────────────┐│
+│  │ CriteriaBuilder Method                   │ SQL Equivalent                    ││
+│  ├──────────────────────────────────────────┼────────────────────────────────────┤│
+│  │ cb.upper(expr)                           │ UPPER(column)                     ││
+│  │ cb.lower(expr)                           │ LOWER(column)                     ││
+│  │ cb.concat(expr1, expr2)                  │ CONCAT(col1, col2)               ││
+│  │ cb.substring(expr, start, len)           │ SUBSTRING(column, start, len)    ││
+│  │ cb.trim(expr)                            │ TRIM(column)                     ││
+│  │ cb.length(expr)                          │ LENGTH(column)                   ││
+│  └──────────────────────────────────────────┴────────────────────────────────────┘│
+│                                                                                  │
+│  TypedQuery — Execution Methods:                                                 │
+│                                                                                  │
+│  ┌──────────────────────────────────────────┬────────────────────────────────────┐│
+│  │ TypedQuery Method                        │ Meaning                           ││
+│  ├──────────────────────────────────────────┼────────────────────────────────────┤│
+│  │ query.getResultList()                    │ Execute SELECT → List<T>          ││
+│  │ query.getSingleResult()                  │ Execute SELECT → single T         ││
+│  │                                          │ (throws if 0 or 2+ results)      ││
+│  │ query.setFirstResult(offset)             │ OFFSET (for pagination)           ││
+│  │ query.setMaxResults(limit)               │ LIMIT (for pagination)            ││
+│  │ query.setParameter(name, value)          │ Bind named parameter              ││
+│  │ query.setParameter(position, value)      │ Bind positional parameter         ││
+│  │ query.setHint(name, value)               │ Set query hint (cache, timeout)   ││
+│  │ query.setLockMode(LockModeType)          │ Set lock mode (PESSIMISTIC, etc.) ││
+│  └──────────────────────────────────────────┴────────────────────────────────────┘│
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Complete Service + Controller Example — Dynamic Search with Criteria API
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Dynamic search using Criteria API.
+     * Filters are optional — only non-null parameters become WHERE conditions.
+     */
+    @Transactional(readOnly = true)
+    public List<UserDetails> searchUsers(String name, String email, Boolean active) {
+
+        // Step 1: Get CriteriaBuilder
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+
+        // Step 2: Create CriteriaQuery for UserDetails entity
+        CriteriaQuery<UserDetails> cq = cb.createQuery(UserDetails.class);
+        //                                 ↑ result type = UserDetails
+
+        // Step 3: Define the FROM clause — the root entity
+        Root<UserDetails> root = cq.from(UserDetails.class);
+        //  root represents the "user_details" table
+        //  root.get("name") = reference to "user_name" column
+        //  root.get("email") = reference to "email" column
+
+        // Step 4: Build predicates (WHERE conditions) dynamically
+        List<Predicate> predicates = new ArrayList<>();
+
+        if (name != null && !name.isEmpty()) {
+            predicates.add(cb.like(root.get("name"), "%" + name + "%"));
+            // SQL: user_name LIKE '%Alice%'
+        }
+
+        if (email != null && !email.isEmpty()) {
+            predicates.add(cb.equal(root.get("email"), email));
+            // SQL: email = 'alice@ex.com'
+        }
+
+        if (active != null) {
+            predicates.add(cb.equal(root.get("active"), active));
+            // SQL: active = true
+        }
+
+        // Step 5: Apply SELECT and WHERE
+        cq.select(root).where(predicates.toArray(new Predicate[0]));
+        //  .where() accepts Predicate[] (varargs)
+        //  Multiple predicates are combined with AND by default.
+
+        // Step 6: Create TypedQuery and execute
+        TypedQuery<UserDetails> query = entityManager.createQuery(cq);
+        return query.getResultList();
+    }
+}
+```
+
+```java
+// Controller
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    // GET /api/users/search?name=Alice
+    // GET /api/users/search?active=true
+    // GET /api/users/search?name=Alice&email=alice@ex.com&active=true
+    @GetMapping("/search")
+    public List<UserDetails> search(
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String email,
+        @RequestParam(required = false) Boolean active
+    ) {
+        return userService.searchUsers(name, email, active);
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Criteria API — Generated SQL for each scenario:                                 │
+│                                                                                  │
+│  Scenario 1: searchUsers("Alice", null, null)                                    │
+│    Predicates: [cb.like(root.get("name"), "%Alice%")]                            │
+│    Generated SQL:                                                                │
+│      SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                    │
+│      FROM user_details u1_0                                                      │
+│      WHERE u1_0.user_name LIKE '%Alice%'                                         │
+│    Result: [UserDetails(id=1, name="Alice", ...)]                                │
+│                                                                                  │
+│  Scenario 2: searchUsers(null, null, true)                                       │
+│    Predicates: [cb.equal(root.get("active"), true)]                              │
+│    Generated SQL:                                                                │
+│      SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                    │
+│      FROM user_details u1_0                                                      │
+│      WHERE u1_0.active = true                                                    │
+│    Result: [Alice, Bob, Diana, Frank, Grace] — 5 active users                    │
+│                                                                                  │
+│  Scenario 3: searchUsers("Bob", "bob@ex.com", true)                              │
+│    Predicates: [like, equal(email), equal(active)]                               │
+│    Generated SQL:                                                                │
+│      SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                    │
+│      FROM user_details u1_0                                                      │
+│      WHERE u1_0.user_name LIKE '%Bob%'                                           │
+│        AND u1_0.email = 'bob@ex.com'                                             │
+│        AND u1_0.active = true                                                    │
+│    Result: [UserDetails(id=2, name="Bob", ...)]                                  │
+│                                                                                  │
+│  Scenario 4: searchUsers(null, null, null)                                       │
+│    Predicates: [] (empty)                                                        │
+│    Generated SQL:                                                                │
+│      SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                    │
+│      FROM user_details u1_0                                                      │
+│    Result: All 8 users (no WHERE clause at all)                                  │
+│                                                                                  │
+│  NOTE: When predicates list is empty, .where() with empty array = no WHERE.      │
+│  This is the Criteria API equivalent of the "WHERE 1=1" trick.                   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Using OR, NOT, and complex logic:**
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Complex search with OR and NOT logic:
+     * Find users where (name LIKE keyword OR email LIKE keyword) AND active = true
+     */
+    @Transactional(readOnly = true)
+    public List<UserDetails> complexSearch(String keyword, Boolean active) {
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<UserDetails> cq = cb.createQuery(UserDetails.class);
+        Root<UserDetails> root = cq.from(UserDetails.class);
+
+        List<Predicate> predicates = new ArrayList<>();
+
+        if (keyword != null && !keyword.isEmpty()) {
+            // OR condition: name LIKE keyword OR email LIKE keyword
+            Predicate nameLike = cb.like(root.get("name"), "%" + keyword + "%");
+            Predicate emailLike = cb.like(root.get("email"), "%" + keyword + "%");
+            predicates.add(cb.or(nameLike, emailLike));
+            // SQL: (user_name LIKE '%keyword%' OR email LIKE '%keyword%')
+        }
+
+        if (active != null) {
+            predicates.add(cb.equal(root.get("active"), active));
+        }
+
+        // All predicates combined with AND
+        cq.select(root).where(predicates.toArray(new Predicate[0]));
+
+        return entityManager.createQuery(cq).getResultList();
+    }
+
+    /**
+     * Using IN, BETWEEN, IS NOT NULL:
+     */
+    @Transactional(readOnly = true)
+    public List<UserDetails> advancedSearch(List<Long> ids, Long minId, Long maxId) {
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<UserDetails> cq = cb.createQuery(UserDetails.class);
+        Root<UserDetails> root = cq.from(UserDetails.class);
+
+        List<Predicate> predicates = new ArrayList<>();
+
+        if (ids != null && !ids.isEmpty()) {
+            predicates.add(root.get("id").in(ids));
+            // SQL: id IN (1, 2, 5)
+        }
+
+        if (minId != null && maxId != null) {
+            predicates.add(cb.between(root.get("id"), minId, maxId));
+            // SQL: id BETWEEN 3 AND 7
+        }
+
+        predicates.add(cb.isNotNull(root.get("email")));
+        // SQL: email IS NOT NULL
+
+        cq.select(root).where(predicates.toArray(new Predicate[0]));
+
+        return entityManager.createQuery(cq).getResultList();
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Complex Logic — Generated SQL:                                                  │
+│                                                                                  │
+│  complexSearch("ali", true):                                                     │
+│    SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                      │
+│    FROM user_details u1_0                                                        │
+│    WHERE (u1_0.user_name LIKE '%ali%' OR u1_0.email LIKE '%ali%')                │
+│      AND u1_0.active = true                                                      │
+│    Result: [Alice] — name matches "ali", active = true                           │
+│                                                                                  │
+│  advancedSearch([1, 2, 5], null, null):                                          │
+│    SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                      │
+│    FROM user_details u1_0                                                        │
+│    WHERE u1_0.id IN (1, 2, 5)                                                    │
+│      AND u1_0.email IS NOT NULL                                                  │
+│    Result: [Alice, Bob, Eve]                                                     │
+│                                                                                  │
+│  advancedSearch(null, 3L, 7L):                                                   │
+│    SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                      │
+│    FROM user_details u1_0                                                        │
+│    WHERE u1_0.id BETWEEN 3 AND 7                                                 │
+│      AND u1_0.email IS NOT NULL                                                  │
+│    Result: [Charlie, Diana, Eve, Frank, Grace]                                   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Multiselect — Selecting Multiple Fields as List<Object[]>
+
+When you don't need the full entity but only specific fields, use `cq.multiselect()` to select individual columns. The result type is `Object[]` — each array element corresponds to one selected field.
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Select only name and email — returns List<Object[]>
+     */
+    @Transactional(readOnly = true)
+    public List<Object[]> getUserNamesAndEmails(Boolean active) {
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+
+        // Result type = Object[] (not entity — because we select partial fields)
+        CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
+
+        Root<UserDetails> root = cq.from(UserDetails.class);
+
+        // multiselect — select specific fields
+        cq.multiselect(
+            root.get("name"),     // index 0 → user_name column
+            root.get("email")     // index 1 → email column
+        );
+
+        if (active != null) {
+            cq.where(cb.equal(root.get("active"), active));
+        }
+
+        TypedQuery<Object[]> query = entityManager.createQuery(cq);
+        return query.getResultList();
+    }
+}
+```
+
+```java
+// Service — converting Object[] to DTO
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Transactional(readOnly = true)
+    public List<UserEmailDTO> getUserEmails(Boolean active) {
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
+        Root<UserDetails> root = cq.from(UserDetails.class);
+
+        cq.multiselect(
+            root.get("name"),
+            root.get("email")
+        );
+
+        if (active != null) {
+            cq.where(cb.equal(root.get("active"), active));
+        }
+
+        List<Object[]> results = entityManager.createQuery(cq).getResultList();
+
+        // Convert Object[] to DTO
+        return results.stream()
+            .map(row -> new UserEmailDTO((String) row[0], (String) row[1]))
+            .collect(Collectors.toList());
+    }
+}
+
+// DTO
+public class UserEmailDTO {
+    private String name;
+    private String email;
+
+    public UserEmailDTO(String name, String email) {
+        this.name = name;
+        this.email = email;
+    }
+    // getters
+    public String getName() { return name; }
+    public String getEmail() { return email; }
+}
+```
+
+```java
+// Controller
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/emails")
+    public List<UserEmailDTO> getEmails(@RequestParam(required = false) Boolean active) {
+        return userService.getUserEmails(active);
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  multiselect — How it works:                                                     │
+│                                                                                  │
+│  Java code:                                                                      │
+│    cq.multiselect(root.get("name"), root.get("email"));                          │
+│                                                                                  │
+│  Generated SQL:                                                                  │
+│    SELECT u1_0.user_name, u1_0.email                                             │
+│    FROM user_details u1_0                                                        │
+│    WHERE u1_0.active = true                                                      │
+│                                                                                  │
+│  ResultSet:                                                                      │
+│    ┌───────────┬──────────────────┐                                              │
+│    │ user_name │ email            │                                              │
+│    ├───────────┼──────────────────┤                                              │
+│    │ Alice     │ alice@ex.com     │   → Object[] { "Alice", "alice@ex.com" }     │
+│    │ Bob       │ bob@ex.com       │   → Object[] { "Bob",   "bob@ex.com" }       │
+│    │ Diana     │ diana@ex.com     │   → Object[] { "Diana", "diana@ex.com" }     │
+│    │ Frank     │ frank@ex.com     │   → Object[] { "Frank", "frank@ex.com" }     │
+│    │ Grace     │ grace@ex.com     │   → Object[] { "Grace", "grace@ex.com" }     │
+│    └───────────┴──────────────────┘                                              │
+│                                                                                  │
+│  Object[] index mapping:                                                         │
+│    row[0] → "name"  (first in multiselect)  → user_name column                  │
+│    row[1] → "email" (second in multiselect) → email column                       │
+│                                                                                  │
+│  Alternative — Direct DTO construction (no Object[] step):                       │
+│    CriteriaQuery<UserEmailDTO> cq = cb.createQuery(UserEmailDTO.class);          │
+│    Root<UserDetails> root = cq.from(UserDetails.class);                          │
+│    cq.select(cb.construct(UserEmailDTO.class,                                    │
+│        root.get("name"),                                                         │
+│        root.get("email")                                                         │
+│    ));                                                                            │
+│    → Hibernate calls new UserEmailDTO(name, email) directly!                     │
+│    → No manual Object[] conversion needed.                                       │
+│    → DTO constructor parameter order must match select order.                    │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Using cb.construct() for direct DTO mapping (cleaner approach):**
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Transactional(readOnly = true)
+    public List<UserEmailDTO> getUserEmailsDirect(Boolean active) {
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+
+        // Result type = DTO class directly
+        CriteriaQuery<UserEmailDTO> cq = cb.createQuery(UserEmailDTO.class);
+        Root<UserDetails> root = cq.from(UserDetails.class);
+
+        // cb.construct() — calls the DTO constructor directly
+        cq.select(cb.construct(UserEmailDTO.class,
+            root.get("name"),      // → 1st constructor parameter (String name)
+            root.get("email")      // → 2nd constructor parameter (String email)
+        ));
+
+        if (active != null) {
+            cq.where(cb.equal(root.get("active"), active));
+        }
+
+        return entityManager.createQuery(cq).getResultList();
+        // Returns List<UserEmailDTO> directly — no Object[] conversion!
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  multiselect vs cb.construct — Comparison:                                       │
+│                                                                                  │
+│  ┌──────────────────────────────────────────┬────────────────────────────────────┐│
+│  │ cq.multiselect() → List<Object[]>        │ cb.construct() → List<DTO>        ││
+│  ├──────────────────────────────────────────┼────────────────────────────────────┤│
+│  │ Returns raw Object[]                     │ Returns DTO instances directly    ││
+│  │ Manual casting: (String) row[0]          │ No casting needed                 ││
+│  │ Index-based (fragile)                    │ Constructor-based (robust)        ││
+│  │ Flexible — any column combination        │ Needs matching DTO constructor    ││
+│  │ Good for prototyping/ad-hoc queries      │ Good for production code          ││
+│  └──────────────────────────────────────────┴────────────────────────────────────┘│
+│                                                                                  │
+│  Both generate the same SQL:                                                     │
+│    SELECT u1_0.user_name, u1_0.email FROM user_details u1_0 WHERE ...            │
+│                                                                                  │
+│  The difference is only in how the ResultSet is mapped to Java objects.           │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Multiselect with aggregation:**
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Count users by active status — GROUP BY + aggregate
+     */
+    @Transactional(readOnly = true)
+    public List<Object[]> getUserCountByStatus() {
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
+        Root<UserDetails> root = cq.from(UserDetails.class);
+
+        cq.multiselect(
+            root.get("active"),              // GROUP BY column
+            cb.count(root.get("id"))         // COUNT(id)
+        );
+
+        cq.groupBy(root.get("active"));
+
+        return entityManager.createQuery(cq).getResultList();
+    }
+    // Generated SQL:
+    //   SELECT u1_0.active, COUNT(u1_0.id)
+    //   FROM user_details u1_0
+    //   GROUP BY u1_0.active
+    //
+    // Result:
+    //   Object[] { true,  5 }   — 5 active users
+    //   Object[] { false, 3 }   — 3 inactive users
+}
+```
+
+---
+
+### JOIN Two Entities Using Criteria API
+
+The Criteria API supports JOINs through `Root.join()`, which follows JPA entity relationships (`@OneToMany`, `@ManyToOne`, etc.). Unlike native queries, you don't write `JOIN ... ON ...` — you reference the Java field that holds the relationship.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Criteria API JOIN — How it works:                                               │
+│                                                                                  │
+│  Entity relationship:                                                            │
+│    UserDetails ───@OneToMany(mappedBy="userDetails")──→ List<UserAddress>        │
+│    UserAddress ───@ManyToOne──→ UserDetails                                      │
+│                                                                                  │
+│  Criteria API:                                                                   │
+│    Root<UserDetails> root = cq.from(UserDetails.class);                          │
+│    Join<UserDetails, UserAddress> addressJoin = root.join("addresses");           │
+│    //          ↑ parent entity    ↑ child entity       ↑ Java field name         │
+│    //  "addresses" is the field on UserDetails that holds List<UserAddress>       │
+│                                                                                  │
+│  Hibernate reads the relationship:                                               │
+│    @OneToMany(mappedBy = "userDetails")                                          │
+│    private List<UserAddress> addresses;                                           │
+│    → Knows that user_addresses.user_id = user_details.id                         │
+│                                                                                  │
+│  Generated SQL:                                                                  │
+│    SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                      │
+│    FROM user_details u1_0                                                        │
+│    JOIN user_addresses a1_0 ON u1_0.id = a1_0.user_id                            │
+│    //                          ↑ Hibernate generates the ON clause automatically │
+│                                                                                  │
+│  JOIN types:                                                                     │
+│    root.join("addresses")                         → INNER JOIN (default)         │
+│    root.join("addresses", JoinType.INNER)         → INNER JOIN                   │
+│    root.join("addresses", JoinType.LEFT)          → LEFT OUTER JOIN              │
+│    root.join("addresses", JoinType.RIGHT)         → RIGHT OUTER JOIN             │
+│                                                                                  │
+│  IMPORTANT: Unlike native query, you CANNOT join unrelated tables.               │
+│  The entities MUST have a mapped JPA relationship (@OneToMany, @ManyToOne, etc.) │
+│  For unrelated tables, use native query.                                         │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Example 1: JOIN + multiselect — user name with city:**
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Search users by city — JOIN UserDetails with UserAddress.
+     * Returns user name + city as Object[].
+     */
+    @Transactional(readOnly = true)
+    public List<Object[]> getUsersWithCity(String city) {
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
+
+        // FROM user_details
+        Root<UserDetails> userRoot = cq.from(UserDetails.class);
+
+        // JOIN user_addresses ON user_details.id = user_addresses.user_id
+        Join<UserDetails, UserAddress> addressJoin = userRoot.join("addresses");
+        //                                                    ↑ field name on UserDetails entity
+
+        // SELECT user_name, city
+        cq.multiselect(
+            userRoot.get("name"),         // user_details.user_name
+            addressJoin.get("city")       // user_addresses.city
+        );
+
+        // WHERE city = :city (optional)
+        if (city != null && !city.isEmpty()) {
+            cq.where(cb.equal(addressJoin.get("city"), city));
+        }
+
+        return entityManager.createQuery(cq).getResultList();
+    }
+}
+```
+
+```java
+// Controller
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    // GET /api/users/by-city?city=New York
+    @GetMapping("/by-city")
+    public List<Object[]> getUsersByCity(@RequestParam(required = false) String city) {
+        return userService.getUsersWithCity(city);
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  JOIN + multiselect — Scenarios:                                                 │
+│                                                                                  │
+│  Scenario 1: getUsersWithCity("New York")                                        │
+│    Generated SQL:                                                                │
+│      SELECT u1_0.user_name, a1_0.city                                            │
+│      FROM user_details u1_0                                                      │
+│      JOIN user_addresses a1_0 ON u1_0.id = a1_0.user_id                          │
+│      WHERE a1_0.city = 'New York'                                                │
+│                                                                                  │
+│    Result:                                                                       │
+│      ┌───────────┬──────────┐                                                    │
+│      │ user_name │ city     │                                                    │
+│      ├───────────┼──────────┤                                                    │
+│      │ Alice     │ New York │  → Object[] { "Alice", "New York" }                │
+│      │ Diana     │ New York │  → Object[] { "Diana", "New York" }                │
+│      └───────────┴──────────┘                                                    │
+│    (Alice has address id=10 in New York, Diana has address id=14 in New York)    │
+│                                                                                  │
+│  Scenario 2: getUsersWithCity(null) — no filter                                  │
+│    Generated SQL:                                                                │
+│      SELECT u1_0.user_name, a1_0.city                                            │
+│      FROM user_details u1_0                                                      │
+│      JOIN user_addresses a1_0 ON u1_0.id = a1_0.user_id                          │
+│                                                                                  │
+│    Result:                                                                       │
+│      ┌───────────┬──────────┐                                                    │
+│      │ user_name │ city     │                                                    │
+│      ├───────────┼──────────┤                                                    │
+│      │ Alice     │ New York │  → from address id=10                              │
+│      │ Alice     │ Mumbai   │  → from address id=12 (Alice has 2 addresses)      │
+│      │ Bob       │ London   │  → from address id=11                              │
+│      │ Charlie   │ Paris    │  → from address id=13                              │
+│      │ Diana     │ New York │  → from address id=14                              │
+│      └───────────┴──────────┘                                                    │
+│    NOTE: Alice appears TWICE because she has 2 addresses (INNER JOIN behavior)   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Example 2: JOIN + multiselect + dynamic conditions on both entities:**
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Advanced search across user_details and user_addresses.
+     * Dynamic conditions on BOTH entities.
+     */
+    @Transactional(readOnly = true)
+    public List<Object[]> advancedJoinSearch(String name, Boolean active,
+                                              String city, String country) {
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
+
+        Root<UserDetails> userRoot = cq.from(UserDetails.class);
+        Join<UserDetails, UserAddress> addrJoin = userRoot.join("addresses", JoinType.LEFT);
+        //                                                                   ↑ LEFT JOIN
+        //  LEFT JOIN ensures users without addresses are still returned
+
+        // SELECT user fields + address fields
+        cq.multiselect(
+            userRoot.get("id"),
+            userRoot.get("name"),
+            userRoot.get("active"),
+            addrJoin.get("city"),
+            addrJoin.get("country")
+        );
+
+        // Dynamic WHERE conditions
+        List<Predicate> predicates = new ArrayList<>();
+
+        if (name != null && !name.isEmpty()) {
+            predicates.add(cb.like(userRoot.get("name"), "%" + name + "%"));
+        }
+        if (active != null) {
+            predicates.add(cb.equal(userRoot.get("active"), active));
+        }
+        if (city != null && !city.isEmpty()) {
+            predicates.add(cb.equal(addrJoin.get("city"), city));
+        }
+        if (country != null && !country.isEmpty()) {
+            predicates.add(cb.equal(addrJoin.get("country"), country));
+        }
+
+        if (!predicates.isEmpty()) {
+            cq.where(predicates.toArray(new Predicate[0]));
+        }
+
+        return entityManager.createQuery(cq).getResultList();
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Advanced JOIN — Generated SQL:                                                  │
+│                                                                                  │
+│  advancedJoinSearch(null, true, "New York", "USA"):                              │
+│    SELECT u1_0.id, u1_0.user_name, u1_0.active, a1_0.city, a1_0.country         │
+│    FROM user_details u1_0                                                        │
+│    LEFT JOIN user_addresses a1_0 ON u1_0.id = a1_0.user_id                       │
+│    WHERE u1_0.active = true AND a1_0.city = 'New York' AND a1_0.country = 'USA'  │
+│                                                                                  │
+│    Result:                                                                       │
+│      ┌────┬───────────┬────────┬──────────┬─────────┐                            │
+│      │ id │ user_name │ active │ city     │ country │                            │
+│      ├────┼───────────┼────────┼──────────┼─────────┤                            │
+│      │  1 │ Alice     │ true   │ New York │ USA     │                            │
+│      │  4 │ Diana     │ true   │ New York │ USA     │                            │
+│      └────┴───────────┴────────┴──────────┴─────────┘                            │
+│                                                                                  │
+│  advancedJoinSearch("Alice", null, null, null):                                  │
+│    SELECT u1_0.id, u1_0.user_name, u1_0.active, a1_0.city, a1_0.country         │
+│    FROM user_details u1_0                                                        │
+│    LEFT JOIN user_addresses a1_0 ON u1_0.id = a1_0.user_id                       │
+│    WHERE u1_0.user_name LIKE '%Alice%'                                           │
+│                                                                                  │
+│    Result:                                                                       │
+│      ┌────┬───────────┬────────┬──────────┬─────────┐                            │
+│      │ id │ user_name │ active │ city     │ country │                            │
+│      ├────┼───────────┼────────┼──────────┼─────────┤                            │
+│      │  1 │ Alice     │ true   │ New York │ USA     │ ← address id=10            │
+│      │  1 │ Alice     │ true   │ Mumbai   │ India   │ ← address id=12            │
+│      └────┴───────────┴────────┴──────────┴─────────┘                            │
+│    Alice appears twice (she has 2 addresses)                                     │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Example 3: JOIN with GROUP BY and HAVING — count addresses per user:**
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Count addresses per user, optionally filter by minimum count.
+     */
+    @Transactional(readOnly = true)
+    public List<Object[]> getUsersWithAddressCount(Integer minAddresses) {
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
+
+        Root<UserDetails> userRoot = cq.from(UserDetails.class);
+        Join<UserDetails, UserAddress> addrJoin = userRoot.join("addresses", JoinType.LEFT);
+
+        cq.multiselect(
+            userRoot.get("name"),
+            cb.count(addrJoin.get("id"))      // COUNT(user_addresses.id)
+        );
+
+        cq.groupBy(userRoot.get("id"), userRoot.get("name"));
+
+        if (minAddresses != null && minAddresses > 0) {
+            cq.having(cb.ge(cb.count(addrJoin.get("id")), minAddresses));
+            // HAVING COUNT(address.id) >= minAddresses
+        }
+
+        cq.orderBy(cb.desc(cb.count(addrJoin.get("id"))));
+
+        return entityManager.createQuery(cq).getResultList();
+    }
+    // Generated SQL (minAddresses = 2):
+    //   SELECT u1_0.user_name, COUNT(a1_0.id)
+    //   FROM user_details u1_0
+    //   LEFT JOIN user_addresses a1_0 ON u1_0.id = a1_0.user_id
+    //   GROUP BY u1_0.id, u1_0.user_name
+    //   HAVING COUNT(a1_0.id) >= 2
+    //   ORDER BY COUNT(a1_0.id) DESC
+    //
+    // Result:
+    //   Object[] { "Alice", 2 }   — Alice has 2 addresses (New York + Mumbai)
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  JOIN Variations — Criteria API:                                                 │
+│                                                                                  │
+│  INNER JOIN (default — only matching rows):                                      │
+│    root.join("addresses")                                                        │
+│    root.join("addresses", JoinType.INNER)                                        │
+│    SQL: ... JOIN user_addresses a ON u.id = a.user_id                            │
+│    → Users WITHOUT addresses are EXCLUDED                                        │
+│                                                                                  │
+│  LEFT JOIN (all parent rows, null for missing child):                            │
+│    root.join("addresses", JoinType.LEFT)                                         │
+│    SQL: ... LEFT JOIN user_addresses a ON u.id = a.user_id                       │
+│    → Users WITHOUT addresses are INCLUDED (address columns = null)               │
+│                                                                                  │
+│  FETCH JOIN (load relationship eagerly to avoid N+1):                            │
+│    root.fetch("addresses")                                                       │
+│    root.fetch("addresses", JoinType.LEFT)                                        │
+│    SQL: ... LEFT JOIN user_addresses a ON u.id = a.user_id                       │
+│    → Same SQL as LEFT JOIN                                                       │
+│    → PLUS: loaded addresses are populated into entity's addresses field          │
+│    → Used with entity results, NOT with multiselect/Object[]                     │
+│                                                                                  │
+│  ┌────────────────────────┬──────────────────────────────────────────────────────┐│
+│  │ Method                 │ Use when                                             ││
+│  ├────────────────────────┼──────────────────────────────────────────────────────┤│
+│  │ root.join()            │ Filtering/selecting by child fields + multiselect   ││
+│  │ root.fetch()           │ Loading full entities with relationships (avoid N+1)││
+│  └────────────────────────┴──────────────────────────────────────────────────────┘│
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Pagination and Sorting with Criteria API
+
+Pagination uses `TypedQuery.setFirstResult(offset)` and `TypedQuery.setMaxResults(limit)` — same methods as with native queries. Sorting uses `CriteriaQuery.orderBy()` with `CriteriaBuilder.asc()` or `CriteriaBuilder.desc()`.
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Full-featured dynamic search with Criteria API:
+     * - Optional filters
+     * - Pagination (page + size)
+     * - Dynamic sorting (sortBy field name + direction)
+     * Returns Page<UserDetails>
+     */
+    @Transactional(readOnly = true)
+    public Page<UserDetails> searchUsersPaginated(String name, Boolean active,
+                                                   int page, int size,
+                                                   String sortBy, String sortDir) {
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+
+        // === DATA QUERY ===
+        CriteriaQuery<UserDetails> dataCq = cb.createQuery(UserDetails.class);
+        Root<UserDetails> dataRoot = dataCq.from(UserDetails.class);
+
+        // Build predicates
+        List<Predicate> predicates = new ArrayList<>();
+        if (name != null && !name.isEmpty()) {
+            predicates.add(cb.like(dataRoot.get("name"), "%" + name + "%"));
+        }
+        if (active != null) {
+            predicates.add(cb.equal(dataRoot.get("active"), active));
+        }
+
+        dataCq.select(dataRoot);
+        if (!predicates.isEmpty()) {
+            dataCq.where(predicates.toArray(new Predicate[0]));
+        }
+
+        // Sorting — dynamic ORDER BY using Java field names
+        List<String> allowedSortFields = List.of("id", "name", "email", "active");
+        if (sortBy != null && allowedSortFields.contains(sortBy)) {
+            if ("DESC".equalsIgnoreCase(sortDir)) {
+                dataCq.orderBy(cb.desc(dataRoot.get(sortBy)));
+            } else {
+                dataCq.orderBy(cb.asc(dataRoot.get(sortBy)));
+            }
+        } else {
+            dataCq.orderBy(cb.asc(dataRoot.get("id")));  // default sort
+        }
+
+        // Apply pagination
+        TypedQuery<UserDetails> dataQuery = entityManager.createQuery(dataCq);
+        dataQuery.setFirstResult(page * size);   // OFFSET
+        dataQuery.setMaxResults(size);            // LIMIT
+
+        List<UserDetails> content = dataQuery.getResultList();
+
+        // === COUNT QUERY ===
+        CriteriaQuery<Long> countCq = cb.createQuery(Long.class);
+        Root<UserDetails> countRoot = countCq.from(UserDetails.class);
+
+        countCq.select(cb.count(countRoot));
+
+        // Rebuild predicates for count query (same conditions, different Root)
+        List<Predicate> countPredicates = new ArrayList<>();
+        if (name != null && !name.isEmpty()) {
+            countPredicates.add(cb.like(countRoot.get("name"), "%" + name + "%"));
+        }
+        if (active != null) {
+            countPredicates.add(cb.equal(countRoot.get("active"), active));
+        }
+        if (!countPredicates.isEmpty()) {
+            countCq.where(countPredicates.toArray(new Predicate[0]));
+        }
+
+        Long totalElements = entityManager.createQuery(countCq).getSingleResult();
+
+        // Build Page object
+        Pageable pageable = PageRequest.of(page, size, Sort.by(
+            "DESC".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC,
+            sortBy != null && allowedSortFields.contains(sortBy) ? sortBy : "id"
+        ));
+        return new PageImpl<>(content, pageable, totalElements);
+    }
+}
+```
+
+```java
+// Controller
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    // GET /api/users/search?active=true&page=0&size=3&sortBy=name&sortDir=DESC
+    @GetMapping("/search")
+    public Page<UserDetails> search(
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) Boolean active,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "id") String sortBy,
+        @RequestParam(defaultValue = "ASC") String sortDir
+    ) {
+        return userService.searchUsersPaginated(name, active, page, size, sortBy, sortDir);
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Criteria API Pagination + Sorting — Scenario:                                   │
+│                                                                                  │
+│  Request: GET /api/users/search?active=true&page=1&size=2&sortBy=name&sortDir=ASC│
+│                                                                                  │
+│  Data query generated SQL:                                                       │
+│    SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                      │
+│    FROM user_details u1_0                                                        │
+│    WHERE u1_0.active = true                                                      │
+│    ORDER BY u1_0.user_name ASC                                                   │
+│    LIMIT 2 OFFSET 2                                                              │
+│         ↑ size   ↑ page(1) × size(2)                                             │
+│                                                                                  │
+│  Count query generated SQL:                                                      │
+│    SELECT COUNT(u1_0.id)                                                         │
+│    FROM user_details u1_0                                                        │
+│    WHERE u1_0.active = true                                                      │
+│    → Returns: 5 (Alice, Bob, Diana, Frank, Grace)                                │
+│                                                                                  │
+│  Active users sorted by name: Alice(1), Bob(2), Diana(4), Frank(6), Grace(7)    │
+│  Page 0 (OFFSET 0, LIMIT 2): [Alice, Bob]                                       │
+│  Page 1 (OFFSET 2, LIMIT 2): [Diana, Frank]  ← THIS page                        │
+│  Page 2 (OFFSET 4, LIMIT 2): [Grace]                                            │
+│                                                                                  │
+│  Response:                                                                       │
+│    Page<UserDetails> {                                                           │
+│      content: [Diana, Frank],                                                    │
+│      pageNumber: 1,                                                              │
+│      pageSize: 2,                                                                │
+│      totalElements: 5,                                                           │
+│      totalPages: 3                                                               │
+│    }                                                                             │
+│                                                                                  │
+│  KEY DIFFERENCE from Native Query pagination:                                    │
+│  - sortBy = "name" (JAVA FIELD name, not DB column "user_name")                 │
+│  - Hibernate translates "name" → "user_name" via @Column annotation              │
+│  - No whitelist needed for SQL injection (no string concatenation in SQL)        │
+│  - But whitelist is still good practice to reject unexpected field names          │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Multi-column sorting:**
+
+```java
+// Sort by active DESC, then by name ASC
+dataCq.orderBy(
+    cb.desc(dataRoot.get("active")),    // active users first
+    cb.asc(dataRoot.get("name"))        // then alphabetical by name
+);
+
+// Generated SQL:
+//   ... ORDER BY u1_0.active DESC, u1_0.user_name ASC
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Criteria API Sorting vs Other Approaches:                                       │
+│                                                                                  │
+│  ┌────────────────────────────────────────┬──────────────────────────────────────┐│
+│  │ Approach                               │ Sorting Mechanism                   ││
+│  ├────────────────────────────────────────┼──────────────────────────────────────┤│
+│  │ Derived Query                          │ findByActiveOrderByNameAsc()        ││
+│  │                                        │ → Fixed in method name              ││
+│  │ JPQL                                   │ "... ORDER BY u.name ASC"           ││
+│  │                                        │ → String (Java field names)         ││
+│  │ Native Query                           │ "... ORDER BY user_name ASC"        ││
+│  │                                        │ → String (DB column names)          ││
+│  │ Dynamic Native (EntityManager)         │ sql.append(" ORDER BY " + col)      ││
+│  │                                        │ → String concat (injection risk!)   ││
+│  │ Criteria API                           │ cb.asc(root.get("name"))            ││
+│  │                                        │ → Method call (type-safe, no SQL)   ││
+│  └────────────────────────────────────────┴──────────────────────────────────────┘│
+│                                                                                  │
+│  Criteria API sorting is the safest:                                             │
+│    - No SQL string concatenation → no SQL injection possible                    │
+│    - Uses Java field names → Hibernate resolves to DB column names               │
+│    - Compile-time safe with Metamodel: cb.asc(root.get(UserDetails_.name))       │
+│    - Dynamic: can add/remove orderBy at runtime based on parameters              │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Summary — Criteria API
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Criteria API — Complete Pattern:                                                │
+│                                                                                  │
+│  @PersistenceContext                                                             │
+│  private EntityManager entityManager;                                            │
+│                                                                                  │
+│  // 1. Get builder                                                               │
+│  CriteriaBuilder cb = entityManager.getCriteriaBuilder();                        │
+│                                                                                  │
+│  // 2. Create query                                                              │
+│  CriteriaQuery<Entity> cq = cb.createQuery(Entity.class);     // entity result   │
+│  CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class); // partial cols    │
+│  CriteriaQuery<Long> cq = cb.createQuery(Long.class);         // count           │
+│  CriteriaQuery<DTO> cq = cb.createQuery(DTO.class);           // DTO (construct) │
+│                                                                                  │
+│  // 3. Define FROM                                                               │
+│  Root<Entity> root = cq.from(Entity.class);                                      │
+│                                                                                  │
+│  // 4. Optional JOIN                                                             │
+│  Join<Parent, Child> join = root.join("fieldName");                               │
+│  Join<Parent, Child> join = root.join("fieldName", JoinType.LEFT);               │
+│                                                                                  │
+│  // 5. SELECT                                                                    │
+│  cq.select(root);                                  // full entity                │
+│  cq.multiselect(root.get("a"), root.get("b"));     // partial → Object[]        │
+│  cq.select(cb.construct(DTO.class, ...));           // direct DTO                │
+│  cq.select(cb.count(root));                         // aggregate                 │
+│                                                                                  │
+│  // 6. WHERE (dynamic predicates)                                                │
+│  List<Predicate> preds = new ArrayList<>();                                      │
+│  preds.add(cb.equal(...));  preds.add(cb.like(...));                             │
+│  cq.where(preds.toArray(new Predicate[0]));                                      │
+│                                                                                  │
+│  // 7. ORDER BY                                                                  │
+│  cq.orderBy(cb.asc(root.get("field")));                                          │
+│                                                                                  │
+│  // 8. GROUP BY + HAVING                                                         │
+│  cq.groupBy(root.get("field"));                                                  │
+│  cq.having(cb.ge(cb.count(root), 5));                                            │
+│                                                                                  │
+│  // 9. Execute with pagination                                                   │
+│  TypedQuery<T> query = entityManager.createQuery(cq);                            │
+│  query.setFirstResult(page * size);                                              │
+│  query.setMaxResults(size);                                                      │
+│  List<T> results = query.getResultList();                                        │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+Complete Decision Table — All Query Approaches:
+
+  ┌─────────────────────────────────────┬──────────────────────────────────────────┐
+  │ Scenario                            │ Best Approach                            │
+  ├─────────────────────────────────────┼──────────────────────────────────────────┤
+  │ Simple findBy with 1-2 conditions   │ Derived Query (method name)              │
+  │ Fixed complex query on entities     │ JPQL @Query on Repository                │
+  │ Fixed complex query on tables       │ Native @Query on Repository              │
+  │ DB-specific features (JSONB, etc.)  │ Native @Query on Repository              │
+  │ Dynamic query, DB-locked            │ Dynamic Native Query (EntityManager)     │
+  │ Dynamic query, DB-independent       │ Criteria API                             │
+  │ Dynamic query, type-safe            │ Criteria API + Metamodel                 │
+  │ Dynamic JOINs (related entities)    │ Criteria API                             │
+  │ Dynamic JOINs (unrelated tables)    │ Dynamic Native Query (EntityManager)     │
+  │ Dynamic GROUP BY / HAVING           │ Criteria API or Dynamic Native Query     │
+  │ Dynamic UPDATE (partial fields)     │ Dynamic Native Query (EntityManager)     │
+  │ Maximum readability                 │ JPQL or Native Query (SQL is familiar)   │
+  │ Maximum type safety                 │ Criteria API + Metamodel                 │
+  │ Maximum DB portability              │ Criteria API or JPQL                     │
+  └─────────────────────────────────────┴──────────────────────────────────────────┘
+```
+
+---
+
+## JPA Specification API
+
+### What Is the Specification API?
+
+The **Specification API** is a Spring Data JPA abstraction built **on top of** the Criteria API. It solves two major problems with raw Criteria API usage:
+
+1. **Code Duplicity** — the same predicate logic (e.g., "filter by active = true") gets copy-pasted across multiple service methods
+2. **Boilerplate** — every Criteria query needs the same `CriteriaBuilder` → `CriteriaQuery` → `Root` → `TypedQuery` setup code
+
+The Specification API encapsulates each WHERE condition as a **reusable, composable** `Specification` object. Spring Data's `JpaSpecificationExecutor` then handles all the CriteriaBuilder/CriteriaQuery/TypedQuery boilerplate for you.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Evolution — from Criteria API to Specification API:                             │
+│                                                                                  │
+│  Criteria API (manual):                                                          │
+│    @Service                                                                      │
+│    public class UserService {                                                    │
+│        @PersistenceContext                                                        │
+│        private EntityManager entityManager;                                      │
+│                                                                                  │
+│        public List<UserDetails> search(String name, Boolean active) {            │
+│            CriteriaBuilder cb = entityManager.getCriteriaBuilder();       // ┐   │
+│            CriteriaQuery<UserDetails> cq = cb.createQuery(UserDetails.class);//│  │
+│            Root<UserDetails> root = cq.from(UserDetails.class);           // │   │
+│            List<Predicate> preds = new ArrayList<>();                     // │   │
+│            if (name != null) preds.add(cb.like(root.get("name"), ...));   // │   │
+│            if (active != null) preds.add(cb.equal(root.get("active"),    // ├ B  │
+│                                                    active));             // │ O  │
+│            cq.select(root).where(preds.toArray(new Predicate[0]));       // │ I  │
+│            TypedQuery<UserDetails> query = entityManager.createQuery(cq); // │ L  │
+│            return query.getResultList();                                  // │ E  │
+│        }                                                                  // │ R  │
+│        // EVERY method repeats this boilerplate!                          // ┘ P  │
+│    }                                                                             │
+│                                                                                  │
+│  Specification API (Spring Data):                                                │
+│    // Repository — just extend JpaSpecificationExecutor                          │
+│    public interface UserDetailsRepository extends JpaRepository<UserDetails, Long>│
+│                                                , JpaSpecificationExecutor<        │
+│                                                    UserDetails> { }              │
+│                                                                                  │
+│    // Specification — reusable predicate                                         │
+│    public class UserSpecs {                                                      │
+│        public static Specification<UserDetails> hasName(String name) {           │
+│            return (root, query, cb) -> cb.like(root.get("name"), "%" + name + "%"│
+│            );                                                                    │
+│        }                                                                         │
+│        public static Specification<UserDetails> isActive() {                     │
+│            return (root, query, cb) -> cb.equal(root.get("active"), true);       │
+│        }                                                                         │
+│    }                                                                             │
+│                                                                                  │
+│    // Service — NO boilerplate!                                                  │
+│    @Service                                                                      │
+│    public class UserService {                                                    │
+│        @Autowired                                                                │
+│        private UserDetailsRepository repository;                                 │
+│                                                                                  │
+│        public List<UserDetails> search(String name, Boolean active) {            │
+│            Specification<UserDetails> spec = Specification.where(null);           │
+│            if (name != null) spec = spec.and(UserSpecs.hasName(name));            │
+│            if (active != null) spec = spec.and(UserSpecs.isActive());            │
+│            return repository.findAll(spec);                                      │
+│        }                                                                         │
+│    }                                                                             │
+│                                                                                  │
+│  RESULT:                                                                         │
+│    - No EntityManager, CriteriaBuilder, CriteriaQuery, Root, TypedQuery          │
+│    - Each predicate defined ONCE, reused everywhere                              │
+│    - Predicates composed with .and(), .or(), .not()                              │
+│    - Spring handles all the Criteria API plumbing                                │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+Database Tables (same as Criteria API section):
+
+  user_details                                          user_addresses
+  ┌────┬───────────┬──────────────────┬────────┐        ┌────┬─────────┬──────────┬─────────┬────────────┐
+  │ id │ user_name │ email            │ active │        │ id │ street  │ city     │ country │ user_id(FK)│
+  ├────┼───────────┼──────────────────┼────────┤        ├────┼─────────┼──────────┼─────────┼────────────┤
+  │  1 │ Alice     │ alice@ex.com     │ true   │        │ 10 │ Main St │ New York │ USA     │     1      │
+  │  2 │ Bob       │ bob@ex.com       │ true   │        │ 11 │ Oak Ave │ London   │ UK      │     2      │
+  │  3 │ Charlie   │ charlie@ex.com   │ false  │        │ 12 │ Pine Rd │ Mumbai   │ India   │     1      │
+  │  4 │ Diana     │ diana@ex.com     │ true   │        │ 13 │ Elm St  │ Paris    │ France  │     3      │
+  │  5 │ Eve       │ eve@ex.com       │ false  │        │ 14 │ Bay Dr  │ New York │ USA     │     4      │
+  │  6 │ Frank     │ frank@ex.com     │ true   │        └────┴─────────┴──────────┴─────────┴────────────┘
+  │  7 │ Grace     │ grace@ex.com     │ true   │
+  │  8 │ Hank      │ hank@ex.com      │ false  │
+  └────┴───────────┴──────────────────┴────────┘
+```
+
+---
+
+### Problem 1: Code Duplicity in Criteria API — Solved by Specification.toPredicate
+
+**The Problem:** With raw Criteria API, the same predicate logic is duplicated across multiple service methods. If the "active = true" condition appears in 10 different search methods, you write `cb.equal(root.get("active"), true)` in all 10 places. When the business rule changes (e.g., "active" is renamed to "enabled"), you must update all 10 methods.
+
+```java
+// PROBLEM — Criteria API code duplicity:
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    // Method 1: search by name + active
+    public List<UserDetails> searchByNameAndActive(String name, Boolean active) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<UserDetails> cq = cb.createQuery(UserDetails.class);
+        Root<UserDetails> root = cq.from(UserDetails.class);
+        List<Predicate> preds = new ArrayList<>();
+        if (name != null) {
+            preds.add(cb.like(root.get("name"), "%" + name + "%"));  // ← DUPLICATED
+        }
+        if (active != null) {
+            preds.add(cb.equal(root.get("active"), active));         // ← DUPLICATED
+        }
+        cq.select(root).where(preds.toArray(new Predicate[0]));
+        return entityManager.createQuery(cq).getResultList();
+    }
+
+    // Method 2: search by email + active — SAME active predicate!
+    public List<UserDetails> searchByEmailAndActive(String email, Boolean active) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<UserDetails> cq = cb.createQuery(UserDetails.class);
+        Root<UserDetails> root = cq.from(UserDetails.class);
+        List<Predicate> preds = new ArrayList<>();
+        if (email != null) {
+            preds.add(cb.equal(root.get("email"), email));
+        }
+        if (active != null) {
+            preds.add(cb.equal(root.get("active"), active));         // ← SAME CODE AGAIN
+        }
+        cq.select(root).where(preds.toArray(new Predicate[0]));
+        return entityManager.createQuery(cq).getResultList();
+    }
+
+    // Method 3: count active users — SAME active predicate AGAIN!
+    public long countActiveUsers() {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Long> cq = cb.createQuery(Long.class);
+        Root<UserDetails> root = cq.from(UserDetails.class);
+        cq.select(cb.count(root));
+        cq.where(cb.equal(root.get("active"), true));               // ← SAME CODE AGAIN
+        return entityManager.createQuery(cq).getSingleResult();
+    }
+
+    // The "active" predicate is written 3 times.
+    // If "active" field is renamed to "enabled" → must update ALL 3 methods.
+    // If the active check changes (e.g., check active AND NOT deleted) → update ALL.
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Code Duplicity Problem — Visual:                                                │
+│                                                                                  │
+│  searchByNameAndActive():                                                        │
+│    cb.like(root.get("name"), ...)              ← unique to this method           │
+│    cb.equal(root.get("active"), active)        ← DUPLICATED                      │
+│                                                                                  │
+│  searchByEmailAndActive():                                                       │
+│    cb.equal(root.get("email"), email)          ← unique to this method           │
+│    cb.equal(root.get("active"), active)        ← SAME predicate, copied again    │
+│                                                                                  │
+│  countActiveUsers():                                                             │
+│    cb.equal(root.get("active"), true)          ← SAME predicate, copied AGAIN    │
+│                                                                                  │
+│  searchByNameInCity():                                                           │
+│    cb.like(root.get("name"), ...)              ← copied from method 1            │
+│    cb.equal(root.get("active"), active)        ← copied AGAIN (4th time)         │
+│    cb.equal(addrJoin.get("city"), city)        ← unique to this method           │
+│                                                                                  │
+│  As the application grows:                                                       │
+│    10 methods × same "active" check = 10 copies of the same code                │
+│    Bug in one? Must fix all 10.                                                  │
+│    Rename field? Must update all 10.                                             │
+│    DRY principle violated!                                                       │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**The Solution: `Specification<T>` — Encapsulate Each Predicate:**
+
+The `Specification<T>` interface has a single method:
+
+```java
+// The Specification interface (from Spring Data JPA):
+@FunctionalInterface
+public interface Specification<T> {
+    Predicate toPredicate(Root<T> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder);
+}
+```
+
+Each `Specification` wraps ONE predicate (WHERE condition). You define it once and reuse it everywhere.
+
+```java
+// SOLUTION — Define each predicate as a reusable Specification:
+public class UserSpecs {
+
+    // Specification for: WHERE user_name LIKE '%name%'
+    public static Specification<UserDetails> hasName(String name) {
+        return (root, query, cb) -> cb.like(root.get("name"), "%" + name + "%");
+        //      ↑ Root   ↑ CriteriaQuery  ↑ CriteriaBuilder
+        //      These are provided by Spring when the Specification is executed.
+        //      You just define WHAT predicate to create.
+    }
+
+    // Specification for: WHERE email = :email
+    public static Specification<UserDetails> hasEmail(String email) {
+        return (root, query, cb) -> cb.equal(root.get("email"), email);
+    }
+
+    // Specification for: WHERE active = :active
+    public static Specification<UserDetails> isActive(Boolean active) {
+        return (root, query, cb) -> cb.equal(root.get("active"), active);
+    }
+
+    // Specification for: WHERE active = true (no parameter)
+    public static Specification<UserDetails> isActive() {
+        return (root, query, cb) -> cb.equal(root.get("active"), true);
+    }
+
+    // Specification for: WHERE id IN (:ids)
+    public static Specification<UserDetails> hasIdIn(List<Long> ids) {
+        return (root, query, cb) -> root.get("id").in(ids);
+    }
+
+    // Specification for: WHERE id BETWEEN :min AND :max
+    public static Specification<UserDetails> hasIdBetween(Long min, Long max) {
+        return (root, query, cb) -> cb.between(root.get("id"), min, max);
+    }
+
+    // Each predicate is defined ONCE. Reused across ALL service methods.
+    // If "active" is renamed to "enabled" → change ONE place (isActive method).
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Specification.toPredicate — How it works:                                       │
+│                                                                                  │
+│  Specification<UserDetails> spec = UserSpecs.hasName("Alice");                   │
+│                                                                                  │
+│  What hasName("Alice") returns:                                                  │
+│    A lambda: (root, query, cb) -> cb.like(root.get("name"), "%Alice%")           │
+│                                                                                  │
+│  This lambda is NOT executed immediately.                                        │
+│  It's a "recipe" for creating a Predicate.                                       │
+│                                                                                  │
+│  When Spring executes the Specification:                                         │
+│    1. Spring creates CriteriaBuilder, CriteriaQuery, Root internally             │
+│    2. Spring calls spec.toPredicate(root, query, cb)                             │
+│    3. The lambda executes: cb.like(root.get("name"), "%Alice%")                  │
+│    4. Returns a Predicate                                                        │
+│    5. Spring adds the Predicate to the CriteriaQuery's WHERE clause              │
+│    6. Spring creates TypedQuery, executes, returns results                        │
+│                                                                                  │
+│  You provide the WHAT (predicate logic).                                         │
+│  Spring handles the HOW (CriteriaBuilder, CriteriaQuery, execution).            │
+│                                                                                  │
+│  Defined ONCE:                               Reused EVERYWHERE:                  │
+│  ┌─────────────────────────┐                 ┌─────────────────────────────────┐ │
+│  │ UserSpecs.hasName(name) │ ────────────→   │ searchByNameAndActive()         │ │
+│  │ UserSpecs.isActive()    │ ──┬──────────→  │ searchByEmailAndActive()        │ │
+│  │ UserSpecs.hasEmail(e)   │   ├──────────→  │ countActiveUsers()              │ │
+│  └─────────────────────────┘   └──────────→  │ searchByNameInCity()            │ │
+│                                              └─────────────────────────────────┘ │
+│                                                                                  │
+│  Change "active" → "enabled"? Fix ONLY isActive(). All methods auto-updated.    │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Problem 2: Boilerplate in Criteria API — Solved by JpaSpecificationExecutor
+
+**The Problem:** Even after extracting predicates into `Specification` objects, you still need to write the `CriteriaBuilder` → `CriteriaQuery` → `Root` → `TypedQuery` boilerplate in every service method to execute them.
+
+**The Solution:** `JpaSpecificationExecutor<T>` is a Spring Data interface that provides pre-built methods for executing Specifications. You just extend it on your repository — no `EntityManager` needed.
+
+```java
+// Repository — extend JpaSpecificationExecutor
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long>,
+                                               JpaSpecificationExecutor<UserDetails> {
+    // That's it! No method declarations needed.
+    // JpaSpecificationExecutor provides:
+    //   List<T> findAll(Specification<T> spec)
+    //   Page<T> findAll(Specification<T> spec, Pageable pageable)
+    //   List<T> findAll(Specification<T> spec, Sort sort)
+    //   Optional<T> findOne(Specification<T> spec)
+    //   long count(Specification<T> spec)
+    //   boolean exists(Specification<T> spec)
+    //   void delete(Specification<T> spec)
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  JpaSpecificationExecutor — Methods provided:                                    │
+│                                                                                  │
+│  ┌─────────────────────────────────────────────────────┬─────────────────────────┐│
+│  │ Method                                              │ SQL Equivalent          ││
+│  ├─────────────────────────────────────────────────────┼─────────────────────────┤│
+│  │ findAll(Specification<T> spec)                      │ SELECT * WHERE ...      ││
+│  │ findAll(Specification<T> spec, Sort sort)           │ SELECT * WHERE ...      ││
+│  │                                                     │   ORDER BY ...          ││
+│  │ findAll(Specification<T> spec, Pageable pageable)   │ SELECT * WHERE ...      ││
+│  │                                                     │   ORDER BY ... LIMIT .. ││
+│  │ findOne(Specification<T> spec)                      │ SELECT * WHERE ... (1)  ││
+│  │ count(Specification<T> spec)                        │ SELECT COUNT(*) WHERE ..││
+│  │ exists(Specification<T> spec)                       │ SELECT EXISTS(...)      ││
+│  │ delete(Specification<T> spec)                       │ DELETE WHERE ...        ││
+│  └─────────────────────────────────────────────────────┴─────────────────────────┘│
+│                                                                                  │
+│  ALL of these methods internally:                                                │
+│    1. Get CriteriaBuilder from EntityManager                                     │
+│    2. Create CriteriaQuery                                                       │
+│    3. Create Root                                                                │
+│    4. Call spec.toPredicate(root, query, cb) to get your Predicate               │
+│    5. Apply the Predicate to WHERE clause                                        │
+│    6. Create TypedQuery and execute                                              │
+│    7. Return results                                                             │
+│                                                                                  │
+│  You NEVER write this boilerplate yourself!                                      │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```java
+// BEFORE — Criteria API (with boilerplate):
+@Service
+public class UserServiceBefore {
+
+    @PersistenceContext
+    private EntityManager entityManager;   // ← need EntityManager
+
+    public List<UserDetails> searchByNameAndActive(String name, Boolean active) {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();              // boilerplate
+        CriteriaQuery<UserDetails> cq = cb.createQuery(UserDetails.class);   // boilerplate
+        Root<UserDetails> root = cq.from(UserDetails.class);                 // boilerplate
+        List<Predicate> preds = new ArrayList<>();                           // boilerplate
+        if (name != null) preds.add(cb.like(root.get("name"), "%" + name + "%"));
+        if (active != null) preds.add(cb.equal(root.get("active"), active));
+        cq.select(root).where(preds.toArray(new Predicate[0]));             // boilerplate
+        TypedQuery<UserDetails> query = entityManager.createQuery(cq);       // boilerplate
+        return query.getResultList();                                        // boilerplate
+    }
+    // 9 lines of boilerplate for every method!
+}
+```
+
+```java
+// AFTER — Specification API (no boilerplate):
+@Service
+public class UserServiceAfter {
+
+    @Autowired
+    private UserDetailsRepository repository;  // ← just the repository
+
+    public List<UserDetails> searchByNameAndActive(String name, Boolean active) {
+        Specification<UserDetails> spec = Specification.where(null);  // start with no condition
+
+        if (name != null) {
+            spec = spec.and(UserSpecs.hasName(name));
+        }
+        if (active != null) {
+            spec = spec.and(UserSpecs.isActive(active));
+        }
+
+        return repository.findAll(spec);  // Spring handles ALL the Criteria API plumbing
+    }
+    // ZERO boilerplate! Just compose Specifications and call findAll().
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Boilerplate Comparison:                                                         │
+│                                                                                  │
+│  Criteria API (per method):                    Specification API (per method):    │
+│  ─────────────────────────                     ──────────────────────────────     │
+│  CriteriaBuilder cb = ...;                     Specification<T> spec = where(null│
+│  CriteriaQuery<T> cq = ...;                    );                                │
+│  Root<T> root = ...;                           spec = spec.and(hasName(name));    │
+│  List<Predicate> preds = ...;                  spec = spec.and(isActive(active)); │
+│  if (...) preds.add(cb.like(...));             return repo.findAll(spec);         │
+│  if (...) preds.add(cb.equal(...));                                              │
+│  cq.select(root).where(...);                   TOTAL: 4 lines                    │
+│  TypedQuery<T> query = ...;                                                      │
+│  return query.getResultList();                                                   │
+│  TOTAL: 9 lines                                                                  │
+│                                                                                  │
+│  With 10 search methods:                                                         │
+│    Criteria API: 10 × 9 = 90 lines of boilerplate                               │
+│    Specification: 10 × 4 = 40 lines total + ~20 lines for Specification defs     │
+│    = 60 lines total (33% less) + predicates are REUSABLE                         │
+│                                                                                  │
+│  The real win is reusability:                                                    │
+│    If 10 methods use "isActive" → defined ONCE, not 10 times                    │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Flow — Specification API execution:                                             │
+│                                                                                  │
+│  Controller: GET /api/users/search?name=Alice&active=true                        │
+│       │                                                                          │
+│       v                                                                          │
+│  Service: searchByNameAndActive("Alice", true)                                   │
+│       │                                                                          │
+│       ├─ Specification.where(null)          → empty spec (no condition)           │
+│       ├─ spec.and(UserSpecs.hasName("Alice"))  → adds name LIKE '%Alice%'        │
+│       ├─ spec.and(UserSpecs.isActive(true))    → adds active = true              │
+│       │                                                                          │
+│       v                                                                          │
+│  repository.findAll(spec)                                                        │
+│       │                                                                          │
+│       v                                                                          │
+│  Spring Data JPA internally:                                                     │
+│    CriteriaBuilder cb = entityManager.getCriteriaBuilder();                      │
+│    CriteriaQuery<UserDetails> cq = cb.createQuery(UserDetails.class);            │
+│    Root<UserDetails> root = cq.from(UserDetails.class);                          │
+│    Predicate p = spec.toPredicate(root, cq, cb);                                │
+│    //  → cb.and(                                                                 │
+│    //      cb.like(root.get("name"), "%Alice%"),                                 │
+│    //      cb.equal(root.get("active"), true)                                    │
+│    //    )                                                                       │
+│    cq.where(p);                                                                  │
+│    TypedQuery<UserDetails> query = entityManager.createQuery(cq);                │
+│    return query.getResultList();                                                 │
+│       │                                                                          │
+│       v                                                                          │
+│  Generated SQL:                                                                  │
+│    SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                      │
+│    FROM user_details u1_0                                                        │
+│    WHERE u1_0.user_name LIKE '%Alice%' AND u1_0.active = true                    │
+│       │                                                                          │
+│       v                                                                          │
+│  Returns List<UserDetails> → Controller → JSON response                          │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Complete Setup — Specifications + Repository + Service + Controller
+
+**Step 1: Specification class (define reusable predicates):**
+
+```java
+// UserSpecs.java — all specifications for UserDetails entity
+public class UserSpecs {
+
+    public static Specification<UserDetails> hasName(String name) {
+        return (root, query, cb) -> cb.like(root.get("name"), "%" + name + "%");
+    }
+
+    public static Specification<UserDetails> hasEmail(String email) {
+        return (root, query, cb) -> cb.equal(root.get("email"), email);
+    }
+
+    public static Specification<UserDetails> isActive(Boolean active) {
+        return (root, query, cb) -> cb.equal(root.get("active"), active);
+    }
+
+    public static Specification<UserDetails> isActive() {
+        return (root, query, cb) -> cb.equal(root.get("active"), true);
+    }
+
+    public static Specification<UserDetails> hasIdIn(List<Long> ids) {
+        return (root, query, cb) -> root.get("id").in(ids);
+    }
+
+    public static Specification<UserDetails> emailContains(String keyword) {
+        return (root, query, cb) -> cb.like(root.get("email"), "%" + keyword + "%");
+    }
+
+    public static Specification<UserDetails> hasIdGreaterThan(Long id) {
+        return (root, query, cb) -> cb.greaterThan(root.get("id"), id);
+    }
+}
+```
+
+**Step 2: Repository (extend JpaSpecificationExecutor):**
+
+```java
+public interface UserDetailsRepository extends JpaRepository<UserDetails, Long>,
+                                               JpaSpecificationExecutor<UserDetails> {
+    // No custom methods needed for Specification-based queries.
+    // All findAll(spec), findAll(spec, pageable), count(spec), etc. are inherited.
+}
+```
+
+**Step 3: Service (compose Specifications dynamically):**
+
+```java
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository repository;
+
+    /**
+     * Dynamic search — any combination of filters.
+     */
+    public List<UserDetails> searchUsers(String name, String email, Boolean active) {
+
+        Specification<UserDetails> spec = Specification.where(null);
+        //  Specification.where(null) starts with NO condition (returns all rows).
+        //  Equivalent to "WHERE 1=1" in dynamic native queries.
+
+        if (name != null && !name.isEmpty()) {
+            spec = spec.and(UserSpecs.hasName(name));
+        }
+        if (email != null && !email.isEmpty()) {
+            spec = spec.and(UserSpecs.hasEmail(email));
+        }
+        if (active != null) {
+            spec = spec.and(UserSpecs.isActive(active));
+        }
+
+        return repository.findAll(spec);
+    }
+
+    /**
+     * Count active users — reuses the same isActive() Specification
+     */
+    public long countActiveUsers() {
+        return repository.count(UserSpecs.isActive());
+        //  Spring generates: SELECT COUNT(*) FROM user_details WHERE active = true
+    }
+
+    /**
+     * Check if user exists — reuses hasEmail() Specification
+     */
+    public boolean existsByEmail(String email) {
+        return repository.exists(UserSpecs.hasEmail(email));
+        //  Spring generates: SELECT 1 FROM user_details WHERE email = 'alice@ex.com' LIMIT 1
+    }
+}
+```
+
+**Step 4: Controller:**
+
+```java
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    // GET /api/users/search?name=Alice
+    // GET /api/users/search?active=true
+    // GET /api/users/search?name=Alice&email=alice@ex.com&active=true
+    @GetMapping("/search")
+    public List<UserDetails> search(
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String email,
+        @RequestParam(required = false) Boolean active
+    ) {
+        return userService.searchUsers(name, email, active);
+    }
+
+    @GetMapping("/count-active")
+    public long countActive() {
+        return userService.countActiveUsers();
+    }
+
+    @GetMapping("/exists")
+    public boolean exists(@RequestParam String email) {
+        return userService.existsByEmail(email);
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Specification API — Generated SQL for each scenario:                            │
+│                                                                                  │
+│  Scenario 1: searchUsers("Alice", null, null)                                    │
+│    spec = where(null).and(hasName("Alice"))                                      │
+│    Generated SQL:                                                                │
+│      SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                    │
+│      FROM user_details u1_0                                                      │
+│      WHERE u1_0.user_name LIKE '%Alice%'                                         │
+│    Result: [UserDetails(id=1, name="Alice", ...)]                                │
+│                                                                                  │
+│  Scenario 2: searchUsers(null, null, true)                                       │
+│    spec = where(null).and(isActive(true))                                        │
+│    Generated SQL:                                                                │
+│      SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                    │
+│      FROM user_details u1_0                                                      │
+│      WHERE u1_0.active = true                                                    │
+│    Result: [Alice, Bob, Diana, Frank, Grace] — 5 active users                    │
+│                                                                                  │
+│  Scenario 3: searchUsers("Bob", "bob@ex.com", true)                              │
+│    spec = where(null).and(hasName("Bob")).and(hasEmail("bob@ex.com"))             │
+│                       .and(isActive(true))                                       │
+│    Generated SQL:                                                                │
+│      SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                    │
+│      FROM user_details u1_0                                                      │
+│      WHERE u1_0.user_name LIKE '%Bob%'                                           │
+│        AND u1_0.email = 'bob@ex.com'                                             │
+│        AND u1_0.active = true                                                    │
+│    Result: [UserDetails(id=2, name="Bob", ...)]                                  │
+│                                                                                  │
+│  Scenario 4: searchUsers(null, null, null)                                       │
+│    spec = where(null) — no .and() called                                         │
+│    Generated SQL:                                                                │
+│      SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                    │
+│      FROM user_details u1_0                                                      │
+│    Result: All 8 users (no WHERE clause)                                         │
+│                                                                                  │
+│  Scenario 5: countActiveUsers()                                                  │
+│    spec = isActive()                                                             │
+│    Generated SQL:                                                                │
+│      SELECT COUNT(u1_0.id) FROM user_details u1_0 WHERE u1_0.active = true       │
+│    Result: 5                                                                     │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### AND, OR, NOT, and Complex Predicates with Specification API
+
+Specifications support composition using `.and()`, `.or()`, and `Specification.not()`.
+
+```java
+// UserSpecs.java — reusable specifications
+public class UserSpecs {
+
+    public static Specification<UserDetails> hasName(String name) {
+        return (root, query, cb) -> cb.like(root.get("name"), "%" + name + "%");
+    }
+
+    public static Specification<UserDetails> hasEmail(String email) {
+        return (root, query, cb) -> cb.equal(root.get("email"), email);
+    }
+
+    public static Specification<UserDetails> isActive(Boolean active) {
+        return (root, query, cb) -> cb.equal(root.get("active"), active);
+    }
+
+    public static Specification<UserDetails> isActive() {
+        return (root, query, cb) -> cb.equal(root.get("active"), true);
+    }
+
+    public static Specification<UserDetails> emailContains(String keyword) {
+        return (root, query, cb) -> cb.like(root.get("email"), "%" + keyword + "%");
+    }
+
+    public static Specification<UserDetails> hasIdGreaterThan(Long id) {
+        return (root, query, cb) -> cb.greaterThan(root.get("id"), id);
+    }
+
+    public static Specification<UserDetails> hasIdBetween(Long min, Long max) {
+        return (root, query, cb) -> cb.between(root.get("id"), min, max);
+    }
+}
+```
+
+```java
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository repository;
+
+    /**
+     * AND — all conditions must match
+     * Find active users whose name contains "a"
+     */
+    public List<UserDetails> findActiveByName(String name) {
+        Specification<UserDetails> spec = Specification
+            .where(UserSpecs.hasName(name))
+            .and(UserSpecs.isActive());
+        return repository.findAll(spec);
+        // SQL: WHERE user_name LIKE '%a%' AND active = true
+    }
+
+    /**
+     * OR — any condition can match
+     * Find users where name contains keyword OR email contains keyword
+     */
+    public List<UserDetails> searchByKeyword(String keyword) {
+        Specification<UserDetails> spec = Specification
+            .where(UserSpecs.hasName(keyword))
+            .or(UserSpecs.emailContains(keyword));
+        return repository.findAll(spec);
+        // SQL: WHERE user_name LIKE '%keyword%' OR email LIKE '%keyword%'
+    }
+
+    /**
+     * NOT — negate a specification
+     * Find inactive users (NOT active)
+     */
+    public List<UserDetails> findInactiveUsers() {
+        Specification<UserDetails> spec = Specification.not(UserSpecs.isActive());
+        return repository.findAll(spec);
+        // SQL: WHERE NOT (active = true)
+        // Same as: WHERE active = false
+    }
+
+    /**
+     * Complex: (name LIKE keyword OR email LIKE keyword) AND active = true AND id > 2
+     */
+    public List<UserDetails> complexSearch(String keyword, Long minId) {
+
+        // Build OR condition: name LIKE keyword OR email LIKE keyword
+        Specification<UserDetails> keywordSpec = Specification
+            .where(UserSpecs.hasName(keyword))
+            .or(UserSpecs.emailContains(keyword));
+
+        // Combine with AND
+        Specification<UserDetails> spec = Specification
+            .where(keywordSpec)                            // (name LIKE OR email LIKE)
+            .and(UserSpecs.isActive())                     // AND active = true
+            .and(UserSpecs.hasIdGreaterThan(minId));       // AND id > minId
+
+        return repository.findAll(spec);
+    }
+
+    /**
+     * Dynamic AND + OR with optional parameters
+     */
+    public List<UserDetails> dynamicSearch(String name, String email,
+                                            Boolean active, String keyword) {
+
+        Specification<UserDetails> spec = Specification.where(null);
+
+        if (name != null) {
+            spec = spec.and(UserSpecs.hasName(name));
+        }
+        if (email != null) {
+            spec = spec.and(UserSpecs.hasEmail(email));
+        }
+        if (active != null) {
+            spec = spec.and(UserSpecs.isActive(active));
+        }
+        if (keyword != null) {
+            // OR within the keyword filter, AND with the rest
+            Specification<UserDetails> keywordSpec = Specification
+                .where(UserSpecs.hasName(keyword))
+                .or(UserSpecs.emailContains(keyword));
+            spec = spec.and(keywordSpec);
+        }
+
+        return repository.findAll(spec);
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Specification Composition — Generated SQL:                                      │
+│                                                                                  │
+│  AND:                                                                            │
+│    where(hasName("a")).and(isActive())                                            │
+│    SQL: WHERE user_name LIKE '%a%' AND active = true                             │
+│                                                                                  │
+│  OR:                                                                             │
+│    where(hasName("ali")).or(emailContains("ali"))                                 │
+│    SQL: WHERE user_name LIKE '%ali%' OR email LIKE '%ali%'                       │
+│                                                                                  │
+│  NOT:                                                                            │
+│    Specification.not(isActive())                                                 │
+│    SQL: WHERE NOT (active = true)                                                │
+│                                                                                  │
+│  Complex: (OR group) AND active AND id > 2                                       │
+│    where(                                                                        │
+│      where(hasName("ali")).or(emailContains("ali"))                               │
+│    ).and(isActive()).and(hasIdGreaterThan(2L))                                    │
+│    SQL: WHERE (user_name LIKE '%ali%' OR email LIKE '%ali%')                     │
+│           AND active = true                                                      │
+│           AND id > 2                                                             │
+│    Result from DB:                                                               │
+│      ┌────┬───────────┬──────────────────┬────────┐                              │
+│      │ id │ user_name │ email            │ active │                              │
+│      ├────┼───────────┼──────────────────┼────────┤                              │
+│      │  4 │ Diana     │ diana@ex.com     │ true   │ ← id > 2, active, name has a│
+│      │  6 │ Frank     │ frank@ex.com     │ true   │ ← id > 2, active, name has a│
+│      │  7 │ Grace     │ grace@ex.com     │ true   │ ← id > 2, active, name has a│
+│      └────┴───────────┴──────────────────┴────────┘                              │
+│    (Alice matches "ali" but id=1, not > 2)                                       │
+│                                                                                  │
+│  Dynamic: name="Bob" + keyword="bob"                                             │
+│    spec = where(null)                                                            │
+│           .and(hasName("Bob"))                                                   │
+│           .and( where(hasName("bob")).or(emailContains("bob")) )                  │
+│    SQL: WHERE user_name LIKE '%Bob%'                                             │
+│           AND (user_name LIKE '%bob%' OR email LIKE '%bob%')                     │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Specification Composition Methods:                                              │
+│                                                                                  │
+│  ┌──────────────────────────────────────────┬────────────────────────────────────┐│
+│  │ Method                                   │ SQL Equivalent                    ││
+│  ├──────────────────────────────────────────┼────────────────────────────────────┤│
+│  │ Specification.where(spec)                │ Start a chain (initial condition) ││
+│  │ Specification.where(null)                │ No initial condition (1=1)        ││
+│  │ spec.and(otherSpec)                      │ cond1 AND cond2                   ││
+│  │ spec.or(otherSpec)                       │ cond1 OR cond2                    ││
+│  │ Specification.not(spec)                  │ NOT (cond)                        ││
+│  │ spec.and(spec2.or(spec3))               │ cond1 AND (cond2 OR cond3)        ││
+│  └──────────────────────────────────────────┴────────────────────────────────────┘│
+│                                                                                  │
+│  Note on .where(null):                                                           │
+│    Specification.where(null) returns a Specification that produces NO predicate.  │
+│    When Spring sees a null Specification, it skips the WHERE clause entirely.    │
+│    This is how you handle the "no filters" case cleanly.                         │
+│                                                                                  │
+│    spec.and(null) is also safe — the null Specification is ignored.              │
+│    This means you can write:                                                     │
+│      spec = spec.and(name != null ? UserSpecs.hasName(name) : null);             │
+│    → If name is null, the .and(null) is a no-op.                                │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Cleaner dynamic search using ternary with null:**
+
+```java
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository repository;
+
+    /**
+     * Clean dynamic search using ternary null pattern
+     */
+    public List<UserDetails> searchUsers(String name, String email, Boolean active) {
+
+        Specification<UserDetails> spec = Specification
+            .where(name != null ? UserSpecs.hasName(name) : null)
+            .and(email != null ? UserSpecs.hasEmail(email) : null)
+            .and(active != null ? UserSpecs.isActive(active) : null);
+        //  null Specifications are ignored in .and() and .where()!
+
+        return repository.findAll(spec);
+    }
+    // If name="Alice", email=null, active=true:
+    //   where(hasName("Alice"))       ← name is non-null
+    //   .and(null)                    ← email is null → ignored
+    //   .and(isActive(true))          ← active is non-null
+    //   SQL: WHERE user_name LIKE '%Alice%' AND active = true
+}
+```
+
+---
+
+### JOIN and Multiselect with Specification API
+
+The Specification API's `toPredicate` method receives `Root`, `CriteriaQuery`, and `CriteriaBuilder` — the same objects used in the Criteria API. So you can perform JOINs inside a Specification. However, `JpaSpecificationExecutor.findAll()` always returns entities (not `Object[]`), so multiselect requires using EntityManager directly with the Specifications providing predicates.
+
+**JOIN inside a Specification — filtering by child entity fields:**
+
+```java
+// UserSpecs.java — JOIN specifications
+public class UserSpecs {
+
+    // Existing specs...
+    public static Specification<UserDetails> hasName(String name) {
+        return (root, query, cb) -> cb.like(root.get("name"), "%" + name + "%");
+    }
+
+    public static Specification<UserDetails> isActive() {
+        return (root, query, cb) -> cb.equal(root.get("active"), true);
+    }
+
+    // JOIN spec — filter by address city
+    public static Specification<UserDetails> hasCity(String city) {
+        return (root, query, cb) -> {
+            // JOIN user_addresses ON user_details.id = user_addresses.user_id
+            Join<UserDetails, UserAddress> addressJoin = root.join("addresses");
+            //                                                ↑ Java field name on UserDetails
+
+            // Prevent duplicate results from JOIN (one user may have multiple addresses)
+            query.distinct(true);
+
+            return cb.equal(addressJoin.get("city"), city);
+            // SQL: ... JOIN user_addresses a ON u.id = a.user_id WHERE a.city = :city
+        };
+    }
+
+    // JOIN spec — filter by address country
+    public static Specification<UserDetails> hasCountry(String country) {
+        return (root, query, cb) -> {
+            Join<UserDetails, UserAddress> addressJoin = root.join("addresses");
+            query.distinct(true);
+            return cb.equal(addressJoin.get("country"), country);
+        };
+    }
+
+    // LEFT JOIN spec — include users without addresses
+    public static Specification<UserDetails> hasCityOptional(String city) {
+        return (root, query, cb) -> {
+            Join<UserDetails, UserAddress> addressJoin = root.join("addresses", JoinType.LEFT);
+            query.distinct(true);
+            return cb.equal(addressJoin.get("city"), city);
+        };
+    }
+}
+```
+
+```java
+// Service — composing JOIN specifications with other specifications
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository repository;
+
+    /**
+     * Find active users in a specific city
+     */
+    public List<UserDetails> findActiveUsersInCity(String city) {
+        Specification<UserDetails> spec = Specification
+            .where(UserSpecs.isActive())
+            .and(UserSpecs.hasCity(city));
+        return repository.findAll(spec);
+    }
+
+    /**
+     * Dynamic search with optional city filter
+     */
+    public List<UserDetails> search(String name, Boolean active, String city, String country) {
+        Specification<UserDetails> spec = Specification
+            .where(name != null ? UserSpecs.hasName(name) : null)
+            .and(active != null ? UserSpecs.isActive() : null)
+            .and(city != null ? UserSpecs.hasCity(city) : null)
+            .and(country != null ? UserSpecs.hasCountry(country) : null);
+        return repository.findAll(spec);
+    }
+}
+```
+
+```java
+// Controller
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    // GET /api/users/search?name=Alice&city=New York
+    // GET /api/users/search?active=true&country=USA
+    @GetMapping("/search")
+    public List<UserDetails> search(
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) Boolean active,
+        @RequestParam(required = false) String city,
+        @RequestParam(required = false) String country
+    ) {
+        return userService.search(name, active, city, country);
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Specification JOIN — Generated SQL:                                             │
+│                                                                                  │
+│  findActiveUsersInCity("New York"):                                              │
+│    spec = where(isActive()).and(hasCity("New York"))                              │
+│    Generated SQL:                                                                │
+│      SELECT DISTINCT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active           │
+│      FROM user_details u1_0                                                      │
+│      JOIN user_addresses a1_0 ON u1_0.id = a1_0.user_id                          │
+│      WHERE u1_0.active = true AND a1_0.city = 'New York'                         │
+│                                                                                  │
+│    Result:                                                                       │
+│      ┌────┬───────────┬──────────────────┬────────┐                              │
+│      │ id │ user_name │ email            │ active │                              │
+│      ├────┼───────────┼──────────────────┼────────┤                              │
+│      │  1 │ Alice     │ alice@ex.com     │ true   │ ← address in New York        │
+│      │  4 │ Diana     │ diana@ex.com     │ true   │ ← address in New York        │
+│      └────┴───────────┴──────────────────┴────────┘                              │
+│                                                                                  │
+│  search("Alice", null, null, null):                                              │
+│    spec = where(hasName("Alice")).and(null).and(null).and(null)                   │
+│    Generated SQL:                                                                │
+│      SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                    │
+│      FROM user_details u1_0                                                      │
+│      WHERE u1_0.user_name LIKE '%Alice%'                                         │
+│    → No JOIN (city and country are null → JOIN specs not added)                   │
+│                                                                                  │
+│  search(null, true, "London", "UK"):                                             │
+│    spec = where(null).and(isActive()).and(hasCity("London"))                      │
+│                       .and(hasCountry("UK"))                                     │
+│    Generated SQL:                                                                │
+│      SELECT DISTINCT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active           │
+│      FROM user_details u1_0                                                      │
+│      JOIN user_addresses a1_0 ON u1_0.id = a1_0.user_id                          │
+│      WHERE u1_0.active = true AND a1_0.city = 'London' AND a1_0.country = 'UK'  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Multiselect with Specification API — using EntityManager for Object[] results:**
+
+`JpaSpecificationExecutor.findAll()` always returns full entities. For partial column selection (multiselect/Object[]), you can use Specifications as predicate providers inside an EntityManager-based approach:
+
+```java
+@Service
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Autowired
+    private UserDetailsRepository repository;
+
+    /**
+     * Multiselect (specific columns) — uses Specification as predicate provider
+     * but executes via EntityManager for Object[] result.
+     */
+    @Transactional(readOnly = true)
+    public List<Object[]> getUserNamesWithCity(String city, Boolean active) {
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Object[]> cq = cb.createQuery(Object[].class);
+        Root<UserDetails> root = cq.from(UserDetails.class);
+
+        Join<UserDetails, UserAddress> addrJoin = root.join("addresses");
+
+        cq.multiselect(root.get("name"), addrJoin.get("city"));
+
+        // Build WHERE using Specification objects
+        List<Predicate> predicates = new ArrayList<>();
+        if (city != null) {
+            // Call Specification.toPredicate manually
+            predicates.add(
+                UserSpecs.hasCity(city).toPredicate(root, cq, cb)
+            );
+        }
+        if (active != null) {
+            predicates.add(
+                UserSpecs.isActive(active).toPredicate(root, cq, cb)
+            );
+        }
+
+        if (!predicates.isEmpty()) {
+            cq.where(predicates.toArray(new Predicate[0]));
+        }
+
+        return entityManager.createQuery(cq).getResultList();
+    }
+    // Generated SQL:
+    //   SELECT u1_0.user_name, a1_0.city
+    //   FROM user_details u1_0
+    //   JOIN user_addresses a1_0 ON u1_0.id = a1_0.user_id
+    //   WHERE a1_0.city = 'New York' AND u1_0.active = true
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Specification API + Multiselect — Two Approaches:                               │
+│                                                                                  │
+│  Approach 1: JpaSpecificationExecutor.findAll(spec)                              │
+│    → Always returns full entities (List<UserDetails>)                            │
+│    → Handles all boilerplate                                                     │
+│    → CANNOT do multiselect / Object[]                                            │
+│    → Use for 90% of queries                                                      │
+│                                                                                  │
+│  Approach 2: EntityManager + spec.toPredicate() manually                         │
+│    → Can do multiselect → Object[]                                               │
+│    → Still reuses Specification predicate logic (no code duplication)             │
+│    → Requires some boilerplate (CriteriaBuilder, Root, etc.)                     │
+│    → Use for the 10% of queries that need partial columns                        │
+│                                                                                  │
+│  In Approach 2, you call spec.toPredicate(root, query, cb) manually              │
+│  to extract the Predicate from a Specification and apply it to your custom query.│
+│  The predicate logic is still defined once in UserSpecs.                          │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  NOTE — Duplicate JOIN issue:                                                    │
+│                                                                                  │
+│  If two Specifications both call root.join("addresses"), two separate JOINs      │
+│  are created:                                                                    │
+│    hasCity("New York")  → root.join("addresses") → JOIN #1                       │
+│    hasCountry("USA")    → root.join("addresses") → JOIN #2                       │
+│    SQL: ... JOIN user_addresses a1 ON ... JOIN user_addresses a2 ON ...           │
+│    → Two JOINs on the same table! Inefficient but correct.                       │
+│                                                                                  │
+│  To avoid duplicate JOINs, either:                                               │
+│  1. Combine conditions into one Specification:                                   │
+│     public static Specification<UserDetails> hasAddress(String city, String co) { │
+│         return (root, query, cb) -> {                                            │
+│             Join<UserDetails, UserAddress> join = root.join("addresses");         │
+│             query.distinct(true);                                                │
+│             List<Predicate> preds = new ArrayList<>();                            │
+│             if (city != null) preds.add(cb.equal(join.get("city"), city));        │
+│             if (co != null) preds.add(cb.equal(join.get("country"), co));         │
+│             return cb.and(preds.toArray(new Predicate[0]));                       │
+│         };                                                                       │
+│     }                                                                            │
+│                                                                                  │
+│  2. Reuse existing JOINs by checking root.getJoins():                            │
+│     Join<?, ?> join = root.getJoins().stream()                                   │
+│         .filter(j -> j.getAttribute().getName().equals("addresses"))              │
+│         .findFirst()                                                             │
+│         .orElseGet(() -> root.join("addresses"));                                │
+│     → Uses existing JOIN if already present, creates new one if not.             │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Pagination and Sorting with Specification API
+
+`JpaSpecificationExecutor` provides `findAll(Specification, Pageable)` which handles pagination and sorting automatically. No manual `setFirstResult`/`setMaxResults` or `orderBy` needed.
+
+```java
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository repository;
+
+    /**
+     * Dynamic search with pagination and sorting.
+     */
+    public Page<UserDetails> searchUsersPaginated(String name, String email,
+                                                   Boolean active,
+                                                   int page, int size,
+                                                   String sortBy, String sortDir) {
+
+        // Build Specification dynamically
+        Specification<UserDetails> spec = Specification
+            .where(name != null ? UserSpecs.hasName(name) : null)
+            .and(email != null ? UserSpecs.hasEmail(email) : null)
+            .and(active != null ? UserSpecs.isActive(active) : null);
+
+        // Build Sort
+        Sort sort;
+        List<String> allowedSortFields = List.of("id", "name", "email", "active");
+        if (sortBy != null && allowedSortFields.contains(sortBy)) {
+            sort = Sort.by(
+                "DESC".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC,
+                sortBy
+            );
+        } else {
+            sort = Sort.by(Sort.Direction.ASC, "id");  // default sort
+        }
+
+        // Build Pageable (page number + page size + sort)
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        // Execute — Spring handles EVERYTHING:
+        //   1. Creates CriteriaBuilder, CriteriaQuery, Root
+        //   2. Calls spec.toPredicate() for WHERE clause
+        //   3. Adds ORDER BY from Sort
+        //   4. Adds LIMIT/OFFSET from Pageable
+        //   5. Executes DATA query
+        //   6. Executes COUNT query (for totalElements)
+        //   7. Returns Page<UserDetails>
+        return repository.findAll(spec, pageable);
+    }
+
+    /**
+     * Search with sorting only (no pagination — returns List, not Page)
+     */
+    public List<UserDetails> searchUsersSorted(Boolean active, String sortBy) {
+        Specification<UserDetails> spec = active != null ? UserSpecs.isActive(active) : null;
+
+        Sort sort = Sort.by(Sort.Direction.ASC, sortBy != null ? sortBy : "id");
+
+        return repository.findAll(spec, sort);
+    }
+}
+```
+
+```java
+// Controller
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    // GET /api/users/search?active=true&page=0&size=3&sortBy=name&sortDir=DESC
+    @GetMapping("/search")
+    public Page<UserDetails> search(
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String email,
+        @RequestParam(required = false) Boolean active,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "id") String sortBy,
+        @RequestParam(defaultValue = "ASC") String sortDir
+    ) {
+        return userService.searchUsersPaginated(name, email, active,
+                                                 page, size, sortBy, sortDir);
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Specification + Pagination — Scenario:                                          │
+│                                                                                  │
+│  Request: GET /api/users/search?active=true&page=1&size=2&sortBy=name&sortDir=ASC│
+│                                                                                  │
+│  spec = where(null).and(null).and(isActive(true))                                │
+│  pageable = PageRequest.of(1, 2, Sort.by(ASC, "name"))                           │
+│                                                                                  │
+│  Spring internally generates TWO queries:                                        │
+│                                                                                  │
+│  Data query:                                                                     │
+│    SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                      │
+│    FROM user_details u1_0                                                        │
+│    WHERE u1_0.active = true                                                      │
+│    ORDER BY u1_0.user_name ASC                                                   │
+│    LIMIT 2 OFFSET 2                                                              │
+│                                                                                  │
+│  Count query:                                                                    │
+│    SELECT COUNT(u1_0.id) FROM user_details u1_0 WHERE u1_0.active = true         │
+│    → Returns: 5                                                                  │
+│                                                                                  │
+│  Active users sorted by name: Alice(1), Bob(2), Diana(4), Frank(6), Grace(7)    │
+│  Page 0 (OFFSET 0, LIMIT 2): [Alice, Bob]                                       │
+│  Page 1 (OFFSET 2, LIMIT 2): [Diana, Frank]  ← THIS page                        │
+│  Page 2 (OFFSET 4, LIMIT 2): [Grace]                                            │
+│                                                                                  │
+│  Response:                                                                       │
+│    Page<UserDetails> {                                                           │
+│      content: [Diana, Frank],                                                    │
+│      pageNumber: 1,                                                              │
+│      pageSize: 2,                                                                │
+│      totalElements: 5,                                                           │
+│      totalPages: 3                                                               │
+│    }                                                                             │
+│                                                                                  │
+│  KEY ADVANTAGE over Criteria API pagination:                                     │
+│    - No manual setFirstResult/setMaxResults                                      │
+│    - No manual count query (Spring generates it automatically!)                  │
+│    - No manual PageImpl construction                                             │
+│    - Just: repository.findAll(spec, pageable) → Page<T>                          │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Pagination with JOIN Specifications:**
+
+```java
+@Service
+public class UserService {
+
+    @Autowired
+    private UserDetailsRepository repository;
+
+    /**
+     * Paginated search with JOIN filter
+     */
+    public Page<UserDetails> searchInCity(String city, Boolean active,
+                                           int page, int size) {
+
+        Specification<UserDetails> spec = Specification
+            .where(city != null ? UserSpecs.hasCity(city) : null)
+            .and(active != null ? UserSpecs.isActive(active) : null);
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("name"));
+
+        return repository.findAll(spec, pageable);
+    }
+    // SQL (city="New York", active=true, page=0, size=2):
+    //   SELECT DISTINCT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active
+    //   FROM user_details u1_0
+    //   JOIN user_addresses a1_0 ON u1_0.id = a1_0.user_id
+    //   WHERE a1_0.city = 'New York' AND u1_0.active = true
+    //   ORDER BY u1_0.user_name ASC
+    //   LIMIT 2 OFFSET 0
+    //
+    // Count SQL (auto-generated):
+    //   SELECT COUNT(DISTINCT u1_0.id)
+    //   FROM user_details u1_0
+    //   JOIN user_addresses a1_0 ON u1_0.id = a1_0.user_id
+    //   WHERE a1_0.city = 'New York' AND u1_0.active = true
+}
+```
+
+**Multi-column sorting:**
+
+```java
+// Sort by active DESC, then by name ASC
+Sort sort = Sort.by(
+    Sort.Order.desc("active"),
+    Sort.Order.asc("name")
+);
+Pageable pageable = PageRequest.of(0, 10, sort);
+
+// SQL: ... ORDER BY u1_0.active DESC, u1_0.user_name ASC LIMIT 10 OFFSET 0
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Specification Pagination vs Criteria API Pagination:                            │
+│                                                                                  │
+│  Criteria API:                                                                   │
+│    // Data query                                                                 │
+│    CriteriaBuilder cb = entityManager.getCriteriaBuilder();                      │
+│    CriteriaQuery<UserDetails> dataCq = cb.createQuery(UserDetails.class);        │
+│    Root<UserDetails> dataRoot = dataCq.from(UserDetails.class);                  │
+│    dataCq.select(dataRoot).where(predicates);                                    │
+│    dataCq.orderBy(cb.asc(dataRoot.get("name")));                                 │
+│    TypedQuery<UserDetails> dataQuery = entityManager.createQuery(dataCq);        │
+│    dataQuery.setFirstResult(page * size);                                        │
+│    dataQuery.setMaxResults(size);                                                │
+│    List<UserDetails> content = dataQuery.getResultList();                         │
+│    // Count query (separate!)                                                    │
+│    CriteriaQuery<Long> countCq = cb.createQuery(Long.class);                     │
+│    Root<UserDetails> countRoot = countCq.from(UserDetails.class);                │
+│    countCq.select(cb.count(countRoot)).where(countPredicates);                   │
+│    Long total = entityManager.createQuery(countCq).getSingleResult();            │
+│    return new PageImpl<>(content, pageable, total);                               │
+│    → 14 lines of boilerplate!                                                    │
+│                                                                                  │
+│  Specification API:                                                              │
+│    Pageable pageable = PageRequest.of(page, size, Sort.by("name"));              │
+│    return repository.findAll(spec, pageable);                                    │
+│    → 2 lines! Spring handles data query, count query, and PageImpl.              │
+│                                                                                  │
+│  Specification API eliminates:                                                   │
+│    ✓ Manual CriteriaBuilder/CriteriaQuery/Root setup                             │
+│    ✓ Manual orderBy with cb.asc()/cb.desc()                                      │
+│    ✓ Manual setFirstResult/setMaxResults                                         │
+│    ✓ Manual count query creation and execution                                   │
+│    ✓ Manual PageImpl construction                                                │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Summary — Specification API
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Specification API — Complete Pattern:                                           │
+│                                                                                  │
+│  1. Define Specifications (once):                                                │
+│     public class UserSpecs {                                                     │
+│         static Specification<UserDetails> hasName(String name) {                 │
+│             return (root, query, cb) -> cb.like(root.get("name"), "%" +name+ "%"│
+│             );                                                                   │
+│         }                                                                        │
+│         static Specification<UserDetails> isActive() {                           │
+│             return (root, query, cb) -> cb.equal(root.get("active"), true);      │
+│         }                                                                        │
+│     }                                                                            │
+│                                                                                  │
+│  2. Repository (extend JpaSpecificationExecutor):                                │
+│     interface UserDetailsRepository                                              │
+│         extends JpaRepository<UserDetails, Long>,                                │
+│                 JpaSpecificationExecutor<UserDetails> { }                         │
+│                                                                                  │
+│  3. Compose and Execute (in service):                                            │
+│     Specification<UserDetails> spec = Specification                              │
+│         .where(name != null ? hasName(name) : null)                              │
+│         .and(active != null ? isActive() : null);                                │
+│     repository.findAll(spec);                     // List<T>                     │
+│     repository.findAll(spec, pageable);           // Page<T>                     │
+│     repository.findAll(spec, sort);               // List<T> sorted              │
+│     repository.count(spec);                       // long                        │
+│     repository.exists(spec);                      // boolean                     │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+Complete Decision Table — All Query Approaches (updated):
+
+  ┌─────────────────────────────────────┬──────────────────────────────────────────┐
+  │ Scenario                            │ Best Approach                            │
+  ├─────────────────────────────────────┼──────────────────────────────────────────┤
+  │ Simple findBy with 1-2 conditions   │ Derived Query (method name)              │
+  │ Fixed complex query on entities     │ JPQL @Query on Repository                │
+  │ Fixed complex query on tables       │ Native @Query on Repository              │
+  │ DB-specific features (JSONB, etc.)  │ Native @Query on Repository              │
+  │ Dynamic query, DB-locked            │ Dynamic Native Query (EntityManager)     │
+  │ Dynamic query, DB-independent       │ Criteria API or Specification API        │
+  │ Dynamic query, type-safe            │ Criteria API + Metamodel                 │
+  │ Reusable dynamic predicates         │ Specification API                        │
+  │ Dynamic query + minimal boilerplate │ Specification API                        │
+  │ Dynamic JOINs (related entities)    │ Specification API or Criteria API        │
+  │ Dynamic JOINs (unrelated tables)    │ Dynamic Native Query (EntityManager)     │
+  │ Multiselect (partial columns)       │ Criteria API (multiselect)               │
+  │ Pagination + sorting + dynamic WHERE│ Specification API (simplest)             │
+  │ Dynamic GROUP BY / HAVING           │ Criteria API or Dynamic Native Query     │
+  │ Dynamic UPDATE (partial fields)     │ Dynamic Native Query (EntityManager)     │
+  │ Maximum readability                 │ JPQL or Native Query (SQL is familiar)   │
+  │ Maximum type safety                 │ Criteria API + Metamodel                 │
+  │ Maximum DB portability              │ Specification API, Criteria API, or JPQL │
+  │ Maximum reusability                 │ Specification API                        │
+  └─────────────────────────────────────┴──────────────────────────────────────────┘
+```
