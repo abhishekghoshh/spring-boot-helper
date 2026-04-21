@@ -19,3 +19,4 @@
 - [Build Full Stack Authentication System with Spring Boot & React | Email OTP + JWT | Full Project](https://www.youtube.com/watch?v=ewGbjpFmRbw)
 - [Full Stack Food Delivery App with React, Spring Boot, MongoDB, AWS, RazorPay | Complete Tutorial](https://www.youtube.com/watch?v=7eZtiuhgIgc)
 - [Java Spring Boot Microservices eCommerce Project | Docker, PostgreSQL, DevOps Full Course](https://www.youtube.com/watch?v=i_9z3tNrphE)
+- [Spring Boot 4 - Microservices portfolio project with Java - Full Course (2026)](https://www.youtube.com/watch?v=vE3u4zgMai8)
