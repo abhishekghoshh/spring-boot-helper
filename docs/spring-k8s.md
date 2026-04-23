@@ -6,6 +6,15 @@
 
 ## Youtube
 
+- [Daily Code Buffer](https://www.youtube.com/@DailyCodeBuffer)
+    - [Kubernetes Tutorial with Microservices and Cloud | Kubernetes Course](https://www.youtube.com/watch?v=EY3uDfBG0OY)
+      	- [shabbirdwd53/spring-boot-microservices/tree/kubernetes_as_service_registry](https://github.com/shabbirdwd53/spring-boot-microservices/tree/kubernetes_as_service_registry)
+      	- [shabbirdwd53/spring-boot-microservices/tree/kubernetes](https://github.com/shabbirdwd53/spring-boot-microservices/tree/kubernetes)
+    - [Deploy Springboot Microservices to Kubernetes Cluster | Full Example](https://www.youtube.com/watch?v=VAmntTPebKE)
+    - [Dekorate: Generating Kubernetes Manifests in Spring Boot](https://www.youtube.com/watch?v=G_BhoEGFWWg)
+    - [Skaffold Tutorial - Easy Kubernetes Development workflow with Spring Boot](https://www.youtube.com/watch?v=G_BhoEGFWWg)
+
+
 - [SpringDeveloper](https://www.youtube.com/@SpringSourceDev/playlists)
   - [Getting Started with Spring Cloud Kubernetes](https://www.youtube.com/watch?v=u64jexEX_RY)
   - [Spring Boot Loves K8s](https://www.youtube.com/watch?v=nPACI6-J9Jc)
@@ -18,3 +27,6 @@
   - [Spring Tips: Kubernetes Native Java](https://www.youtube.com/watch?v=6XIakve0GjI)
   - [Spring Office Hours: Episode 15 - Spring to Production](https://www.youtube.com/watch?v=zE2GW_CEJy4)
   - [Spring Boot on Amazon Web Services with Spring Cloud AWS](https://www.youtube.com/watch?v=cgMjPBmBkyE)
+
+
+

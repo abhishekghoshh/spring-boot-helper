@@ -18,6 +18,8 @@
     - [marcobehlerjetbrains/jdbc-tutorial](https://github.com/marcobehlerjetbrains/jdbc-tutorial)
 - [Java Database Connectivity | JDBC](https://www.youtube.com/watch?v=7v2OnUti2eM)
 
+- [Spring Security JDBC: How to authenticate against a database in Spring Boot](https://www.youtube.com/watch?v=d7ZmZFbE_qY)
+
 
 
 ## Reading Chronology

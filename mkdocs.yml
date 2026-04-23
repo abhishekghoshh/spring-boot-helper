@@ -1,0 +1,94 @@
+site_name: spring-boot-helper
+site_url: https://abhishekghoshh.github.io/spring-boot-helper/
+
+nav:
+  - Introduction: introduction.md
+  - Interview Helper: interview-helper.md
+  - Spring JDBC: Spring-jdbc.md
+  - Spring JPA: spring-jpa.md
+  - Spring Transaction: spring-transaction.md
+  - Spring AOP: spring-aop.md
+  - Spring Security: spring-security.md
+  - Spring Async: spring-async.md
+  - Spring Testing: spring-testing.md
+  - Spring Batch: spring-batch.md
+  - Spring Kafka: spring-kafka.md
+  - Spring Redis: spring-redis.md
+  - Spring MongoDB: spring-mongodb.md
+  - Spring Cassandra: spring-cassandra.md
+  - Spring Cloud: spring-cloud.md
+  - Spring Microservices Patterns: spring-microservices-pattern.md
+  - Spring GraphQL: spring-graphql.md
+  - Spring Reactive Programming: spring-reactive-programming.md
+  - Spring Cloud Functions: spring-cloud-functions.md
+  - Spring AWS: spring-aws.md
+  - Spring Kubernetes: spring-k8s.md
+  - Spring CI/CD: spring-cicd.md
+  - Spring Observability: spring-observabilty.md
+  - Spring Splunk: spring-splunk.md
+  - Spring Docs: spring-docs.md
+
+
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.annotation
+    - content.code.copy
+  language: en
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/toggle-switch-off-outline 
+        name: Switch to dark mode
+      primary: teal
+      accent: purple 
+    - scheme: slate 
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode    
+      primary: teal
+      accent: lime
+
+plugins:
+  - social
+  - search
+  - mkdocs-pdf
+
+extra:
+  social:
+    - icon: fontawesome/brands/github-alt
+      link: https://github.com/abhishekghoshh
+    - icon: fontawesome/brands/twitter
+      link: https://x.com/abhishek_ghoshh
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/in/abhishek-ghosh-220679132/
+
+markdown_extensions:
+  - attr_list
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - admonition
+  - pymdownx.arithmatex:
+      generic: true
+  - footnotes
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.mark
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+
+copyright: |
+  &copy; 2025 <a href="https://github.com/abhishekghoshh"  target="_blank" rel="noopener">Abhishek Ghosh</a>

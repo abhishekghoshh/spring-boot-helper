@@ -1,7 +1,6 @@
 # Spring JDBC JPA
 
 
-
 ## Documentation
 
 - [Spring Data JPA](https://docs.spring.io/spring-data/jpa/reference/)
@@ -17,7 +16,6 @@
 
 ## Blogs
 
-
 - [Spring Persistence Series](https://www.baeldung.com/persistence-with-spring-series)
 - [Learn JPA & Hibernate Series](https://www.baeldung.com/learn-jpa-hibernate)
 
@@ -32,6 +30,11 @@
 
 
 
+## Udemy
+
+- [Master Hibernate and JPA with Spring Boot in 100 Steps](https://www.udemy.com/course/hibernate-jpa-tutorial-for-beginners-in-100-steps/)
+
+
 ## Youtube
 
 - [Hibernate & JPA Tutorial - Crash Course](https://www.youtube.com/watch?v=xHminZ9Dxm4)
@@ -39,11 +42,14 @@
 
 
 - [Concept && Coding - by Shrayansh](https://www.youtube.com/@ConceptAndCodingByShrayansh)
-    - 
 
-- [Spring Data JPA Tutorial | Full In-depth Course](https://www.youtube.com/watch?v=XszpXoII9Sg)
+- [Daily Code Buffer](https://www.youtube.com/@DailyCodeBuffer)
+    - [Spring Data JPA Tutorial | Full In-depth Course](https://www.youtube.com/watch?v=XszpXoII9Sg)
+    - [MySQL Integration with Spring Boot Application | Daily Code Buffer](https://www.youtube.com/watch?v=qsioDgfs7jc)
+
 - [Master Spring Data JPA In One Video | Hindi](https://www.youtube.com/watch?v=8SxJNqeq_zc)
 
+- [Spring Security JPA Authentication in Spring Boot](https://www.youtube.com/watch?v=awcCiqBO36E)
 
 
 ## Udemy

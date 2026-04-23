@@ -1,0 +1,11 @@
+services:
+  spring-boot-helper-docs:
+    container_name: spring-boot-helper-docs
+    image: abhishek1009/spring-boot-helper-docs:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.docs
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/home/abhishek/workspace/helper-docs

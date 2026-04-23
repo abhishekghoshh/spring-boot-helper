@@ -29,6 +29,7 @@
 
 ### General
 
+- [How to implement Redis in Spring Boot using Spring Data Redis & Jedis](https://www.youtube.com/watch?v=PpkPTviLTLs)
 - [How to Use Redis in Your Spring Boot Project: Step-by-Step Tutorial](https://www.youtube.com/watch?v=2srQ-RiJHps)
     - [chotabheeeeem/journalApp/tree/master](https://github.com/chotabheeeeem/journalApp/tree/master)
 - [Step-by-Step Guide to Spring Boot CRUD with Redis in Hindi](https://www.youtube.com/watch?v=lXK8RS40v9c)

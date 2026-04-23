@@ -1,6 +1,11 @@
 # Spring GraphQL course
 
 
+## Udemy
+
+- [GraphQL API with Java Spring Boot & Spring Framework](https://www.udemy.com/course/graphql-with-java-spring-boot-query-mutation-schema-resolver-edge-jpa/)
+
+
 
 ## Youtube
 

@@ -1,0 +1,41 @@
+# Use the official Python Alpine image as the base
+FROM python:3-alpine
+
+# Install required packages
+RUN apk add --no-cache \
+    python3-dev py3-virtualenv \
+    cairo-dev gcc musl-dev pkgconfig
+
+# Set environment variables
+ENV DOTFILES_DIR=/workspace/helper-docs \
+    MKDOCS_VERSION=1.6.1 \
+    PYTHONUNBUFFERED=1
+
+
+# Create the workspace directory
+RUN mkdir -p ${DOTFILES_DIR}
+
+# Set the working directory
+WORKDIR ${DOTFILES_DIR}
+
+# Create a virtual environment
+RUN python3 -m venv /venv
+
+# Copy requirements.txt
+COPY requirements.txt requirements.txt
+
+# Install Python packages in the virtual environment
+RUN /venv/bin/pip install --upgrade pip && \
+    /venv/bin/pip install -r requirements.txt
+
+# Copy mkdocs configuration files
+COPY mkdocs.yml ./
+
+# Copy the docs directory
+COPY docs ./docs
+
+# Expose the port that MkDocs will run on
+EXPOSE 8000
+
+# Command to run when starting the container
+CMD ["/venv/bin/mkdocs", "serve", "-a", "0.0.0.0:8000"]
