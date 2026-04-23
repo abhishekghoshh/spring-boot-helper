@@ -2,6 +2,7 @@ site_name: spring-boot-helper
 site_url: https://abhishekghoshh.github.io/spring-boot-helper/
 
 nav:
+  - Home: index.md
   - Introduction: introduction.md
   - Interview Helper: interview-helper.md
   - Spring JDBC: Spring-jdbc.md
