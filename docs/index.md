@@ -108,10 +108,12 @@
   - [Say Goodbye to Microservices, Say Hello to Self-Contained Systems by Simon Martinelli @ Spring I/O](https://www.youtube.com/watch?v=jdxxgHcAjf8)
 
 
-### Spring Boot 3
+### Spring Boot upgrades
 
 - [Spring Boot 3.0 | New Features in Spring Framework 6 and Spring Boot 3](https://www.youtube.com/watch?v=haVMaDiAGSw)
 - [Microservices using SpringBoot 3.0 | Full Example](https://www.youtube.com/watch?v=HFl2dzhVuUo)
+
+- [Spring Boot 4 Tutorial - Learn Spring Boot in 30 Minutes](https://www.youtube.com/watch?v=59twysAveKI)
 
 
 
