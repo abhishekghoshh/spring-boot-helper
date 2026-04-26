@@ -4,10 +4,10 @@
 ## Table of Contents
 
 - [Introduction](introduction.md) — Spring Boot fundamentals, auto-configuration, and project setup
+- [Spring AOP](spring-aop.md) — Aspect-Oriented Programming, pointcuts, advice types, and proxy internals
 - [Spring JDBC](Spring-jdbc.md) — JdbcTemplate, NamedParameterJdbcTemplate, and raw SQL operations
 - [Spring JPA](spring-jpa.md) — JPA repositories, entity mapping, relationships, and query methods
 - [Spring Transaction](spring-transaction.md) — @Transactional, propagation levels, isolation, and rollback rules
-- [Spring AOP](spring-aop.md) — Aspect-Oriented Programming, pointcuts, advice types, and proxy internals
 - [Spring Security](spring-security.md) — Authentication, authorization, JWT, OAuth2, and filter chains
 - [Spring Async](spring-async.md) — @Async, CompletableFuture, thread pools, and non-blocking execution
 - [Spring Testing](spring-testing.md) — Unit testing, integration testing, MockMvc, and test slices

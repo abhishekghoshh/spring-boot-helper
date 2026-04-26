@@ -5,10 +5,10 @@ nav:
   - Home: index.md
   - Introduction: introduction.md
   - Interview Helper: interview-helper.md
+  - Spring AOP: spring-aop.md
+  - Spring Transaction: spring-transaction.md
   - Spring JDBC: Spring-jdbc.md
   - Spring JPA: spring-jpa.md
-  - Spring Transaction: spring-transaction.md
-  - Spring AOP: spring-aop.md
   - Spring Security: spring-security.md
   - Spring Async: spring-async.md
   - Spring Testing: spring-testing.md
