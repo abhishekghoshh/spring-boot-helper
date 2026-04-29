@@ -1,0 +1,1690 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://abhishekghoshh.github.io/spring-boot-helper/">
+      
+      
+      
+        <link rel="next" href="introduction/">
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.50">
+    
+    
+      
+        <title>spring-boot-helper</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.a40c8224.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+      
+        <meta  property="og:type"  content="website" >
+      
+        <meta  property="og:title"  content="spring-boot-helper" >
+      
+        <meta  property="og:description"  content="None" >
+      
+        <meta  property="og:image"  content="https://abhishekghoshh.github.io/spring-boot-helper/assets/images/social/index.png" >
+      
+        <meta  property="og:image:type"  content="image/png" >
+      
+        <meta  property="og:image:width"  content="1200" >
+      
+        <meta  property="og:image:height"  content="630" >
+      
+        <meta  property="og:url"  content="https://abhishekghoshh.github.io/spring-boot-helper/" >
+      
+        <meta  name="twitter:card"  content="summary_large_image" >
+      
+        <meta  name="twitter:title"  content="spring-boot-helper" >
+      
+        <meta  name="twitter:description"  content="None" >
+      
+        <meta  name="twitter:image"  content="https://abhishekghoshh.github.io/spring-boot-helper/assets/images/social/index.png" >
+      
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#spring-boot" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="." title="spring-boot-helper" class="md-header__button md-logo" aria-label="spring-boot-helper" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            spring-boot-helper
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Home
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="lime"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="introduction/" class="md-tabs__link">
+        
+  
+    
+  
+  Introduction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="interview-helper/" class="md-tabs__link">
+        
+  
+    
+  
+  Interview Helper
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-aop/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring AOP
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-transaction/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Transaction
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="Spring-jdbc/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring JDBC
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-jpa/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring JPA
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-security/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Security
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-async/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Async
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-testing/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Testing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-batch/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Batch
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-kafka/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Kafka
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-redis/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Redis
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-mongodb/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring MongoDB
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-cassandra/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Cassandra
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-cloud/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Cloud
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-microservices-pattern/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Microservices Patterns
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-graphql/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring GraphQL
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-reactive-programming/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Reactive Programming
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-cloud-functions/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Cloud Functions
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-aws/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring AWS
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-k8s/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Kubernetes
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-cicd/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring CI/CD
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-observabilty/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Observability
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-splunk/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Splunk
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="spring-docs/" class="md-tabs__link">
+        
+  
+    
+  
+  Spring Docs
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="." title="spring-boot-helper" class="md-nav__button md-logo" aria-label="spring-boot-helper" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    spring-boot-helper
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="." class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Table of Contents
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#udemy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Udemy
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#medium" class="md-nav__link">
+    <span class="md-ellipsis">
+      Medium
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Medium">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#general" class="md-nav__link">
+    <span class="md-ellipsis">
+      General
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#developer-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      Developer Practices
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#youtube" class="md-nav__link">
+    <span class="md-ellipsis">
+      Youtube
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Youtube">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spring-boot-upgrades" class="md-nav__link">
+    <span class="md-ellipsis">
+      Spring Boot upgrades
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#channels-and-playlists" class="md-nav__link">
+    <span class="md-ellipsis">
+      Channels and playlists
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#projects-build-using-spring-boot" class="md-nav__link">
+    <span class="md-ellipsis">
+      Projects build using Spring Boot
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="introduction/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Introduction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="interview-helper/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Interview Helper
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-aop/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring AOP
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-transaction/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Transaction
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="Spring-jdbc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring JDBC
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-jpa/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring JPA
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-security/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Security
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-async/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Async
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-testing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Testing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-batch/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Batch
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-kafka/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Kafka
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-redis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Redis
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-mongodb/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring MongoDB
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-cassandra/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Cassandra
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-cloud/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Cloud
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-microservices-pattern/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Microservices Patterns
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-graphql/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring GraphQL
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-reactive-programming/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Reactive Programming
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-cloud-functions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Cloud Functions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-aws/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring AWS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-k8s/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Kubernetes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-cicd/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring CI/CD
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-observabilty/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Observability
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-splunk/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Splunk
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spring-docs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Spring Docs
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<div><h1 id="spring-boot">Spring Boot</h1>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="introduction/">Introduction</a> — Spring Boot fundamentals, auto-configuration, and project setup</li>
+<li><a href="spring-aop/">Spring AOP</a> — Aspect-Oriented Programming, pointcuts, advice types, and proxy internals</li>
+<li><a href="Spring-jdbc/">Spring JDBC</a> — JdbcTemplate, NamedParameterJdbcTemplate, and raw SQL operations</li>
+<li><a href="spring-jpa/">Spring JPA</a> — JPA repositories, entity mapping, relationships, and query methods</li>
+<li><a href="spring-transaction/">Spring Transaction</a> — @Transactional, propagation levels, isolation, and rollback rules</li>
+<li><a href="spring-security/">Spring Security</a> — Authentication, authorization, JWT, OAuth2, and filter chains</li>
+<li><a href="spring-async/">Spring Async</a> — @Async, CompletableFuture, thread pools, and non-blocking execution</li>
+<li><a href="spring-testing/">Spring Testing</a> — Unit testing, integration testing, MockMvc, and test slices</li>
+<li><a href="spring-batch/">Spring Batch</a> — Batch processing, chunk-based steps, readers, writers, and job scheduling</li>
+<li><a href="spring-kafka/">Spring Kafka</a> — Kafka producers, consumers, topics, and event-driven messaging</li>
+<li><a href="spring-redis/">Spring Redis</a> — Redis caching, RedisTemplate, pub/sub, and session management</li>
+<li><a href="spring-mongodb/">Spring MongoDB</a> — MongoTemplate, MongoRepository, document mapping, and aggregations</li>
+<li><a href="spring-cassandra/">Spring Cassandra</a> — Cassandra data modeling, CassandraTemplate, and distributed storage</li>
+<li><a href="spring-cloud/">Spring Cloud</a> — Service discovery, config server, circuit breakers, and API gateway</li>
+<li><a href="spring-microservices-pattern/">Spring Microservices Patterns</a> — SAGA, CQRS, event sourcing, and distributed system patterns</li>
+<li><a href="spring-graphql/">Spring GraphQL</a> — GraphQL schemas, queries, mutations, and Spring GraphQL integration</li>
+<li><a href="spring-reactive-programming/">Spring Reactive Programming</a> — WebFlux, Mono, Flux, and reactive streams</li>
+<li><a href="spring-cloud-functions/">Spring Cloud Functions</a> — Serverless functions, Function-as-a-Service with Spring Cloud</li>
+<li><a href="spring-aws/">Spring AWS</a> — AWS integration with S3, SQS, SNS, DynamoDB, and Spring Cloud AWS</li>
+<li><a href="spring-k8s/">Spring Kubernetes</a> — Kubernetes deployment, ConfigMaps, health probes, and Spring Cloud K8s</li>
+<li><a href="spring-cicd/">Spring CI/CD</a> — Continuous integration and deployment pipelines for Spring Boot apps</li>
+<li><a href="spring-observabilty/">Spring Observability</a> — Micrometer, distributed tracing, metrics, and monitoring</li>
+<li><a href="spring-splunk/">Spring Splunk</a> — Log aggregation, Splunk integration, and centralized logging</li>
+<li><a href="spring-docs/">Spring Docs</a> — OpenAPI, Swagger, and API documentation with Spring REST Docs</li>
+<li><a href="interview-helper/">Interview Helper</a> — Common Spring Boot interview questions and answers</li>
+</ul>
+<h2 id="udemy">Udemy</h2>
+<ul>
+<li>
+<p><a href="https://www.udemy.com/course/spring-springboot-jpa-hibernate-zero-to-master/">Master Spring 7, Spring Boot 4, REST, JPA, Security</a></p>
+</li>
+<li>
+<p><a href="https://www.udemy.com/course/spring-tutorial-for-beginners">Spring Framework Master Class - Java Spring the Modern Way</a></p>
+</li>
+<li><a href="https://www.udemy.com/course/spring-web-services-tutorial">Master Java Web Services and REST API with Spring Boot</a></li>
+<li><a href="https://www.udemy.com/course/spring-boot-tutorial-for-beginners">Learn Spring Boot 3 in 100 Steps - No 1 Java Framework - in28 minutes</a></li>
+<li><a href="https://www.udemy.com/course/spring-boot-and-spring-framework-tutorial-for-beginners">Master Spring Boot 3 &amp; Spring Framework 6 with Java</a></li>
+<li><a href="https://www.udemy.com/course/spring-interview-questions-and-answers">Spring &amp; Spring Boot Interview Guide - in28 minutes</a></li>
+<li>
+<p><a href="https://www.udemy.com/course/microservices-with-spring-boot-and-spring-cloud">Master Microservices with Spring Boot and Spring Cloud - in28 minutes</a></p>
+</li>
+<li>
+<p><a href="https://www.udemy.com/course/spring-5-with-spring-boot-2">Java Spring Framework 6 with Spring Boot 3 - telusko</a></p>
+</li>
+<li><a href="https://www.udemy.com/course/springframeworkineasysteps">Spring Framework In Easy Steps</a></li>
+<li><a href="https://www.udemy.com/course/spring-hibernate-tutorial">Spring Boot 3, Spring 6 &amp; Hibernate for Beginners</a></li>
+<li><a href="https://www.udemy.com/course/spring-framework-6-beginner-to-guru">Spring Boot 3, Spring Framework 6: Beginner to Guru</a> </li>
+<li><a href="https://www.udemy.com/course/microservices-with-spring-boot/">Microservices with Spring Boot, Spring Cloud, Docker, K8s</a></li>
+<li><a href="https://www.udemy.com/course/master-microservices-with-spring-docker-kubernetes">Master Microservices with SpringBoot,Docker,Kubernetes</a></li>
+<li><a href="https://www.udemy.com/course/master-spring-boot-microservices-with-cqrs-event-sourcing">Master Spring Boot Microservices with CQRS &amp; Event Sourcing</a></li>
+<li><a href="https://www.udemy.com/course/spring-boot-microservices-cqrs-saga-axon-framework">Event-Driven Microservices, CQRS, SAGA, Axon, Spring Boot</a></li>
+<li><a href="https://www.udemy.com/course/microservices-clean-architecture-ddd-saga-outbox-kafka-kubernetes/">Microservices: Clean Architecture, DDD, SAGA, Outbox &amp; Kafka</a></li>
+<li><a href="https://www.udemy.com/course/building-real-time-rest-apis-with-spring-boot">Building Real-Time REST APIs with Spring Boot - Blog App</a></li>
+<li><a href="https://www.udemy.com/course/spring-framework-web-development-2020/">Master Modern Spring Boot, Spring Web MVC, AOP, Hibernate, Thymeleaf, JPA, Spring Security, RESTful services</a></li>
+</ul>
+<h2 id="medium">Medium</h2>
+<h3 id="general">General</h3>
+<ul>
+<li><a href="https://medium.com/@satyendra.jaiswal/understanding-spring-ioc-and-dependency-injection-97f18cb0c617">Understanding Spring IoC and Dependency Injection</a></li>
+<li><a href="https://www.baeldung.com/spring-component-annotation">Spring @Component Annotation</a></li>
+<li><a href="https://stackoverflow.com/questions/67691575/when-should-you-use-configuration-instead-of-service-controller-component-fo">When should you use @Configuration instead of @Service/@Controller/@Component for defining beans</a></li>
+<li><a href="https://docs.spring.io/spring-framework/reference/core/beans/java/configuration-annotation.html">Using the @Configuration annotation</a></li>
+<li><a href="https://medium.com/@satyendra.jaiswal/understanding-configuration-componentscan-and-springbootapplication-annotations-in-spring-boot-d70a1320dcd0">Understanding @Configuration , @ComponentScan and @SpringBootApplication Annotations in Spring Boot</a></li>
+<li><a href="https://medium.com/@satyendra.jaiswal/spring-boot-annotations-in-restful-web-services-57cfde61c150">Spring Boot Annotations in RESTful Web Services</a></li>
+<li><a href="https://www.baeldung.com/spring-component-repository-service">@Component vs @Repository and @Service in Spring</a></li>
+</ul>
+<h3 id="developer-practices">Developer Practices</h3>
+<ul>
+<li><a href="https://blog.stackademic.com/how-i-optimized-a-spring-boot-application-to-handle-1m-requests-second-0cbb2f2823ed">How I Optimized a Spring Boot Application to Handle 1M Requests/Second</a></li>
+<li><a href="https://medium.com/javaguides/how-to-actually-use-modern-java-like-a-pro-cbc5aa1646e9">How to Actually Use Modern Java Like a Pro</a></li>
+<li><a href="https://blog.devgenius.io/spring-boot-best-practices-what-not-to-do-in-your-applications-f2f54332f547">Spring Boot Red Flags: What You Should Never Do</a></li>
+<li><a href="https://medium.com/@mohitbajaj1995/advanced-spring-boot-concepts-every-java-developer-should-know-511b054a46cc">Advanced Spring Boot Concepts Every Java Developer Should Know</a></li>
+<li><a href="https://medium.com/@kanishksinghpujari/optimizing-spring-boot-for-insane-traffic-the-1m-rps-guide-8b2a54cd711d">Optimizing Spring Boot for INSANE Traffic: The 1M RPS Guide</a></li>
+<li><a href="https://medium.com/@anurag.ydv36/stop-using-null-heres-how-senior-developers-actually-think-e5ef86d9eb6e">Stop Using != null — Here's How Senior Developers Actually Think</a></li>
+</ul>
+<h2 id="youtube">Youtube</h2>
+<h3 id="introduction">Introduction</h3>
+<ul>
+<li><a href="https://www.youtube.com/watch?v=HL5XucT21Zg">99% Of Devs Don't Understand Spring Boot</a></li>
+<li><a href="https://www.youtube.com/watch?v=sMPMiy0NsUs">Netflix is Built on Java</a></li>
+<li><a href="https://www.youtube.com/watch?v=XpunFFS-n8I">How Netflix Uses Java - 2025 Edition</a></li>
+<li><a href="https://www.youtube.com/watch?v=aS9SQITRocc">Spring ultimate basics: What are Spring Beans and what is the Spring Container?</a></li>
+<li>
+<p><a href="https://www.youtube.com/watch?v=vKs17-QDi4w">How Spring Boot Works Internally? - Complete Working</a></p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/@SpringSourceDev/playlists">SpringDeveloper</a></p>
+</li>
+<li><a href="https://github.com/spring-projects/spring-boot">spring-projects/spring-boot</a></li>
+<li>
+<p><a href="https://github.com/spring-projects/spring-framework">spring-projects/spring-framework</a></p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/watch?v=zvLZLFWrbAA">What Is Spring?</a></p>
+</li>
+<li><a href="https://www.youtube.com/watch?v=W6KTXsG7ToI">What Is Spring?</a></li>
+<li><a href="https://www.youtube.com/watch?v=e3kgfcO0af4">Spring for Architects</a></li>
+<li>
+<p><a href="https://www.youtube.com/watch?v=Ki54FB2B25U">Spring Cloud Contract (HTTP)</a></p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/@SpringIOConference">Spring I/O</a></p>
+</li>
+<li><a href="https://www.youtube.com/watch?v=jdxxgHcAjf8">Say Goodbye to Microservices, Say Hello to Self-Contained Systems by Simon Martinelli @ Spring I/O</a></li>
+</ul>
+<h3 id="spring-boot-upgrades">Spring Boot upgrades</h3>
+<ul>
+<li><a href="https://www.youtube.com/watch?v=haVMaDiAGSw">Spring Boot 3.0 | New Features in Spring Framework 6 and Spring Boot 3</a></li>
+<li>
+<p><a href="https://www.youtube.com/watch?v=HFl2dzhVuUo">Microservices using SpringBoot 3.0 | Full Example</a></p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/watch?v=59twysAveKI">Spring Boot 4 Tutorial - Learn Spring Boot in 30 Minutes</a></p>
+</li>
+</ul>
+<h3 id="channels-and-playlists">Channels and playlists</h3>
+<ul>
+<li>
+<p><a href="https://www.youtube.com/@ConceptAndCodingByShrayansh">Concept &amp;&amp; Coding - by Shrayansh</a></p>
+<ul>
+<li><a href="https://www.youtube.com/playlist?list=PL6W8uoQQ2c60g6_fcjDCLHSx1LBeVYqyZ">Spring Boot from Basics to Advanced</a></li>
+</ul>
+</li>
+<li>
+<p><a href="https://www.youtube.com/@CodeSnippetByChetanGhate">CodeSnippet</a></p>
+<ul>
+<li><a href="https://www.youtube.com/playlist?list=PL-bgVzzRdaPhNeXyQBtp8hMlUc14J2kRK">Spring Boot Course</a></li>
+</ul>
+</li>
+<li>
+<p><a href="https://www.youtube.com/@EngineeringDigest/playlists">Engineering Digest</a></p>
+<ul>
+<li><a href="https://www.youtube.com/playlist?list=PLA3GkZPtsafacdBLdd3p1DyRd5FGfr3Ue">Spring Boot Mastery: From Basics to Advanced</a></li>
+</ul>
+</li>
+<li>
+<p><a href="https://www.youtube.com/@EmbarkX">EmbarkX | Learn Programming | Faisal Memon</a></p>
+<ul>
+<li><a href="https://www.youtube.com/playlist?list=PLxhSr_SLdXGPCS0F-4v5zEXATHnHLT7Qf">Spring Boot REST API Project to Microservices Course | Tutorial | Building a Job Application Project | Line By Line Coding</a></li>
+<li><a href="https://www.youtube.com/playlist?list=PLxhSr_SLdXGNCwu3jMlwczL_m6hVTsXQc">Spring Boot Projects for Your Resume | Java Project Based Course and Tutorials</a></li>
+</ul>
+</li>
+<li>
+<p><a href="https://www.youtube.com/@AnujBhaiya">Anuj Kumar Sharma</a></p>
+<ul>
+<li><a href="https://www.youtube.com/playlist?list=PLUcsbZa0qzu0gVRFlVfscqjD84TqMssOt">Complete Spring Boot Tutorial For Beginners [2025]</a></li>
+</ul>
+</li>
+<li>
+<p><a href="https://www.youtube.com/@SinghDevHub">Lovepreet Singh</a></p>
+<ul>
+<li><a href="https://www.youtube.com/playlist?list=PL7CBVLpg0zqf_ggig9cOr72oZNGf9RZmZ">Full Courses [In Depth]</a></li>
+</ul>
+</li>
+<li>
+<p><a href="https://www.youtube.com/@Telusko">Telusko</a></p>
+<ul>
+<li><a href="https://www.youtube.com/playlist?list=PLsyeobzWxl7q6oUFts2erdot6jxF_lisP">Complete Java, Spring, and Microservices course</a></li>
+</ul>
+</li>
+<li>
+<p><a href="https://www.youtube.com/@DanVega/playlists">Dan Vega</a></p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/@DailyCodeBuffer">Daily Code Buffer</a></p>
+<ul>
+<li><a href="https://www.youtube.com/playlist?list=PLhfxuQVMs-nx3YQa3XJ9-4g_EoK0J8WhU">Spring Boot Tutorials</a></li>
+</ul>
+</li>
+<li>
+<p><a href="https://www.youtube.com/@LearnCodeWithDurgesh/playlists">Learn Code With Durgesh</a></p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/@Javatechie">Java Techie</a></p>
+</li>
+</ul>
+<h3 id="projects-build-using-spring-boot">Projects build using Spring Boot</h3>
+<ul>
+<li><a href="https://www.youtube.com/playlist?list=PLuNxlOYbv61gfJv1uTOFKAWig98e7fk_m">Spring Boot URL Shortener Application</a><ul>
+<li><a href="https://github.com/sivaprasadreddy/spring-boot-url-shortener">Spring Boot URL Shortener</a></li>
+</ul>
+</li>
+<li><a href="https://www.youtube.com/watch?v=Cdx4DF9N8d8">Full Project: How Uber Finds Your Driver in 10 Seconds | Redis + Kafka + Spring Boot</a></li>
+<li><a href="https://www.youtube.com/watch?v=8I6Glio84s8">Complete Fullstack project with Spring Boot and React for Beginners</a></li>
+<li><a href="https://www.youtube.com/playlist?list=PL0zysOflRCelqoxmPregCleOVdwrTYyUF">Spring and AmazonS3: Image Uploader</a></li>
+<li><a href="https://www.youtube.com/watch?v=97YqAtFjWDM">I Made a Rate Limiter using Springboot in 1.5 Hours</a></li>
+<li><a href="https://www.youtube.com/watch?v=EKHoE2TpxPA">Java Spring Boot Project | Product Inventory System with MySQL &amp; Postman</a></li>
+<li><a href="https://www.youtube.com/playlist?list=PLm4khKImW62HqaieT4HKej1jnkfM3Sw2d">Hospital Management System Project</a></li>
+<li><a href="https://www.youtube.com/watch?v=ZKQWwCUEABY">Spring Boot Microservices Complete Tutorial</a></li>
+<li><a href="https://www.youtube.com/watch?v=tseqdcFfTUY">Build &amp; Deploy a Production-Ready Patient Management System with Microservices: Java Spring Boot AWS</a></li>
+<li><a href="https://www.youtube.com/playlist?list=PLaihB5c0gLqZNjSIGHak3Fg_o-Sp1V_IU">PayPal Clone - Full Stack Project Series</a></li>
+<li><a href="https://www.youtube.com/playlist?list=PLaihB5c0gLqa7tjSfLJdFzaIcfGR2RHna">Paypal Clone - Complete Frontend Project</a></li>
+<li><a href="https://www.youtube.com/watch?v=jdeSV0GRvwI">Mastering Microservices: Spring boot, Spring Cloud and Keycloak In 7 Hours</a></li>
+<li><a href="https://www.youtube.com/watch?v=ewGbjpFmRbw">Build Full Stack Authentication System with Spring Boot &amp; React | Email OTP + JWT | Full Project</a></li>
+<li><a href="https://www.youtube.com/watch?v=7eZtiuhgIgc">Full Stack Food Delivery App with React, Spring Boot, MongoDB, AWS, RazorPay | Complete Tutorial</a></li>
+<li><a href="https://www.youtube.com/watch?v=i_9z3tNrphE">Java Spring Boot Microservices eCommerce Project | Docker, PostgreSQL, DevOps Full Course</a></li>
+<li><a href="https://www.youtube.com/watch?v=vE3u4zgMai8">Spring Boot 4 - Microservices portfolio project with Java - Full Course (2026)</a></li>
+</ul></div>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      &copy; 2025 <a href="https://github.com/abhishekghoshh"  target="_blank" rel="noopener">Abhishek Ghosh</a>
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/abhishekghoshh" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M186.1 328.7c0 20.9-10.9 55.1-36.7 55.1s-36.7-34.2-36.7-55.1 10.9-55.1 36.7-55.1 36.7 34.2 36.7 55.1M480 278.2c0 31.9-3.2 65.7-17.5 95-37.9 76.6-142.1 74.8-216.7 74.8-75.8 0-186.2 2.7-225.6-74.8-14.6-29-20.2-63.1-20.2-95 0-41.9 13.9-81.5 41.5-113.6-5.2-15.8-7.7-32.4-7.7-48.8 0-21.5 4.9-32.3 14.6-51.8 45.3 0 74.3 9 108.8 36 29-6.9 58.8-10 88.7-10 27 0 54.2 2.9 80.4 9.2 34-26.7 63-35.2 107.8-35.2 9.8 19.5 14.6 30.3 14.6 51.8 0 16.4-2.6 32.7-7.7 48.2 27.5 32.4 39 72.3 39 114.2m-64.3 50.5c0-43.9-26.7-82.6-73.5-82.6-18.9 0-37 3.4-56 6-14.9 2.3-29.8 3.2-45.1 3.2-15.2 0-30.1-.9-45.1-3.2-18.7-2.6-37-6-56-6-46.8 0-73.5 38.7-73.5 82.6 0 87.8 80.4 101.3 150.4 101.3h48.2c70.3 0 150.6-13.4 150.6-101.3m-82.6-55.1c-25.8 0-36.7 34.2-36.7 55.1s10.9 55.1 36.7 55.1 36.7-34.2 36.7-55.1-10.9-55.1-36.7-55.1"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://x.com/abhishek_ghoshh" target="_blank" rel="noopener" title="x.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.linkedin.com/in/abhishek-ghosh-220679132/" target="_blank" rel="noopener" title="www.linkedin.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5m282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.tabs", "navigation.sections", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="assets/javascripts/bundle.60a45f97.min.js"></script>
+      
+    
+  </body>
+</html>
