@@ -49,3 +49,7 @@
 
 - [Spring Security: Manage JWT with Redis (Step-by-Step)](https://www.youtube.com/watch?v=Uslb42Qn5ac)
     - [learnwithiftekhar/Spring-Boot-Redis-Token-Management](https://github.com/learnwithiftekhar/Spring-Boot-Redis-Token-Management)
+
+
+
+## Theory

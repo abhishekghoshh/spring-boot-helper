@@ -19847,3 +19847,1387 @@ public class AuthenticationPrincipalArgumentResolver
 ```
 
 
+---
+
+### 20. ★ OAuth 2.0 & OpenID Connect (OIDC) — Complete Guide
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ OAUTH 2.0 & OPENID CONNECT (OIDC) — COMPLETE GUIDE                                      │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  OAuth 2.0 and OIDC are the foundation of modern authentication and                         │
+│  authorization on the internet. Every "Sign in with Google/GitHub/Facebook"                  │
+│  button you see uses these protocols.                                                        │
+│                                                                                              │
+│  This section covers:                                                                        │
+│  • What is OAuth 2.0 and how it works (with diagrams)                                       │
+│  • The 4 actors in OAuth 2.0                                                                 │
+│  • All grant types and where each is used                                                    │
+│  • Advantages and disadvantages                                                              │
+│  • What is OIDC and how it extends OAuth 2.0                                                 │
+│  • OAuth 2.0 vs OIDC — key differences                                                      │
+│  • Spring Security implementation code                                                       │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 20.1 ★ What is OAuth 2.0? — The Problem It Solves
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ WHAT IS OAuth 2.0? — THE PROBLEM IT SOLVES                                               │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│                                                                                              │
+│  ── FULL FORM ───────────────────────────────────────────────────────────────               │
+│                                                                                              │
+│  OAuth = Open Authorization                                                                  │
+│  OAuth 2.0 = Open Authorization 2.0 (second version, not backward-compatible)               │
+│                                                                                              │
+│  ★ It is an AUTHORIZATION framework, NOT authentication.                                    │
+│  ★ It answers: "What is this app ALLOWED to do?" NOT "Who is this user?"                    │
+│                                                                                              │
+│                                                                                              │
+│  ── THE PROBLEM (Without OAuth) ─────────────────────────────────────────────               │
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  Imagine you have a photo printing app (PrintMyPhotos.com) that needs        │           │
+│  │  to access your Google Photos to print them.                                  │           │
+│  │                                                                               │           │
+│  │  WITHOUT OAuth (the old, dangerous way):                                     │           │
+│  │                                                                               │           │
+│  │  PrintMyPhotos: "Give me your Gmail username and password so I can          │           │
+│  │                  access your Google Photos"                                   │           │
+│  │                                                                               │           │
+│  │  ❌ Problems:                                                                 │           │
+│  │  • You give your FULL Google password to a third-party app!                 │           │
+│  │  • PrintMyPhotos can now read your emails, delete files, send emails       │           │
+│  │  • You can't limit what PrintMyPhotos can do (it has your full password)   │           │
+│  │  • The only way to revoke access is to CHANGE your Google password          │           │
+│  │  • If PrintMyPhotos is hacked, your Google account is compromised          │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  WITH OAuth 2.0 (the secure way):                                            │           │
+│  │                                                                               │           │
+│  │  PrintMyPhotos: "Click this button to authorize me to READ your photos"     │           │
+│  │  → You are redirected to Google's login page (you NEVER give your          │           │
+│  │    password to PrintMyPhotos!)                                               │           │
+│  │  → Google asks: "PrintMyPhotos wants to READ your photos. Allow?"          │           │
+│  │  → You click "Allow"                                                        │           │
+│  │  → Google gives PrintMyPhotos a LIMITED access token                        │           │
+│  │  → PrintMyPhotos can ONLY read photos (not emails, not files)              │           │
+│  │  → You can REVOKE access anytime from Google settings                      │           │
+│  │                                                                               │           │
+│  │  ✅ Benefits:                                                                 │           │
+│  │  • Your password NEVER leaves Google                                        │           │
+│  │  • PrintMyPhotos gets LIMITED access (only what you approved)              │           │
+│  │  • You can revoke access without changing your password                    │           │
+│  │  • If PrintMyPhotos is hacked, attacker only gets limited access           │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 20.2 ★ The 4 Actors (Roles) in OAuth 2.0
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ THE 4 ACTORS (ROLES) IN OAuth 2.0                                                        │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ┌──────────────────────────────────────────────────────────────────┐       │           │
+│  │  │                                                                  │       │           │
+│  │  │  1. RESOURCE OWNER (The User)                                   │       │           │
+│  │  │  ─────────────────────────────                                  │       │           │
+│  │  │  • The person who OWNS the data/resource                       │       │           │
+│  │  │  • Example: YOU — the person who owns the Gmail account        │       │           │
+│  │  │  • You authorize the client app to access YOUR resources       │       │           │
+│  │  │  • You decide WHAT the client can access (scopes)              │       │           │
+│  │  │  • You can REVOKE access at any time                           │       │           │
+│  │  │                                                                  │       │           │
+│  │  │  Real-world: John who has a Google account with photos, emails  │       │           │
+│  │  │                                                                  │       │           │
+│  │  └──────────────────────────────────────────────────────────────────┘       │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ┌──────────────────────────────────────────────────────────────────┐       │           │
+│  │  │                                                                  │       │           │
+│  │  │  2. CLIENT (The Application)                                    │       │           │
+│  │  │  ───────────────────────────                                    │       │           │
+│  │  │  • The third-party application that WANTS to access the data   │       │           │
+│  │  │  • Example: PrintMyPhotos.com, Canva, Slack, etc.              │       │           │
+│  │  │  • It does NOT have direct access to the user's resources      │       │           │
+│  │  │  • It must get PERMISSION from the resource owner first        │       │           │
+│  │  │  • It receives an ACCESS TOKEN (not the user's password!)      │       │           │
+│  │  │  • It uses the access token to call the Resource Server APIs   │       │           │
+│  │  │                                                                  │       │           │
+│  │  │  The client registers with the Authorization Server and gets:  │       │           │
+│  │  │  • client_id — public identifier for the app                   │       │           │
+│  │  │  • client_secret — secret known only to the app and auth server│       │           │
+│  │  │  • redirect_uri — URL to send the user back to after auth      │       │           │
+│  │  │                                                                  │       │           │
+│  │  │  Real-world: PrintMyPhotos.com that wants to read your photos  │       │           │
+│  │  │                                                                  │       │           │
+│  │  └──────────────────────────────────────────────────────────────────┘       │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ┌──────────────────────────────────────────────────────────────────┐       │           │
+│  │  │                                                                  │       │           │
+│  │  │  3. AUTHORIZATION SERVER (The Gatekeeper)                       │       │           │
+│  │  │  ────────────────────────────────────────                       │       │           │
+│  │  │  • The server that AUTHENTICATES the user and ISSUES tokens    │       │           │
+│  │  │  • Example: Google's OAuth server (accounts.google.com)        │       │           │
+│  │  │  • Shows the login page to the user                            │       │           │
+│  │  │  • Shows the consent screen ("Allow PrintMyPhotos to...?")     │       │           │
+│  │  │  • Issues Authorization Code, Access Token, Refresh Token      │       │           │
+│  │  │  • Validates client_id and client_secret                       │       │           │
+│  │  │                                                                  │       │           │
+│  │  │  Endpoints:                                                     │       │           │
+│  │  │  • /authorize — shows login + consent screen                   │       │           │
+│  │  │  • /token — exchanges auth code for tokens                     │       │           │
+│  │  │  • /revoke — revokes tokens                                    │       │           │
+│  │  │  • /.well-known/openid-configuration — discovery document      │       │           │
+│  │  │                                                                  │       │           │
+│  │  │  Real-world: Google (accounts.google.com),                      │       │           │
+│  │  │  GitHub (github.com/login/oauth), Keycloak, Auth0, Okta       │       │           │
+│  │  │                                                                  │       │           │
+│  │  └──────────────────────────────────────────────────────────────────┘       │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ┌──────────────────────────────────────────────────────────────────┐       │           │
+│  │  │                                                                  │       │           │
+│  │  │  4. RESOURCE SERVER (The API Server)                            │       │           │
+│  │  │  ───────────────────────────────────                            │       │           │
+│  │  │  • The server that HOSTS the protected resources (data/APIs)   │       │           │
+│  │  │  • Example: Google Photos API, Gmail API, Google Drive API     │       │           │
+│  │  │  • Validates the access token on each request                  │       │           │
+│  │  │  • Returns data only if token is valid and has required scopes │       │           │
+│  │  │  • Does NOT authenticate the user — that's the auth server's   │       │           │
+│  │  │    job. It only AUTHORIZES based on the access token.          │       │           │
+│  │  │                                                                  │       │           │
+│  │  │  ★ The Authorization Server and Resource Server can be the     │       │           │
+│  │  │    SAME server (e.g., Google handles both) or DIFFERENT         │       │           │
+│  │  │    servers (common in microservices)                             │       │           │
+│  │  │                                                                  │       │           │
+│  │  │  Real-world: Google Photos API (photoslibrary.googleapis.com)  │       │           │
+│  │  │                                                                  │       │           │
+│  │  └──────────────────────────────────────────────────────────────────┘       │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+│                                                                                              │
+│  ── REAL-WORLD EXAMPLE: Gmail OAuth ─────────────────────────────────────────               │
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  Scenario: Slack wants to access your Gmail contacts to invite them         │           │
+│  │                                                                               │           │
+│  │  Resource Owner:        YOU (John, the Gmail account holder)                │           │
+│  │  Client:                Slack (the app that wants your contacts)            │           │
+│  │  Authorization Server:  Google (accounts.google.com)                        │           │
+│  │  Resource Server:       Gmail API (gmail.googleapis.com)                    │           │
+│  │                                                                               │           │
+│  │  ┌─────────┐     ┌─────────┐     ┌────────────────┐     ┌──────────────┐  │           │
+│  │  │  YOU     │     │  SLACK  │     │  GOOGLE AUTH   │     │  GMAIL API   │  │           │
+│  │  │ (Resource│     │ (Client)│     │  SERVER        │     │  (Resource   │  │           │
+│  │  │  Owner)  │     │         │     │ (Authorization │     │   Server)    │  │           │
+│  │  │          │     │         │     │  Server)       │     │              │  │           │
+│  │  └────┬─────┘     └────┬────┘     └───────┬────────┘     └──────┬───────┘  │           │
+│  │       │                │                  │                     │          │           │
+│  │       │  1. Click      │                  │                     │          │           │
+│  │       │  "Connect      │                  │                     │          │           │
+│  │       │   Gmail"       │                  │                     │          │           │
+│  │       │───────────────>│                  │                     │          │           │
+│  │       │                │                  │                     │          │           │
+│  │       │                │  2. Redirect to  │                     │          │           │
+│  │       │                │  Google login     │                     │          │           │
+│  │       │<───────────────│──────────────────>│                     │          │           │
+│  │       │                │                  │                     │          │           │
+│  │       │  3. Login to Google               │                     │          │           │
+│  │       │  (your password goes ONLY to      │                     │          │           │
+│  │       │   Google, NOT to Slack!)           │                     │          │           │
+│  │       │──────────────────────────────────>│                     │          │           │
+│  │       │                │                  │                     │          │           │
+│  │       │  4. Google shows consent screen:  │                     │          │           │
+│  │       │  "Slack wants to READ contacts.   │                     │          │           │
+│  │       │   Allow?"                         │                     │          │           │
+│  │       │<──────────────────────────────────│                     │          │           │
+│  │       │                │                  │                     │          │           │
+│  │       │  5. You click  │                  │                     │          │           │
+│  │       │  "Allow" ✅    │                  │                     │          │           │
+│  │       │──────────────────────────────────>│                     │          │           │
+│  │       │                │                  │                     │          │           │
+│  │       │                │  6. Google sends  │                     │          │           │
+│  │       │                │  authorization    │                     │          │           │
+│  │       │                │  code to Slack     │                     │          │           │
+│  │       │                │<─────────────────│                     │          │           │
+│  │       │                │                  │                     │          │           │
+│  │       │                │  7. Slack exchanges│                    │          │           │
+│  │       │                │  code for tokens  │                     │          │           │
+│  │       │                │  (server-to-server)│                    │          │           │
+│  │       │                │─────────────────>│                     │          │           │
+│  │       │                │                  │                     │          │           │
+│  │       │                │  8. Google returns │                    │          │           │
+│  │       │                │  access_token     │                     │          │           │
+│  │       │                │<─────────────────│                     │          │           │
+│  │       │                │                  │                     │          │           │
+│  │       │                │  9. Slack uses access_token             │          │           │
+│  │       │                │  to GET /contacts from Gmail API       │          │           │
+│  │       │                │───────────────────────────────────────>│          │           │
+│  │       │                │                  │                     │          │           │
+│  │       │                │  10. Gmail API validates token         │          │           │
+│  │       │                │  and returns contacts                  │          │           │
+│  │       │                │<───────────────────────────────────────│          │           │
+│  │       │                │                  │                     │          │           │
+│  │       │  11. Slack shows your contacts    │                     │          │           │
+│  │       │<───────────────│                  │                     │          │           │
+│  │       │                │                  │                     │          │           │
+│  │                                                                               │           │
+│  │  ★ Slack NEVER saw your Google password!                                     │           │
+│  │  ★ Slack can ONLY read contacts (not emails, not drive files)               │           │
+│  │  ★ You can revoke Slack's access from Google account settings               │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 20.3 ★ OAuth 2.0 Authorization Code Flow — The Most Common Flow
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ AUTHORIZATION CODE FLOW — THE MOST COMMON AND SECURE OAuth 2.0 FLOW                     │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  This is the RECOMMENDED flow for server-side web applications.                             │
+│  It uses a two-step process: first get an authorization code, then                          │
+│  exchange it for an access token (server-to-server, more secure).                           │
+│                                                                                              │
+│                                                                                              │
+│  ── STEP-BY-STEP FLOW ──────────────────────────────────────────────────────               │
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  User          Client App           Authorization          Resource           │           │
+│  │  (Browser)     (Your Server)        Server (Google)        Server (API)       │           │
+│  │  ─────────     ─────────────        ───────────────        ────────────       │           │
+│  │     │               │                     │                     │             │           │
+│  │     │  1. Click     │                     │                     │             │           │
+│  │     │  "Login with  │                     │                     │             │           │
+│  │     │   Google"     │                     │                     │             │           │
+│  │     │──────────────>│                     │                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │  2. Redirect to Authorization Server                     │             │           │
+│  │     │<──────────────│                     │                     │             │           │
+│  │     │  302 Redirect to:                   │                     │             │           │
+│  │     │  https://accounts.google.com/o/oauth2/v2/auth             │             │           │
+│  │     │  ?response_type=code                │                     │             │           │
+│  │     │  &client_id=abc123                  │                     │             │           │
+│  │     │  &redirect_uri=https://myapp.com/callback                │             │           │
+│  │     │  &scope=openid+email+profile        │                     │             │           │
+│  │     │  &state=random_csrf_string          │                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │  3. Browser navigates to Google Login                     │             │           │
+│  │     │─────────────────────────────────────>│                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │  4. Google shows login page         │                     │             │           │
+│  │     │<─────────────────────────────────────│                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │  5. User enters credentials          │                     │             │           │
+│  │     │  (password goes to Google ONLY!)     │                     │             │           │
+│  │     │─────────────────────────────────────>│                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │  6. Google shows CONSENT screen:    │                     │             │           │
+│  │     │  "MyApp wants to:                   │                     │             │           │
+│  │     │   ✓ View your email                 │                     │             │           │
+│  │     │   ✓ View your profile               │                     │             │           │
+│  │     │   Allow / Deny"                     │                     │             │           │
+│  │     │<─────────────────────────────────────│                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │  7. User clicks "Allow"             │                     │             │           │
+│  │     │─────────────────────────────────────>│                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │  8. Google redirects back to client  │                     │             │           │
+│  │     │  with AUTHORIZATION CODE             │                     │             │           │
+│  │     │<─────────────────────────────────────│                     │             │           │
+│  │     │  302 Redirect to:                   │                     │             │           │
+│  │     │  https://myapp.com/callback          │                     │             │           │
+│  │     │  ?code=AUTH_CODE_XYZ                │                     │             │           │
+│  │     │  &state=random_csrf_string          │                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │  9. Browser hits the callback URL                         │             │           │
+│  │     │──────────────>│                     │                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │               │  10. Server exchanges                     │             │           │
+│  │     │               │  authorization code for tokens            │             │           │
+│  │     │               │  POST /token                              │             │           │
+│  │     │               │  {                   │                     │             │           │
+│  │     │               │   grant_type:        │                     │             │           │
+│  │     │               │    authorization_code│                     │             │           │
+│  │     │               │   code: AUTH_CODE_XYZ│                     │             │           │
+│  │     │               │   client_id: abc123  │                     │             │           │
+│  │     │               │   client_secret: s3cr│                     │             │           │
+│  │     │               │   redirect_uri: ...  │                     │             │           │
+│  │     │               │  }                   │                     │             │           │
+│  │     │               │─────────────────────>│                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │               │  11. Auth server returns TOKENS           │             │           │
+│  │     │               │  {                   │                     │             │           │
+│  │     │               │   access_token: eyJ..│                     │             │           │
+│  │     │               │   refresh_token: eyJ.│                     │             │           │
+│  │     │               │   token_type: Bearer │                     │             │           │
+│  │     │               │   expires_in: 3600   │                     │             │           │
+│  │     │               │  }                   │                     │             │           │
+│  │     │               │<─────────────────────│                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │               │  12. Use access_token to call API         │             │           │
+│  │     │               │  GET /api/photos                          │             │           │
+│  │     │               │  Authorization: Bearer eyJ...             │             │           │
+│  │     │               │──────────────────────────────────────────>│             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │               │  13. API returns data                     │             │           │
+│  │     │               │<──────────────────────────────────────────│             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │  14. Show data│                     │                     │             │           │
+│  │     │<──────────────│                     │                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+│                                                                                              │
+│  ── WHY TWO STEPS? (Code → Token) ──────────────────────────────────────────               │
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ★ The authorization code is returned via the BROWSER (front-channel)       │           │
+│  │    → It appears in the URL: /callback?code=AUTH_CODE_XYZ                    │           │
+│  │    → URLs can be logged, cached, visible in browser history                 │           │
+│  │    → NOT safe to put access tokens in URLs!                                 │           │
+│  │                                                                               │           │
+│  │  ★ The token exchange happens SERVER-TO-SERVER (back-channel)               │           │
+│  │    → Client server sends POST /token with client_secret                     │           │
+│  │    → Access token is returned in the HTTP response body                     │           │
+│  │    → NEVER exposed to the browser or URL!                                   │           │
+│  │    → client_secret proves the request is from the real client app           │           │
+│  │                                                                               │           │
+│  │  ★ Authorization code is SHORT-LIVED (10 seconds to few minutes)            │           │
+│  │    → Even if intercepted, it's useless without the client_secret            │           │
+│  │    → Can only be used ONCE                                                  │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+│                                                                                              │
+│  ── KEY URL PARAMETERS EXPLAINED ────────────────────────────────────────────               │
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ── Authorization Request (/authorize) ──                                    │           │
+│  │                                                                               │           │
+│  │  response_type=code       → "I want an authorization code"                  │           │
+│  │  client_id=abc123         → "I am this registered application"              │           │
+│  │  redirect_uri=...         → "Send the code to this URL"                     │           │
+│  │  scope=email+photos       → "I want access to email and photos"             │           │
+│  │  state=random_string      → CSRF protection (verified on callback)          │           │
+│  │                                                                               │           │
+│  │  ── Token Request (/token) ──                                                │           │
+│  │                                                                               │           │
+│  │  grant_type=authorization_code  → "I'm exchanging a code for a token"      │           │
+│  │  code=AUTH_CODE_XYZ             → "Here is the authorization code"          │           │
+│  │  client_id=abc123               → "I am this registered application"        │           │
+│  │  client_secret=s3cret           → "Prove I'm the real client"              │           │
+│  │  redirect_uri=...               → Must match the original redirect_uri     │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 20.4 ★ All OAuth 2.0 Grant Types — When to Use Each
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ ALL OAuth 2.0 GRANT TYPES — WHEN TO USE EACH                                             │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ┌────────────────────────────────────────────────────────────────────┐      │           │
+│  │  │                                                                    │      │           │
+│  │  │  1. AUTHORIZATION CODE GRANT (Most Common & Secure)               │      │           │
+│  │  │  ──────────────────────────────────────────────────               │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  Flow:  User → Browser → Auth Server → Code → Server → Token    │      │           │
+│  │  │  Use:   Server-side web applications (Spring Boot, Django, etc.)  │      │           │
+│  │  │  Why:   Server can securely store client_secret                   │      │           │
+│  │  │         Token exchange happens server-to-server (back-channel)   │      │           │
+│  │  │  Token: Access Token + Refresh Token                              │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  ★ RECOMMENDED for most applications!                            │      │           │
+│  │  │  ★ Most secure because tokens are never exposed to the browser   │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  Example: "Login with Google" in a Spring Boot application        │      │           │
+│  │  │                                                                    │      │           │
+│  │  └────────────────────────────────────────────────────────────────────┘      │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ┌────────────────────────────────────────────────────────────────────┐      │           │
+│  │  │                                                                    │      │           │
+│  │  │  2. AUTHORIZATION CODE + PKCE (Proof Key for Code Exchange)       │      │           │
+│  │  │  ──────────────────────────────────────────────────────────       │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  Flow:  Same as Auth Code, but adds code_verifier + code_challenge│      │           │
+│  │  │  Use:   Single-Page Apps (React, Angular), Mobile Apps            │      │           │
+│  │  │  Why:   SPAs and mobile apps CANNOT securely store client_secret  │      │           │
+│  │  │         PKCE replaces client_secret with a dynamic challenge     │      │           │
+│  │  │  Token: Access Token + Refresh Token                              │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  How PKCE works:                                                  │      │           │
+│  │  │  1. Client generates random code_verifier                        │      │           │
+│  │  │  2. Client hashes it → code_challenge = SHA256(code_verifier)    │      │           │
+│  │  │  3. Sends code_challenge to /authorize                            │      │           │
+│  │  │  4. Auth server stores code_challenge                             │      │           │
+│  │  │  5. Client sends code_verifier to /token                          │      │           │
+│  │  │  6. Auth server: SHA256(code_verifier) == stored code_challenge? │      │           │
+│  │  │  7. If match → issue tokens                                       │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  ★ RECOMMENDED for SPAs and mobile apps!                         │      │           │
+│  │  │  ★ Prevents authorization code interception attacks              │      │           │
+│  │  │                                                                    │      │           │
+│  │  └────────────────────────────────────────────────────────────────────┘      │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ┌────────────────────────────────────────────────────────────────────┐      │           │
+│  │  │                                                                    │      │           │
+│  │  │  3. CLIENT CREDENTIALS GRANT (Machine-to-Machine)                 │      │           │
+│  │  │  ────────────────────────────────────────────────                 │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  Flow:  Client → Auth Server → Token (NO user involved!)         │      │           │
+│  │  │  Use:   Service-to-service communication (microservices)          │      │           │
+│  │  │         Cron jobs, batch processes, daemon services               │      │           │
+│  │  │  Why:   No human user — the CLIENT itself is the resource owner  │      │           │
+│  │  │  Token: Access Token ONLY (no refresh token, no user context)    │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  POST /token                                                      │      │           │
+│  │  │  {                                                                │      │           │
+│  │  │    grant_type: client_credentials,                                │      │           │
+│  │  │    client_id: service-a,                                          │      │           │
+│  │  │    client_secret: s3cret,                                         │      │           │
+│  │  │    scope: read:orders                                             │      │           │
+│  │  │  }                                                                │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  ★ Simplest flow — just client_id + client_secret → token        │      │           │
+│  │  │  ★ No browser, no user, no consent screen                        │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  Example: Order Service calling Payment Service in microservices │      │           │
+│  │  │                                                                    │      │           │
+│  │  └────────────────────────────────────────────────────────────────────┘      │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ┌────────────────────────────────────────────────────────────────────┐      │           │
+│  │  │                                                                    │      │           │
+│  │  │  4. RESOURCE OWNER PASSWORD CREDENTIALS (ROPC) ⚠️ DEPRECATED     │      │           │
+│  │  │  ────────────────────────────────────────────────────────────     │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  Flow:  User gives username+password DIRECTLY to client app      │      │           │
+│  │  │         Client sends them to auth server → gets token            │      │           │
+│  │  │  Use:   Legacy apps, trusted first-party apps ONLY               │      │           │
+│  │  │  Why:   ⚠️ User's password is exposed to the client app!         │      │           │
+│  │  │         Defeats the purpose of OAuth!                             │      │           │
+│  │  │  Token: Access Token + Refresh Token                              │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  POST /token                                                      │      │           │
+│  │  │  {                                                                │      │           │
+│  │  │    grant_type: password,                                          │      │           │
+│  │  │    username: john,                                                │      │           │
+│  │  │    password: secret123,                                           │      │           │
+│  │  │    client_id: my-app                                              │      │           │
+│  │  │  }                                                                │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  ❌ DEPRECATED in OAuth 2.1 — do NOT use in new applications!    │      │           │
+│  │  │  ❌ User's password is given to the client (violates OAuth goal) │      │           │
+│  │  │                                                                    │      │           │
+│  │  └────────────────────────────────────────────────────────────────────┘      │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ┌────────────────────────────────────────────────────────────────────┐      │           │
+│  │  │                                                                    │      │           │
+│  │  │  5. IMPLICIT GRANT ❌ DEPRECATED                                  │      │           │
+│  │  │  ──────────────────────────────                                   │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  Flow:  Access token returned DIRECTLY in URL fragment            │      │           │
+│  │  │         (no authorization code, no server-to-server exchange)     │      │           │
+│  │  │  Use:   Was designed for SPAs (before PKCE existed)               │      │           │
+│  │  │  Why:   ❌ Token exposed in URL (can be logged, leaked, stolen)   │      │           │
+│  │  │         ❌ No refresh token                                        │      │           │
+│  │  │         ❌ No client authentication                                │      │           │
+│  │  │  Token: Access Token ONLY (in URL fragment!)                      │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  ❌ REMOVED in OAuth 2.1 — replaced by Auth Code + PKCE          │      │           │
+│  │  │  ❌ NEVER use this in new applications!                           │      │           │
+│  │  │                                                                    │      │           │
+│  │  └────────────────────────────────────────────────────────────────────┘      │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ┌────────────────────────────────────────────────────────────────────┐      │           │
+│  │  │                                                                    │      │           │
+│  │  │  6. DEVICE AUTHORIZATION GRANT (Device Code Flow)                 │      │           │
+│  │  │  ────────────────────────────────────────────────                 │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  Flow:  Device shows code → User enters code on another device   │      │           │
+│  │  │  Use:   Smart TVs, IoT devices, CLI tools                        │      │           │
+│  │  │  Why:   Device has no browser or limited input capability        │      │           │
+│  │  │  Token: Access Token + Refresh Token                              │      │           │
+│  │  │                                                                    │      │           │
+│  │  │  Example: Netflix on Smart TV says:                               │      │           │
+│  │  │  "Go to netflix.com/activate and enter code: ABCD-1234"          │      │           │
+│  │  │  You open your phone browser, login, enter the code → TV is     │      │           │
+│  │  │  now authenticated.                                               │      │           │
+│  │  │                                                                    │      │           │
+│  │  └────────────────────────────────────────────────────────────────────┘      │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+│                                                                                              │
+│  ── SUMMARY TABLE ───────────────────────────────────────────────────────────               │
+│                                                                                              │
+│  ┌──────────────────────┬──────────────────────┬────────────────┬────────────┐              │
+│  │  Grant Type           │  Best For             │  User Involved │  Status    │              │
+│  ├──────────────────────┼──────────────────────┼────────────────┼────────────┤              │
+│  │  Authorization Code   │  Server-side web apps │  Yes           │  ✅ Use     │              │
+│  ├──────────────────────┼──────────────────────┼────────────────┼────────────┤              │
+│  │  Auth Code + PKCE     │  SPAs, mobile apps    │  Yes           │  ✅ Use     │              │
+│  ├──────────────────────┼──────────────────────┼────────────────┼────────────┤              │
+│  │  Client Credentials   │  Machine-to-machine   │  No            │  ✅ Use     │              │
+│  ├──────────────────────┼──────────────────────┼────────────────┼────────────┤              │
+│  │  Device Code          │  Smart TV, IoT, CLI   │  Yes (2nd dev) │  ✅ Use     │              │
+│  ├──────────────────────┼──────────────────────┼────────────────┼────────────┤              │
+│  │  ROPC (Password)      │  Legacy/first-party   │  Yes           │  ⚠️ Avoid  │              │
+│  ├──────────────────────┼──────────────────────┼────────────────┼────────────┤              │
+│  │  Implicit             │  Was for SPAs          │  Yes           │  ❌ Removed │              │
+│  └──────────────────────┴──────────────────────┴────────────────┴────────────┘              │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 20.5 ★ Advantages and Disadvantages of OAuth 2.0
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ ADVANTAGES AND DISADVANTAGES OF OAuth 2.0                                                 │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│                                                                                              │
+│  ── ADVANTAGES ──────────────────────────────────────────────────────────────               │
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ✅ NO PASSWORD SHARING                                                      │           │
+│  │     User's password NEVER leaves the authorization server                   │           │
+│  │     Third-party apps never see the user's credentials                       │           │
+│  │                                                                               │           │
+│  │  ✅ GRANULAR PERMISSIONS (Scopes)                                            │           │
+│  │     User can grant limited access (e.g., "read photos" only)               │           │
+│  │     App can't access anything beyond the approved scopes                   │           │
+│  │                                                                               │           │
+│  │  ✅ REVOCABLE ACCESS                                                         │           │
+│  │     User can revoke a specific app's access without changing password       │           │
+│  │     Go to Google Settings → Security → Third-party apps → Remove           │           │
+│  │                                                                               │           │
+│  │  ✅ SEPARATION OF CONCERNS                                                   │           │
+│  │     Authentication (who are you?) → Authorization Server handles it        │           │
+│  │     Authorization (what can you do?) → Resource Server handles it          │           │
+│  │     Your app doesn't need to handle user registration/passwords            │           │
+│  │                                                                               │           │
+│  │  ✅ STANDARDIZED PROTOCOL                                                    │           │
+│  │     Same flow works with Google, GitHub, Facebook, Microsoft, etc.         │           │
+│  │     Libraries exist for every language/framework                            │           │
+│  │     Spring Security has built-in OAuth 2.0 client and resource server      │           │
+│  │                                                                               │           │
+│  │  ✅ TOKEN-BASED (Stateless possible)                                         │           │
+│  │     Access tokens can be JWT (self-contained, no session needed)            │           │
+│  │     Scales well in microservices architecture                               │           │
+│  │                                                                               │           │
+│  │  ✅ SINGLE SIGN-ON (SSO) ENABLED                                            │           │
+│  │     Login once with Google → access multiple apps                          │           │
+│  │     User doesn't need separate accounts for every app                      │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+│                                                                                              │
+│  ── DISADVANTAGES ───────────────────────────────────────────────────────────               │
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ❌ COMPLEXITY                                                                │           │
+│  │     Multiple grant types, flows, token types, scopes                        │           │
+│  │     Many ways to implement it wrong (security vulnerabilities)             │           │
+│  │     Requires understanding of redirects, codes, tokens, etc.               │           │
+│  │                                                                               │           │
+│  │  ❌ DEPENDENCY ON THIRD-PARTY                                                │           │
+│  │     If Google/GitHub's auth server goes down, YOUR users can't login       │           │
+│  │     You depend on the availability of the authorization server             │           │
+│  │     The provider can change their API, deprecate endpoints, etc.           │           │
+│  │                                                                               │           │
+│  │  ❌ TOKEN MANAGEMENT OVERHEAD                                                │           │
+│  │     Must handle token refresh, expiration, revocation                      │           │
+│  │     Must securely store tokens on client and server                        │           │
+│  │     Token leakage is a security risk                                        │           │
+│  │                                                                               │           │
+│  │  ❌ NOT AUTHENTICATION (OAuth 2.0 alone)                                     │           │
+│  │     OAuth 2.0 is AUTHORIZATION only — it tells you what an app can do      │           │
+│  │     It does NOT tell you WHO the user is (no standard identity claims)      │           │
+│  │     Need OIDC (OpenID Connect) on top for authentication                   │           │
+│  │                                                                               │           │
+│  │  ❌ PHISHING RISK                                                            │           │
+│  │     Users can be tricked into authorizing malicious apps                   │           │
+│  │     Fake consent screens can steal authorization codes                     │           │
+│  │     Requires careful redirect_uri validation                               │           │
+│  │                                                                               │           │
+│  │  ❌ OVER-SCOPING RISK                                                        │           │
+│  │     Apps may request more permissions than they need                        │           │
+│  │     Users often click "Allow" without reading the scope list               │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 20.6 ★ What is OIDC (OpenID Connect)? — Authentication Layer on Top of OAuth 2.0
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ WHAT IS OIDC (OpenID Connect)?                                                            │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│                                                                                              │
+│  ── FULL FORM ───────────────────────────────────────────────────────────────               │
+│                                                                                              │
+│  OIDC = OpenID Connect                                                                       │
+│  It is an IDENTITY LAYER built ON TOP of OAuth 2.0.                                         │
+│                                                                                              │
+│  ★ OAuth 2.0 = AUTHORIZATION ("What can this app do?")                                      │
+│  ★ OIDC = AUTHENTICATION ("Who is this user?") + Authorization                              │
+│                                                                                              │
+│                                                                                              │
+│  ── THE PROBLEM OIDC SOLVES ─────────────────────────────────────────────────               │
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  OAuth 2.0 alone:                                                            │           │
+│  │  → Gives you an ACCESS TOKEN                                                │           │
+│  │  → Access token says: "This app can read photos" (authorization)            │           │
+│  │  → Access token does NOT say: "The user is john@gmail.com" (identity)       │           │
+│  │  → To get user info, you must make an EXTRA API call:                       │           │
+│  │    GET /userinfo with the access token                                       │           │
+│  │  → ❌ Not standardized — each provider has different userinfo endpoints      │           │
+│  │  → ❌ Extra network call on every login                                      │           │
+│  │                                                                               │           │
+│  │  OIDC adds:                                                                  │           │
+│  │  → An ID TOKEN alongside the access token                                   │           │
+│  │  → ID token is a JWT that contains user identity claims:                    │           │
+│  │    { sub: "12345", name: "John", email: "john@gmail.com", picture: "..." } │           │
+│  │  → ✅ Standardized claims — same format across all OIDC providers            │           │
+│  │  → ✅ No extra API call needed — user info is IN the token!                  │           │
+│  │  → ✅ The client can immediately display "Hello, John!" from the ID token   │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+│                                                                                              │
+│  ── OIDC = OAuth 2.0 + Identity Layer ───────────────────────────────────────               │
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ┌────────────────────────────────────────────────────────────────┐          │           │
+│  │  │                                                                │          │           │
+│  │  │  ┌──────────────────────────────────────────────────────┐     │          │           │
+│  │  │  │                                                      │     │          │           │
+│  │  │  │           OPENID CONNECT (OIDC)                      │     │          │           │
+│  │  │  │                                                      │     │          │           │
+│  │  │  │  • ID Token (JWT with user identity)                │     │          │           │
+│  │  │  │  • UserInfo endpoint                                 │     │          │           │
+│  │  │  │  • Standard claims (sub, name, email, picture)      │     │          │           │
+│  │  │  │  • Discovery document (.well-known/openid-config)   │     │          │           │
+│  │  │  │  • scope: openid (required!)                        │     │          │           │
+│  │  │  │                                                      │     │          │           │
+│  │  │  └──────────────────────────────────────────────────────┘     │          │           │
+│  │  │                                                                │          │           │
+│  │  │               OAuth 2.0 (Foundation)                           │          │           │
+│  │  │                                                                │          │           │
+│  │  │  • Access Token                                                │          │           │
+│  │  │  • Refresh Token                                               │          │           │
+│  │  │  • Authorization Code Flow                                     │          │           │
+│  │  │  • Client Credentials, PKCE, etc.                              │          │           │
+│  │  │  • Scopes, Redirect URIs                                       │          │           │
+│  │  │                                                                │          │           │
+│  │  └────────────────────────────────────────────────────────────────┘          │           │
+│  │                                                                               │           │
+│  │  ★ OIDC is NOT a separate protocol — it IS OAuth 2.0 with extra features!  │           │
+│  │  ★ Every OIDC flow IS an OAuth 2.0 flow + ID token                         │           │
+│  │  ★ You can do OIDC without changing any OAuth 2.0 infrastructure!          │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 20.7 ★ OIDC Flow — How to Get the ID Token
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ OIDC FLOW — HOW TO GET THE ID TOKEN                                                      │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  The OIDC flow is IDENTICAL to the OAuth 2.0 Authorization Code flow,                       │
+│  with ONE key difference: you add "openid" to the scope parameter.                          │
+│  This tells the Authorization Server: "I also want an ID Token!"                            │
+│                                                                                              │
+│                                                                                              │
+│  ── OIDC AUTHORIZATION CODE FLOW ────────────────────────────────────────────               │
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  User          Client App           Authorization          Resource           │           │
+│  │  (Browser)     (Your Server)        Server (Google)        Server (API)       │           │
+│  │  ─────────     ─────────────        ───────────────        ────────────       │           │
+│  │     │               │                     │                     │             │           │
+│  │     │  1. Click "Login with Google"       │                     │             │           │
+│  │     │──────────────>│                     │                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │  2. Redirect to Google              │                     │             │           │
+│  │     │<──────────────│                     │                     │             │           │
+│  │     │  https://accounts.google.com/o/oauth2/v2/auth             │             │           │
+│  │     │  ?response_type=code                │                     │             │           │
+│  │     │  &client_id=abc123                  │                     │             │           │
+│  │     │  &redirect_uri=https://myapp.com/callback                │             │           │
+│  │     │  &scope=openid+email+profile        │  ★ "openid" is the key!         │           │
+│  │     │  &state=random_csrf_string          │                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │  3-7. Same as OAuth 2.0 (login, consent, code)           │             │           │
+│  │     │  ...                                │                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │               │  8. Exchange code for tokens              │             │           │
+│  │     │               │  POST /token         │                     │             │           │
+│  │     │               │  {                   │                     │             │           │
+│  │     │               │   grant_type:         │                     │             │           │
+│  │     │               │    authorization_code │                     │             │           │
+│  │     │               │   code: AUTH_CODE     │                     │             │           │
+│  │     │               │   client_id: abc123   │                     │             │           │
+│  │     │               │   client_secret: s3cr │                     │             │           │
+│  │     │               │  }                   │                     │             │           │
+│  │     │               │─────────────────────>│                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │               │  9. Auth server returns THREE tokens!     │             │           │
+│  │     │               │  {                   │                     │             │           │
+│  │     │               │   access_token: eyJ.. │  ← For API calls  │             │           │
+│  │     │               │   ★ id_token: eyJ..   │  ← For identity!  │             │           │
+│  │     │               │   refresh_token: eyJ. │  ← For renewal    │             │           │
+│  │     │               │   token_type: Bearer  │                     │             │           │
+│  │     │               │   expires_in: 3600   │                     │             │           │
+│  │     │               │  }                   │                     │             │           │
+│  │     │               │<─────────────────────│                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │               │  10. Decode the id_token (JWT):           │             │           │
+│  │     │               │  {                   │                     │             │           │
+│  │     │               │   "iss": "https://accounts.google.com",   │             │           │
+│  │     │               │   "sub": "110248495921238986420",          │             │           │
+│  │     │               │   "aud": "abc123",   │  ← your client_id  │             │           │
+│  │     │               │   "email": "john@gmail.com",              │             │           │
+│  │     │               │   "name": "John Doe",│                     │             │           │
+│  │     │               │   "picture": "https://...",               │             │           │
+│  │     │               │   "iat": 1715184000, │                     │             │           │
+│  │     │               │   "exp": 1715187600  │                     │             │           │
+│  │     │               │  }                   │                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │               │  ★ Client now knows the user's identity   │             │           │
+│  │     │               │  ★ WITHOUT making any extra API calls!    │             │           │
+│  │     │               │  ★ Can display: "Welcome, John Doe!"      │             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │               │  11. Use access_token for API calls       │             │           │
+│  │     │               │  Authorization: Bearer <access_token>     │             │           │
+│  │     │               │──────────────────────────────────────────>│             │           │
+│  │     │               │                     │                     │             │           │
+│  │     │  12. Show data to user              │                     │             │           │
+│  │     │<──────────────│                     │                     │             │           │
+│  │     │               │                     │                     │             │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+│                                                                                              │
+│  ── THE MAGIC: scope=openid ─────────────────────────────────────────────────               │
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  OAuth 2.0 only:        scope=email+photos                                  │           │
+│  │  → Returns: access_token + refresh_token                                    │           │
+│  │  → NO id_token!                                                              │           │
+│  │                                                                               │           │
+│  │  OIDC (OAuth 2.0 + openid): scope=openid+email+profile                     │           │
+│  │  → Returns: access_token + refresh_token + ★ id_token                      │           │
+│  │  → id_token contains user identity!                                          │           │
+│  │                                                                               │           │
+│  │  ★ Adding "openid" to scope is ALL you need to switch from                  │           │
+│  │    OAuth 2.0 to OIDC! Everything else stays the same!                       │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  Common OIDC scopes:                                                         │           │
+│  │  ┌──────────────┬─────────────────────────────────────────────┐             │           │
+│  │  │  Scope        │  Claims in ID Token                        │             │           │
+│  │  ├──────────────┼─────────────────────────────────────────────┤             │           │
+│  │  │  openid       │  sub (subject — required!)                 │             │           │
+│  │  ├──────────────┼─────────────────────────────────────────────┤             │           │
+│  │  │  profile      │  name, family_name, given_name, picture,   │             │           │
+│  │  │              │  gender, birthdate, locale, updated_at     │             │           │
+│  │  ├──────────────┼─────────────────────────────────────────────┤             │           │
+│  │  │  email        │  email, email_verified                     │             │           │
+│  │  ├──────────────┼─────────────────────────────────────────────┤             │           │
+│  │  │  phone        │  phone_number, phone_number_verified       │             │           │
+│  │  ├──────────────┼─────────────────────────────────────────────┤             │           │
+│  │  │  address      │  address (JSON object)                     │             │           │
+│  │  └──────────────┴─────────────────────────────────────────────┘             │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 20.8 ★ OAuth 2.0 vs OIDC — Complete Comparison
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ OAuth 2.0 vs OIDC — COMPLETE COMPARISON                                                  │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌───────────────────┬──────────────────────────────┬──────────────────────────────┐        │
+│  │  Aspect            │  OAuth 2.0                    │  OIDC (OpenID Connect)       │        │
+│  ├───────────────────┼──────────────────────────────┼──────────────────────────────┤        │
+│  │  Full Form         │  Open Authorization 2.0      │  OpenID Connect 1.0          │        │
+│  ├───────────────────┼──────────────────────────────┼──────────────────────────────┤        │
+│  │  Purpose           │  AUTHORIZATION               │  AUTHENTICATION +            │        │
+│  │                    │  "What can this app do?"      │  Authorization               │        │
+│  │                    │                              │  "Who is this user?" +        │        │
+│  │                    │                              │  "What can this app do?"      │        │
+│  ├───────────────────┼──────────────────────────────┼──────────────────────────────┤        │
+│  │  Built On          │  Standalone protocol         │  Built ON TOP of OAuth 2.0   │        │
+│  │                    │                              │  (extension, not separate)    │        │
+│  ├───────────────────┼──────────────────────────────┼──────────────────────────────┤        │
+│  │  Tokens Generated  │  Access Token                │  Access Token                │        │
+│  │                    │  Refresh Token               │  Refresh Token               │        │
+│  │                    │                              │  ★ + ID Token (JWT!)         │        │
+│  ├───────────────────┼──────────────────────────────┼──────────────────────────────┤        │
+│  │  Token Types       │  Access Token: JWT or opaque │  Access Token: JWT or opaque │        │
+│  │                    │  Refresh Token: opaque/JWT   │  Refresh Token: opaque/JWT   │        │
+│  │                    │                              │  ID Token: ALWAYS JWT         │        │
+│  ├───────────────────┼──────────────────────────────┼──────────────────────────────┤        │
+│  │  Scope             │  Custom scopes               │  Standard scopes:            │        │
+│  │                    │  (read, write, photos, etc.) │  openid (required!)          │        │
+│  │                    │                              │  profile, email, phone,      │        │
+│  │                    │                              │  address                     │        │
+│  │                    │                              │  + custom scopes too         │        │
+│  ├───────────────────┼──────────────────────────────┼──────────────────────────────┤        │
+│  │  User Identity     │  ❌ No standard way to get    │  ✅ ID Token contains user    │        │
+│  │                    │  user identity               │  identity (sub, name, email) │        │
+│  │                    │  Must call /userinfo API     │  Standardized claims         │        │
+│  │                    │  (non-standard endpoint)     │  UserInfo endpoint also      │        │
+│  │                    │                              │  available                   │        │
+│  ├───────────────────┼──────────────────────────────┼──────────────────────────────┤        │
+│  │  Discovery         │  ❌ No standard discovery      │  ✅ .well-known/              │        │
+│  │                    │                              │  openid-configuration         │        │
+│  │                    │                              │  (auto-discovery of all      │        │
+│  │                    │                              │  endpoints, keys, etc.)      │        │
+│  ├───────────────────┼──────────────────────────────┼──────────────────────────────┤        │
+│  │  How to Get        │  scope=photos+email          │  scope=openid+email+profile  │        │
+│  │  Both Tokens       │  → access_token only         │  → access_token + id_token   │        │
+│  │                    │  (no id_token!)              │  ★ Just add "openid" scope!  │        │
+│  ├───────────────────┼──────────────────────────────┼──────────────────────────────┤        │
+│  │  Spec Defines      │  How to get access tokens    │  Everything in OAuth 2.0 +   │        │
+│  │                    │  Grant types, scopes,        │  ID Token format,            │        │
+│  │                    │  refresh tokens              │  Standard claims,            │        │
+│  │                    │                              │  UserInfo endpoint,          │        │
+│  │                    │                              │  Discovery document,         │        │
+│  │                    │                              │  Session management          │        │
+│  ├───────────────────┼──────────────────────────────┼──────────────────────────────┤        │
+│  │  Use Case          │  Third-party API access      │  Login / SSO / Identity      │        │
+│  │                    │  "Let Slack read my Gmail"   │  "Login with Google"         │        │
+│  │                    │                              │  "Who is this user?"         │        │
+│  ├───────────────────┼──────────────────────────────┼──────────────────────────────┤        │
+│  │  Examples          │  GitHub API access,          │  "Sign in with Google",      │        │
+│  │                    │  Stripe API,                 │  "Login with Microsoft",     │        │
+│  │                    │  Twitter API                 │  Keycloak SSO, Auth0 login   │        │
+│  └───────────────────┴──────────────────────────────┴──────────────────────────────┘        │
+│                                                                                              │
+│                                                                                              │
+│  ── VISUAL COMPARISON ───────────────────────────────────────────────────────               │
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  OAuth 2.0 Response (scope=email+photos):                                    │           │
+│  │  {                                                                            │           │
+│  │    "access_token": "eyJhbGci...",         ← for API access                  │           │
+│  │    "refresh_token": "eyJhbGci...",        ← for token renewal               │           │
+│  │    "token_type": "Bearer",                                                   │           │
+│  │    "expires_in": 3600                                                        │           │
+│  │  }                                                                            │           │
+│  │  → ❌ No user identity! Must call GET /userinfo separately!                  │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  OIDC Response (scope=openid+email+profile):                                 │           │
+│  │  {                                                                            │           │
+│  │    "access_token": "eyJhbGci...",         ← for API access                  │           │
+│  │    "refresh_token": "eyJhbGci...",        ← for token renewal               │           │
+│  │    ★ "id_token": "eyJhbGci...",           ← user identity (JWT!)            │           │
+│  │    "token_type": "Bearer",                                                   │           │
+│  │    "expires_in": 3600                                                        │           │
+│  │  }                                                                            │           │
+│  │  → ✅ Decode id_token → { name: "John", email: "john@gmail.com" }           │           │
+│  │  → ✅ Instant user identity without extra API calls!                         │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+│                                                                                              │
+│  ── ONE-LINE SUMMARY ────────────────────────────────────────────────────────               │
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  OAuth 2.0: "I authorize this app to access my photos" (WHAT)               │           │
+│  │  OIDC:      "I am John Doe, and I authorize this app" (WHO + WHAT)          │           │
+│  │                                                                               │           │
+│  │  ★ OIDC = OAuth 2.0 + scope=openid + ID Token                              │           │
+│  │  ★ That's literally the only difference!                                     │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 20.9 ★ Spring Security OAuth 2.0 / OIDC Implementation — Code
+
+##### 20.9.1 Spring Boot OAuth 2.0 Client — "Login with Google"
+
+```yaml
+# ═══════════════════════════════════════════════════════════════════════════════
+#  application.yml — OAuth 2.0 / OIDC Client Configuration
+#
+#  ★ Spring Security supports OIDC out of the box!
+#  Just add the Google/GitHub client configuration and Spring handles:
+#  → Redirect to authorization server
+#  → Authorization code exchange
+#  → Token parsing (access + id token)
+#  → User info extraction
+#  → SecurityContext population
+# ═══════════════════════════════════════════════════════════════════════════════
+
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          # ── Google OIDC Login ────────────────────────────────────
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - openid      # ★ This makes it OIDC (returns id_token!)
+              - email
+              - profile
+            # Spring knows Google's endpoints automatically!
+            # No need to configure authorize-uri, token-uri, etc.
+
+          # ── GitHub OAuth 2.0 Login ───────────────────────────────
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            scope:
+              - read:user
+              - user:email
+            # ★ GitHub does NOT support OIDC — only OAuth 2.0
+            # → No id_token, only access_token
+            # → Spring calls /user API to get user info
+
+        # ── Custom Authorization Server (Keycloak, Auth0, etc.) ────
+        # If not using Google/GitHub, configure provider manually:
+        provider:
+          keycloak:
+            issuer-uri: https://keycloak.myapp.com/realms/myrealm
+            # ★ Spring auto-discovers all endpoints from:
+            # https://keycloak.myapp.com/realms/myrealm/.well-known/openid-configuration
+```
+
+##### 20.9.2 SecurityConfig — OAuth 2.0 / OIDC
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  SecurityConfig — OAuth 2.0 / OIDC Login Configuration
+//
+//  ★ Spring Security handles the ENTIRE OAuth 2.0 / OIDC flow automatically:
+//  → Redirects to Google/GitHub login page
+//  → Handles the callback URL (/login/oauth2/code/{provider})
+//  → Exchanges authorization code for tokens
+//  → Parses the ID Token (OIDC) or calls /userinfo (OAuth 2.0)
+//  → Creates Authentication object and sets SecurityContext
+//  → ALL without writing any filter or provider code!
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/", "/login", "/error", "/public/**").permitAll()
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated()
+            )
+            // ★ This single line enables the ENTIRE OAuth 2.0 / OIDC flow!
+            .oauth2Login(oauth2 -> oauth2
+                .loginPage("/login")                              // Custom login page
+                .defaultSuccessUrl("/dashboard", true)            // Where to go after login
+                .failureUrl("/login?error=true")                  // Where to go on failure
+                .userInfoEndpoint(userInfo -> userInfo
+                    .userService(customOAuth2UserService())        // For OAuth 2.0 (GitHub)
+                    .oidcUserService(customOidcUserService())      // For OIDC (Google)
+                )
+            )
+            .logout(logout -> logout
+                .logoutSuccessUrl("/")
+            );
+
+        return http.build();
+    }
+
+    // ── Custom OAuth2 User Service (for GitHub — no OIDC) ─────────────
+    // ★ Called when user logs in via OAuth 2.0 (no id_token)
+    // Spring calls the /userinfo endpoint and passes the result here
+    @Bean
+    public OAuth2UserService<OAuth2UserRequest, OAuth2User> customOAuth2UserService() {
+        DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
+        return request -> {
+            OAuth2User oAuth2User = delegate.loadUser(request);
+            // ★ oAuth2User contains: name, email, avatar_url, etc.
+            // You can load/create user in your DB here
+            // Map attributes to your User entity
+            return oAuth2User;
+        };
+    }
+
+    // ── Custom OIDC User Service (for Google — has id_token!) ─────────
+    // ★ Called when user logs in via OIDC (id_token is available)
+    @Bean
+    public OAuth2UserService<OidcUserRequest, OidcUser> customOidcUserService() {
+        OidcUserService delegate = new OidcUserService();
+        return request -> {
+            OidcUser oidcUser = delegate.loadUser(request);
+            // ★ oidcUser contains:
+            //   - ID Token claims: sub, name, email, picture (from id_token)
+            //   - User info claims: same but from /userinfo endpoint
+            //   - Both are merged automatically by Spring!
+            
+            String email = oidcUser.getEmail();           // From id_token
+            String name = oidcUser.getFullName();          // From id_token
+            String picture = oidcUser.getPicture();        // From id_token
+            String subject = oidcUser.getSubject();        // Unique user ID
+            
+            // You can load/create user in your DB here
+            // Map OIDC claims to your User entity
+            
+            return oidcUser;
+        };
+    }
+}
+```
+
+##### 20.9.3 Accessing User Info in Controllers
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Accessing OAuth 2.0 / OIDC User Info in Controllers
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@RestController
+public class UserController {
+
+    // ── Method 1: OAuth2User parameter (works for both OAuth2 and OIDC) ──
+    @GetMapping("/user")
+    public Map<String, Object> getUser(@AuthenticationPrincipal OAuth2User principal) {
+        // ★ principal.getAttributes() returns ALL user attributes
+        return principal.getAttributes();
+        // Google (OIDC): { sub, name, email, picture, email_verified, ... }
+        // GitHub (OAuth2): { login, id, avatar_url, name, email, ... }
+    }
+
+    // ── Method 2: OidcUser parameter (OIDC only — Google, Keycloak) ──
+    @GetMapping("/oidc-user")
+    public Map<String, Object> getOidcUser(@AuthenticationPrincipal OidcUser principal) {
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("name", principal.getFullName());
+        userInfo.put("email", principal.getEmail());
+        userInfo.put("picture", principal.getPicture());
+        userInfo.put("subject", principal.getSubject());
+
+        // ★ Access the raw ID Token (JWT)
+        String idTokenValue = principal.getIdToken().getTokenValue();
+        userInfo.put("idToken", idTokenValue);
+
+        // ★ Access individual ID Token claims
+        userInfo.put("issuer", principal.getIdToken().getIssuer().toString());
+        userInfo.put("issuedAt", principal.getIdToken().getIssuedAt().toString());
+        userInfo.put("expiresAt", principal.getIdToken().getExpiresAt().toString());
+
+        return userInfo;
+    }
+
+    // ── Method 3: OAuth2AuthenticationToken (full authentication object) ──
+    @GetMapping("/auth-details")
+    public Map<String, Object> getAuthDetails(
+            OAuth2AuthenticationToken authentication) {
+        Map<String, Object> details = new HashMap<>();
+        details.put("provider", authentication.getAuthorizedClientRegistrationId());
+        // → "google" or "github"
+        details.put("principal", authentication.getPrincipal().getAttributes());
+        details.put("authorities", authentication.getAuthorities());
+        return details;
+    }
+}
+```
+
+##### 20.9.4 Spring Boot OAuth 2.0 Resource Server — Validating Access Tokens
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Resource Server Configuration — Validates access tokens from external
+//  authorization server (Google, Keycloak, Auth0, etc.)
+//
+//  ★ Use this when your Spring Boot app is an API server that receives
+//  access tokens from clients that logged in elsewhere.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@Configuration
+@EnableWebSecurity
+public class ResourceServerConfig {
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/public/**").permitAll()
+                .requestMatchers("/api/admin/**").hasAuthority("SCOPE_admin")
+                .requestMatchers("/api/**").hasAuthority("SCOPE_read")
+                .anyRequest().authenticated()
+            )
+            // ★ This configures your app as a Resource Server
+            // It validates JWT access tokens automatically!
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt
+                    // Option 1: JWKS URI — auto-fetch public keys for signature verification
+                    .jwkSetUri("https://auth.myapp.com/.well-known/jwks.json")
+                    
+                    // Option 2: Issuer URI — auto-discover everything
+                    // .issuerUri("https://accounts.google.com")
+                )
+            );
+
+        return http.build();
+    }
+}
+```
+
+```yaml
+# ═══════════════════════════════════════════════════════════════════════════════
+#  application.yml — Resource Server Configuration
+# ═══════════════════════════════════════════════════════════════════════════════
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Option 1: JWKS URI (explicit)
+          jwk-set-uri: https://auth.myapp.com/.well-known/jwks.json
+
+          # Option 2: Issuer URI (auto-discovery)
+          # issuer-uri: https://accounts.google.com
+          # ★ Spring auto-discovers JWKS URI from:
+          # https://accounts.google.com/.well-known/openid-configuration
+```
+
+##### 20.9.5 Dependencies (pom.xml)
+
+```xml
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!--  Required Dependencies for OAuth 2.0 / OIDC                          -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+<dependencies>
+    <!-- Spring Boot Starter Security -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+
+    <!-- ★ OAuth 2.0 CLIENT — for "Login with Google/GitHub" -->
+    <!-- Handles: redirect, code exchange, token parsing, user info -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-oauth2-client</artifactId>
+    </dependency>
+
+    <!-- ★ OAuth 2.0 RESOURCE SERVER — for validating access tokens -->
+    <!-- Handles: JWT validation, signature verification, claims extraction -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+    </dependency>
+
+    <!-- Spring Boot Starter Web -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+</dependencies>
+```
+
+---
+
+#### 20.10 ★ How Spring Security Handles OAuth 2.0 / OIDC Internally
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ HOW SPRING SECURITY HANDLES OAUTH 2.0 / OIDC INTERNALLY                                 │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  When you add .oauth2Login(), Spring Security AUTO-REGISTERS:               │           │
+│  │                                                                               │           │
+│  │  1. OAuth2AuthorizationRequestRedirectFilter                                │           │
+│  │     → Intercepts /oauth2/authorization/{provider}                           │           │
+│  │     → Builds the authorization URL with client_id, scope, state, etc.      │           │
+│  │     → Redirects user to Google/GitHub login page                            │           │
+│  │                                                                               │           │
+│  │  2. OAuth2LoginAuthenticationFilter                                          │           │
+│  │     → Intercepts /login/oauth2/code/{provider} (callback URL)              │           │
+│  │     → Receives the authorization code from the auth server                  │           │
+│  │     → Exchanges code for tokens (POST /token — server-to-server)           │           │
+│  │     → Parses access token, refresh token, and id token (if OIDC)           │           │
+│  │     → Calls OAuth2UserService or OidcUserService to load user info         │           │
+│  │     → Creates OAuth2AuthenticationToken with user details + authorities    │           │
+│  │     → Sets SecurityContextHolder.getContext().setAuthentication(auth)       │           │
+│  │                                                                               │           │
+│  │  ★ All of this happens WITHOUT you writing ANY filter or provider!          │           │
+│  │  ★ Spring handles the entire Authorization Code flow automatically!        │           │
+│  │  ★ You only configure client-id, client-secret, and scope in YAML!         │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── FILTER CHAIN ORDER (with OAuth2 Login) ──                               │           │
+│  │                                                                               │           │
+│  │  Request                                                                      │           │
+│  │    │                                                                          │           │
+│  │    ▼                                                                          │           │
+│  │  SecurityContextHolderFilter (creates empty context)                         │           │
+│  │    │                                                                          │           │
+│  │    ▼                                                                          │           │
+│  │  OAuth2AuthorizationRequestRedirectFilter                                    │           │
+│  │    │  → /oauth2/authorization/google → redirect to Google                   │           │
+│  │    ▼                                                                          │           │
+│  │  OAuth2LoginAuthenticationFilter                                             │           │
+│  │    │  → /login/oauth2/code/google → exchange code → set auth               │           │
+│  │    ▼                                                                          │           │
+│  │  AuthorizationFilter (hasRole, hasAuthority)                                 │           │
+│  │    │                                                                          │           │
+│  │    ▼                                                                          │           │
+│  │  Controller (DispatcherServlet)                                               │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 20.11 Summary — Section 20 Key Takeaways
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  SUMMARY — SECTION 20 KEY TAKEAWAYS                                                         │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  1. OAuth 2.0 = AUTHORIZATION (Open Authorization)                           │           │
+│  │     • Answers: "What can this app do?" NOT "Who is this user?"              │           │
+│  │     • User's password NEVER leaves the authorization server                 │           │
+│  │     • Third-party apps get LIMITED access tokens, not passwords             │           │
+│  │                                                                               │           │
+│  │  2. THE 4 ACTORS                                                             │           │
+│  │     • Resource Owner: the user (you)                                        │           │
+│  │     • Client: the app that wants access (Slack, PrintMyPhotos)             │           │
+│  │     • Authorization Server: authenticates user, issues tokens (Google)     │           │
+│  │     • Resource Server: hosts the data/APIs (Gmail API, Photos API)         │           │
+│  │                                                                               │           │
+│  │  3. AUTHORIZATION CODE FLOW (Most Common)                                    │           │
+│  │     • Two-step: get code (browser) → exchange for token (server-to-server) │           │
+│  │     • Code in URL is safe (useless without client_secret)                  │           │
+│  │     • Token never exposed to the browser                                    │           │
+│  │                                                                               │           │
+│  │  4. GRANT TYPES                                                               │           │
+│  │     • Auth Code: server-side web apps (most secure) ✅                      │           │
+│  │     • Auth Code + PKCE: SPAs, mobile apps ✅                                │           │
+│  │     • Client Credentials: machine-to-machine, no user ✅                    │           │
+│  │     • Device Code: smart TVs, IoT ✅                                        │           │
+│  │     • ROPC (Password): ⚠️ deprecated                                       │           │
+│  │     • Implicit: ❌ removed in OAuth 2.1                                     │           │
+│  │                                                                               │           │
+│  │  5. OIDC = OAuth 2.0 + Identity Layer                                        │           │
+│  │     • Full form: OpenID Connect                                              │           │
+│  │     • Adds AUTHENTICATION on top of OAuth 2.0's authorization              │           │
+│  │     • Returns an ID Token (JWT) with user identity claims                  │           │
+│  │     • Triggered by adding "openid" to the scope parameter                  │           │
+│  │                                                                               │           │
+│  │  6. KEY DIFFERENCE: OAuth 2.0 vs OIDC                                        │           │
+│  │     • OAuth 2.0: access_token + refresh_token (no identity)                │           │
+│  │     • OIDC: access_token + refresh_token + ★ id_token (identity!)          │           │
+│  │     • OIDC = OAuth 2.0 + scope=openid → that's the ONLY change!           │           │
+│  │                                                                               │           │
+│  │  7. SPRING SECURITY SUPPORT                                                   │           │
+│  │     • spring-boot-starter-oauth2-client → "Login with Google/GitHub"       │           │
+│  │     • spring-boot-starter-oauth2-resource-server → validate access tokens  │           │
+│  │     • .oauth2Login() → enables entire OAuth 2.0 / OIDC flow automatically  │           │
+│  │     • Only need client-id, client-secret, scope in application.yml!        │           │
+│  │     • Spring auto-handles: redirect, code exchange, token parsing,         │           │
+│  │       user info extraction, SecurityContext population                     │           │
+│  │                                                                               │           │
+│  │  8. ADVANTAGES vs DISADVANTAGES                                               │           │
+│  │     • ✅ No password sharing, granular scopes, revocable, standardized      │           │
+│  │     • ❌ Complex, third-party dependency, not authentication (need OIDC)    │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+
+
