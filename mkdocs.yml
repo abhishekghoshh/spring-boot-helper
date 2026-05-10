@@ -3,11 +3,33 @@ site_url: https://abhishekghoshh.github.io/spring-boot-helper/
 
 nav:
   - Home: index.md
-  - Introduction: introduction.md
   - Interview Helper: interview-helper.md
-  - Spring AOP: spring-aop.md
+  - Introduction: spring-introduction.md
+  - Spring Config: spring-config.md
+  - Spring AOP:
+      - Overview: spring-aop.md
+      - Links: spring-aop/links.md
+      - 001 - What is AOP? Why and How We Use It?: spring-aop/001-what-is-aop.md
+      - 002 - Advantages and Disadvantages of AOP: spring-aop/002-advantages-and-disadvantages.md
+      - 003 - Real-Life Examples and Industry Usages: spring-aop/003-real-life-examples.md
+      - 004 - All Spring AOP Annotations Explained: spring-aop/004-aop-annotations.md
+      - 005 - Code Examples with Spring AOP: spring-aop/005-code-examples.md
+      - 006 - Summary: spring-aop/006-summary.md
+      - 007 - How AOP Intercepts Method Invocation: spring-aop/007-aop-intercepts-method-invocation.md
+      - 008 - How AOP Allows Focus on Business Logic: spring-aop/008-aop-focus-on-business-logic.md
+      - 009 - How AOP Achieves Reusability and Maintainability: spring-aop/009-aop-reusability-and-maintainability.md
+      - 010 - What is a Pointcut?: spring-aop/010-what-is-a-pointcut.md
+      - 011 - Pointcut Expression Structure: spring-aop/011-pointcut-expression-structure.md
+      - 012 - Different Types of Pointcut Designators: spring-aop/012-pointcut-designators.md
+      - 013 - Combining Pointcut Expressions (AND, OR, NOT): spring-aop/013-combining-pointcut-expressions.md
+      - 014 - Named Pointcuts — Reusable Pointcut Definitions: spring-aop/014-named-pointcuts.md
+      - 015 - How AOP Works Internally: spring-aop/015-how-aop-works-internally.md
+      - 016 - What is Advice? How It Works: spring-aop/016-what-is-advice.md
+      - 017 - What is JoinPoint? How It Works: spring-aop/017-what-is-joinpoint.md
+      - 018 - How @Before, @After, and @Around Work Internally: spring-aop/018-before-after-around-internals.md
+      - 019 - How Matching, Linking, and Interception Work Together: spring-aop/019-matching-linking-interception.md
+      - 020 - What If We Have 100s of Pointcuts? — Performance & Caching: spring-aop/020-performance-and-caching.md
   - Spring Transaction: spring-transaction.md
-  - Spring JDBC: Spring-jdbc.md
   - Spring JPA:
       - Overview: spring-jpa.md
       - Links: spring-jpa/links.md
@@ -79,7 +101,17 @@ nav:
   - Spring Redis: spring-redis.md
   - Spring MongoDB: spring-mongodb.md
   - Spring Cassandra: spring-cassandra.md
-  - Spring Cloud: spring-cloud.md
+  - Spring Cloud:
+      - Overview: spring-cloud.md
+      - Links: spring-cloud/links.md
+      - 001 - Circuit Breakers and Resilience4j: spring-cloud/001-circuit-breakers-and-resilience4j.md
+      - 002 - Service Discovery: spring-cloud/002-service-discovery.md
+      - 003 - API Gateway: spring-cloud/003-api-gateway.md
+      - 004 - Cloud Centralized Configuration: spring-cloud/004-cloud-centralized-configuration.md
+      - 005 - Load Balancing: spring-cloud/005-load-balancing.md
+      - 006 - Distributed Tracing: spring-cloud/006-distributed-tracing.md
+      - 007 - Messaging: spring-cloud/007-messaging.md
+      - 008 - Testing: spring-cloud/008-testing.md
   - Spring Microservices Patterns: spring-microservices-pattern.md
   - Spring GraphQL: spring-graphql.md
   - Spring Reactive Programming: spring-reactive-programming.md

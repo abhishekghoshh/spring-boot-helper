@@ -3,9 +3,11 @@
 
 ## Table of Contents
 
-- [Introduction](introduction.md) — Spring Boot fundamentals, auto-configuration, and project setup
+- [Index](index.md) - Index of the all topics
+- [Interview Helper](interview-helper.md) — Common Spring Boot interview questions and answers
+- [Spring Introduction](spring-introduction.md) — Spring Boot fundamentals, auto-configuration, and project setup
+- [Spring Config](spring-config.md) - Spring Boot config Management
 - [Spring AOP](spring-aop.md) — Aspect-Oriented Programming, pointcuts, advice types, and proxy internals
-- [Spring JDBC](Spring-jdbc.md) — JdbcTemplate, NamedParameterJdbcTemplate, and raw SQL operations
 - [Spring JPA](spring-jpa.md) — JPA repositories, entity mapping, relationships, and query methods
 - [Spring Transaction](spring-transaction.md) — @Transactional, propagation levels, isolation, and rollback rules
 - [Spring Security](spring-security.md) — Authentication, authorization, JWT, OAuth2, and filter chains
@@ -27,7 +29,7 @@
 - [Spring Observability](spring-observabilty.md) — Micrometer, distributed tracing, metrics, and monitoring
 - [Spring Splunk](spring-splunk.md) — Log aggregation, Splunk integration, and centralized logging
 - [Spring Docs](spring-docs.md) — OpenAPI, Swagger, and API documentation with Spring REST Docs
-- [Interview Helper](interview-helper.md) — Common Spring Boot interview questions and answers
+
 
 
 
