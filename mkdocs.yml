@@ -8,7 +8,46 @@ nav:
   - Spring AOP: spring-aop.md
   - Spring Transaction: spring-transaction.md
   - Spring JDBC: Spring-jdbc.md
-  - Spring JPA: spring-jpa.md
+  - Spring JPA:
+      - Overview: spring-jpa.md
+      - Links: spring-jpa/links.md
+      - JDBC: spring-jpa/000-jdbc.md
+      - 001 - Architecture: spring-jpa/001-architecture.md
+      - 002 - Entity Lifecycle: spring-jpa/002-entity-lifecycle.md
+      - 003 - EntityManagerFactory and EntityManager: spring-jpa/003-entity-manager-factory-and-entity-manager.md
+      - 004 - Persistence Context: spring-jpa/004-persistence-context.md
+      - 005 - Transaction Manager: spring-jpa/005-transaction-manager.md
+      - 006 - Hibernate Implementation: spring-jpa/006-hibernate-implementation.md
+      - 007 - How JPA Repository Uses EntityManager: spring-jpa/007-how-jpa-repository-uses-entity-manager.md
+      - 008 - Why @PersistenceContext Instead of @Autowired: spring-jpa/008-persistence-context-annotation-vs-autowired.md
+      - 009 - Why @Transactional is Used for EntityManager: spring-jpa/009-transactional-with-entity-manager.md
+      - 010 - How EntityManager Creates Persistence Context: spring-jpa/010-entity-manager-creates-persistence-context.md
+      - 011 - Role of Persistence Context: spring-jpa/011-role-of-persistence-context.md
+      - 012 - Transaction-Bounded Operations: spring-jpa/012-transaction-bounded-operations.md
+      - 013 - First-Level Caching: spring-jpa/013-first-level-caching.md
+      - 014 - Second-Level Caching: spring-jpa/014-second-level-caching.md
+      - 015 - spring.jpa.hibernate.ddl-auto: spring-jpa/015-ddl-auto.md
+      - 016 - "@Table Annotation": spring-jpa/016-table-annotation.md
+      - 017 - "@Column Annotation": spring-jpa/017-column-annotation.md
+      - 018 - "@Id Annotation and Composite IDs": spring-jpa/018-id-and-composite-ids.md
+      - 019 - "@SequenceGenerator": spring-jpa/019-sequence-generator.md
+      - 020 - "@GeneratedValue and Generation Strategies": spring-jpa/020-generated-value-and-generation-strategies.md
+      - 021 - OneToOne Unidirectional Mapping: spring-jpa/021-one-to-one-unidirectional-mapping.md
+      - 022 - Eager and Lazy Loading: spring-jpa/022-eager-and-lazy-loading.md
+      - 023 - OneToOne Bidirectional Mapping: spring-jpa/023-one-to-one-bidirectional-mapping.md
+      - 024 - OneToMany Unidirectional Mapping: spring-jpa/024-one-to-many-unidirectional-mapping.md
+      - 025 - OneToMany Bidirectional Mapping: spring-jpa/025-one-to-many-bidirectional-mapping.md
+      - 026 - ManyToOne Bidirectional Mapping: spring-jpa/026-many-to-one-bidirectional-mapping.md
+      - 027 - ManyToMany Unidirectional Mapping: spring-jpa/027-many-to-many-unidirectional-mapping.md
+      - 028 - ManyToMany Bidirectional Mapping: spring-jpa/028-many-to-many-bidirectional-mapping.md
+      - 029 - Derived Query Methods: spring-jpa/029-derived-query-methods.md
+      - 030 - JPQL: spring-jpa/030-jpql.md
+      - 031 - The N+1 Problem in JPA: spring-jpa/031-n-plus-1-problem.md
+      - 032 - "@NamedQuery": spring-jpa/032-named-query.md
+      - 033 - Native Query: spring-jpa/033-native-query.md
+      - 034 - Dynamic Native Query: spring-jpa/034-dynamic-native-query.md
+      - 035 - Criteria API: spring-jpa/035-criteria-api.md
+      - 036 - JPA Specification API: spring-jpa/036-jpa-specification-api.md
   - Spring Security:
     - Overview: spring-security.md
     - Links: spring-security/links.md
