@@ -24,9 +24,3 @@
 - [018 - How @Before, @After, and @Around Work Internally](./spring-aop/018-before-after-around-internals.md)
 - [019 - How Matching, Linking, and Interception Work Together](./spring-aop/019-matching-linking-interception.md)
 - [020 - What If We Have 100s of Pointcuts? — Performance & Caching](./spring-aop/020-performance-and-caching.md)
-
-
-## Theory
-
-> All topics have been moved to individual files listed in the Table of Contents above.
-
