@@ -29825,3 +29825,983 @@ public class ApiController {
 ```
 
 
+---
+
+### 21. Role-Based Authorization (RBAC) in Spring Security
+
+---
+
+#### 21.1 ★ What is Role-Based Authorization?
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ ROLE-BASED ACCESS CONTROL (RBAC) — CONCEPT                                              │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ── DEFINITION ───────────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  Role-Based Authorization is a security model where access to resources     │           │
+│  │  is determined by the ROLE(s) assigned to the authenticated user, rather    │           │
+│  │  than the identity of the user directly.                                     │           │
+│  │                                                                               │           │
+│  │  ★ Authentication answers: "WHO are you?"  → User logs in                  │           │
+│  │  ★ Authorization  answers: "WHAT can you do?" → Based on role              │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── CORE CONCEPTS ────────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  ┌─────────────┬──────────────────────────────────────────────────────────┐ │           │
+│  │  │  Concept     │  Description                                             │ │           │
+│  │  ├─────────────┼──────────────────────────────────────────────────────────┤ │           │
+│  │  │  User        │  An authenticated principal (person or system)           │ │           │
+│  │  │  Role        │  A named group of permissions (e.g., ADMIN, USER, MOD)  │ │           │
+│  │  │  Resource    │  A URL, endpoint, or method being protected              │ │           │
+│  │  │  Permission  │  A specific action allowed (read, write, delete)         │ │           │
+│  │  └─────────────┴──────────────────────────────────────────────────────────┘ │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── EXAMPLE ROLE HIERARCHY ───────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │       ┌─────────────────────────────────────────────────────┐               │           │
+│  │       │                     ADMIN                            │               │           │
+│  │       │  /admin/**  /users/**  /reports/**  /settings/**    │               │           │
+│  │       │  DELETE, WRITE, READ everything                      │               │           │
+│  │       └────────────────────────┬────────────────────────────┘               │           │
+│  │                                │ includes                                    │           │
+│  │       ┌────────────────────────▼────────────────────────────┐               │           │
+│  │       │                   MODERATOR                           │               │           │
+│  │       │  /posts/**  /comments/**  /users/list               │               │           │
+│  │       │  READ + WRITE (no DELETE users)                      │               │           │
+│  │       └────────────────────────┬────────────────────────────┘               │           │
+│  │                                │ includes                                    │           │
+│  │       ┌────────────────────────▼────────────────────────────┐               │           │
+│  │       │                     USER                              │               │           │
+│  │       │  /profile/**  /posts/read  /api/public/**            │               │           │
+│  │       │  READ own data only                                   │               │           │
+│  │       └─────────────────────────────────────────────────────┘               │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── ROLE vs AUTHORITY IN SPRING SECURITY ────────────────────────           │           │
+│  │                                                                               │           │
+│  │  ┌─────────────────────────────┬───────────────────────────────────────────┐ │          │
+│  │  │  Role                        │  Authority (GrantedAuthority)             │ │          │
+│  │  ├─────────────────────────────┼───────────────────────────────────────────┤ │          │
+│  │  │  Prefixed with "ROLE_"       │  Any string (no prefix required)         │ │          │
+│  │  │  e.g., "ROLE_ADMIN"          │  e.g., "SCOPE_read", "user:delete"       │ │          │
+│  │  │  hasRole("ADMIN") checks for │  hasAuthority("ROLE_ADMIN") requires     │ │          │
+│  │  │  "ROLE_ADMIN" automatically  │  the full string including prefix        │ │          │
+│  │  │  @PreAuthorize("hasRole      │  @PreAuthorize("hasAuthority             │ │          │
+│  │  │  ('ADMIN')")                 │  ('ROLE_ADMIN')")                         │ │          │
+│  │  └─────────────────────────────┴───────────────────────────────────────────┘ │          │
+│  │                                                                               │           │
+│  │  ★ KEY: hasRole("ADMIN") automatically prepends "ROLE_" prefix!             │           │
+│  │    So hasRole("ADMIN") is equivalent to hasAuthority("ROLE_ADMIN")          │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 21.2 ★ Where Does Authorization Happen? — The Two Layers
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ TWO PLACES TO ENFORCE ROLE-BASED AUTHORIZATION IN SPRING SECURITY                       │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│                                                                                              │
+│   HTTP Request                                                                               │
+│       │                                                                                      │
+│       ▼                                                                                      │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐        │
+│  │                     LAYER 1: SECURITY FILTER CHAIN                               │        │
+│  │                     (SecurityConfig — URL-level authorization)                   │        │
+│  │                                                                                   │        │
+│  │  .authorizeHttpRequests(auth -> auth                                             │        │
+│  │      .requestMatchers("/admin/**").hasRole("ADMIN")     ← ★ LAYER 1            │        │
+│  │      .requestMatchers("/api/**").hasAnyRole("USER","ADMIN")                     │        │
+│  │      .anyRequest().authenticated()                                               │        │
+│  │  )                                                                               │        │
+│  │                                                                                   │        │
+│  │  ★ Checks: Does the user's role match the URL pattern?                          │        │
+│  │  ★ If NO → 403 Forbidden (never reaches controller)                            │        │
+│  │  ★ If YES → request passes to the Controller                                   │        │
+│  └────────────────────────────────┬────────────────────────────────────────────────┘        │
+│                                   │ passes (role matches URL)                               │
+│                                   ▼                                                          │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐        │
+│  │                     LAYER 2: METHOD-LEVEL SECURITY                               │        │
+│  │                     (Controller / Service — method-level authorization)          │        │
+│  │                                                                                   │        │
+│  │  @PreAuthorize("hasRole('ADMIN')")        ← ★ LAYER 2 (BEFORE method runs)     │        │
+│  │  public String deleteUser(Long id) { ... }                                       │        │
+│  │                                                                                   │        │
+│  │  @PostAuthorize("returnObject.owner == authentication.name")  ← AFTER method    │        │
+│  │  public Document getDocument(Long id) { ... }                                    │        │
+│  │                                                                                   │        │
+│  │  ★ @PreAuthorize: Checks BEFORE the method runs                               │        │
+│  │  ★ @PostAuthorize: Checks AFTER the method runs (on the return value)          │        │
+│  │  ★ If check fails → 403 Forbidden                                              │        │
+│  └─────────────────────────────────────────────────────────────────────────────────┘        │
+│                                   │                                                          │
+│                                   ▼                                                          │
+│                            HTTP Response                                                     │
+│                                                                                              │
+│  ★ YOU CONTROL WHICH LAYER (or both!) to use:                                              │
+│    • LAYER 1 alone: Good for coarse-grained access (entire URL paths)                      │
+│    • LAYER 2 alone: Good for fine-grained access (specific methods/logic)                  │
+│    • BOTH together: Defense in depth (recommended!)                                        │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 21.3 ★ Key Annotations — @EnableWebSecurity and @EnableMethodSecurity
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ KEY ANNOTATIONS FOR SPRING SECURITY AUTHORIZATION                                       │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ── @EnableWebSecurity ────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  @Configuration                                                               │           │
+│  │  @EnableWebSecurity   ← ★★★                                                  │           │
+│  │  public class SecurityConfig { ... }                                          │           │
+│  │                                                                               │           │
+│  │  • Activates Spring Security's web security support                          │           │
+│  │  • Registers Spring Security filter chain in the servlet context             │           │
+│  │  • Enables you to define custom SecurityFilterChain beans                   │           │
+│  │  • Required for HttpSecurity-based configuration                             │           │
+│  │  • Without it: Spring Security auto-configuration may still activate,       │           │
+│  │    but you CANNOT customize it with @Bean SecurityFilterChain               │           │
+│  │  • In Spring Boot: auto-applied by spring-boot-autoconfigure                │           │
+│  │    if spring-security is on classpath — but explicit is better practice     │           │
+│  │  • Controls: URL-level security (Layer 1)                                   │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── @EnableMethodSecurity(prePostEnabled = true) ──────────────────          │           │
+│  │                                                                               │           │
+│  │  @Configuration                                                               │           │
+│  │  @EnableWebSecurity                                                           │           │
+│  │  @EnableMethodSecurity(prePostEnabled = true)   ← ★★★                       │           │
+│  │  public class SecurityConfig { ... }                                          │           │
+│  │                                                                               │           │
+│  │  • Enables method-level security using Spring Expression Language (SpEL)    │           │
+│  │  • prePostEnabled = true → unlocks:                                          │           │
+│  │    → @PreAuthorize("...")   checked BEFORE the method runs                  │           │
+│  │    → @PostAuthorize("...")  checked AFTER the method returns                │           │
+│  │    → @PreFilter("...")      filters method input collections                │           │
+│  │    → @PostFilter("...")     filters method return collections               │           │
+│  │  • Controls: Method-level security (Layer 2)                                │           │
+│  │                                                                               │           │
+│  │  ┌──────────────────────────────────────────────────────────────────────┐   │           │
+│  │  │  Additional attributes of @EnableMethodSecurity:                      │   │           │
+│  │  │                                                                        │   │           │
+│  │  │  @EnableMethodSecurity(                                                │   │           │
+│  │  │    prePostEnabled  = true,  // @PreAuthorize, @PostAuthorize (default) │   │           │
+│  │  │    securedEnabled  = true,  // @Secured("ROLE_ADMIN")                 │   │           │
+│  │  │    jsr250Enabled   = true   // @RolesAllowed("ADMIN") from JSR-250    │   │           │
+│  │  │  )                                                                     │   │           │
+│  │  │                                                                        │   │           │
+│  │  │  ★ prePostEnabled=true is the modern approach (SpEL expressions)      │   │           │
+│  │  │  ★ securedEnabled: older approach, less flexible                       │   │           │
+│  │  │  ★ jsr250Enabled: for Jakarta EE interoperability                      │   │           │
+│  │  └──────────────────────────────────────────────────────────────────────┘   │           │
+│  │                                                                               │           │
+│  │  ★ IMPORTANT: @EnableMethodSecurity replaced @EnableGlobalMethodSecurity    │           │
+│  │    in Spring Security 5.6+. Use @EnableMethodSecurity in new projects!      │           │
+│  │                                                                               │           │
+│  │  ┌──────────────────────────────────────────────────────────────────────┐   │           │
+│  │  │  Old (deprecated):                                                     │   │           │
+│  │  │  @EnableGlobalMethodSecurity(prePostEnabled = true)  ← before 5.6     │   │           │
+│  │  │                                                                        │   │           │
+│  │  │  New (use this):                                                        │   │           │
+│  │  │  @EnableMethodSecurity(prePostEnabled = true)         ← 5.6+          │   │           │
+│  │  └──────────────────────────────────────────────────────────────────────┘   │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 21.4 ★ Complete Architecture Diagram — RBAC in Spring Boot
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ COMPLETE RBAC ARCHITECTURE IN SPRING BOOT                                               │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│                                                                                              │
+│   HTTP Request: GET /admin/users                                                             │
+│   User: alice (ROLE_ADMIN)                                                                   │
+│       │                                                                                      │
+│       ▼                                                                                      │
+│  ┌────────────────────────────────────────────────────────────────────────────┐             │
+│  │  1. UsernamePasswordAuthenticationFilter (or JWT Filter)                    │             │
+│  │     → Authenticates user → creates Authentication object                   │             │
+│  │     → SecurityContextHolder.getContext().setAuthentication(auth)            │             │
+│  │                                                                              │             │
+│  │     Authentication = {                                                       │             │
+│  │       principal: "alice",                                                    │             │
+│  │       authorities: [ROLE_ADMIN, ROLE_USER],                                 │             │
+│  │       authenticated: true                                                    │             │
+│  │     }                                                                        │             │
+│  └──────────────────────────────┬─────────────────────────────────────────────┘             │
+│                                  │                                                            │
+│                                  ▼                                                            │
+│  ┌────────────────────────────────────────────────────────────────────────────┐             │
+│  │  2. AuthorizationFilter (Layer 1 — URL Security)                            │             │
+│  │     → Reads SecurityContext → gets Authentication                          │             │
+│  │     → Checks request URL: GET /admin/users                                  │             │
+│  │     → Matches rule: .requestMatchers("/admin/**").hasRole("ADMIN")          │             │
+│  │     → Does alice have ROLE_ADMIN? YES ✅                                    │             │
+│  │     → Pass through                                                          │             │
+│  │                                                                              │             │
+│  │     ❌ If bob (ROLE_USER) requests /admin/users:                            │             │
+│  │        → Does bob have ROLE_ADMIN? NO ❌                                    │             │
+│  │        → 403 Forbidden (request NEVER reaches controller)                   │             │
+│  └──────────────────────────────┬─────────────────────────────────────────────┘             │
+│                                  │                                                            │
+│                                  ▼                                                            │
+│  ┌────────────────────────────────────────────────────────────────────────────┐             │
+│  │  3. DispatcherServlet → AdminController.listUsers()                         │             │
+│  │                                                                              │             │
+│  │     @PreAuthorize("hasRole('ADMIN')")   ← Layer 2 check BEFORE method body │             │
+│  │     public List<User> listUsers() {                                          │             │
+│  │         return userRepository.findAll();                                     │             │
+│  │     }                                                                        │             │
+│  │                                                                              │             │
+│  │     → Spring's MethodSecurityInterceptor intercepts the call                │             │
+│  │     → Evaluates SpEL: hasRole('ADMIN') for alice                           │             │
+│  │     → alice has ROLE_ADMIN → YES ✅                                         │             │
+│  │     → Method body executes                                                  │             │
+│  └──────────────────────────────┬─────────────────────────────────────────────┘             │
+│                                  │                                                            │
+│                                  ▼                                                            │
+│               200 OK { list of users }                                                       │
+│                                                                                              │
+│                                                                                              │
+│  ★ STORAGE OF ROLES:                                                                        │
+│                                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────────────┐             │
+│  │                                                                              │             │
+│  │  Option 1: In-Memory (testing)      Option 2: Database (production)        │             │
+│  │  ──────────────────────────────     ────────────────────────────────────   │             │
+│  │  User.withUsername("alice")         users table + roles table              │             │
+│  │    .roles("ADMIN")                  UserDetailsService loads from DB       │             │
+│  │    .build()                          user.getAuthorities() → roles         │             │
+│  │                                                                              │             │
+│  │  Option 3: JWT (stateless)                                                  │             │
+│  │  ─────────────────────────                                                  │             │
+│  │  { "sub":"alice",                                                           │             │
+│  │    "roles":["ROLE_ADMIN","ROLE_USER"] }                                     │             │
+│  │  JwtAuthenticationConverter extracts roles                                  │             │
+│  │                                                                              │             │
+│  └────────────────────────────────────────────────────────────────────────────┘             │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 21.5 ★ pom.xml — Dependencies
+
+```xml
+<!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+<!--  pom.xml — Spring Boot with Role-Based Authorization                           -->
+<!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+
+<dependencies>
+
+    <!-- ── Spring Security ───────────────────────────────────────────────────── -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+
+    <!-- ── Web ──────────────────────────────────────────────────────────────── -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- ── Spring Data JPA (optional, for loading roles from DB) ────────────── -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+
+    <!-- ── H2 (for demo; replace with MySQL/PostgreSQL in production) ─────── -->
+    <dependency>
+        <groupId>com.h2database</groupId>
+        <artifactId>h2</artifactId>
+        <scope>runtime</scope>
+    </dependency>
+
+</dependencies>
+```
+
+---
+
+#### 21.6 ★ Layer 1 — URL-Level Security in SecurityConfig (hasRole / hasAnyRole)
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ LAYER 1 — SecurityConfig URL-Level Authorization                                        │
+│    Applies BEFORE the request reaches the Controller                                         │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  Methods available inside .authorizeHttpRequests():                          │           │
+│  │                                                                               │           │
+│  │  ┌──────────────────────────────────┬────────────────────────────────────┐  │           │
+│  │  │  Method                           │  Description                       │  │           │
+│  │  ├──────────────────────────────────┼────────────────────────────────────┤  │           │
+│  │  │  .permitAll()                     │  Allow everyone (no auth needed)   │  │           │
+│  │  │  .denyAll()                       │  Block everyone                    │  │           │
+│  │  │  .authenticated()                 │  Any authenticated user            │  │           │
+│  │  │  .hasRole("ADMIN")                │  Must have ROLE_ADMIN              │  │           │
+│  │  │  .hasAnyRole("ADMIN","MOD")       │  Must have ROLE_ADMIN OR ROLE_MOD  │  │           │
+│  │  │  .hasAuthority("ROLE_ADMIN")      │  Same as hasRole but full string   │  │           │
+│  │  │  .hasAnyAuthority("X","Y")        │  Same as hasAnyRole but full str   │  │           │
+│  │  │  .access(AuthorizationManager)    │  Custom authorization logic        │  │           │
+│  │  └──────────────────────────────────┴────────────────────────────────────┘  │           │
+│  │                                                                               │           │
+│  │  ★ Rules are evaluated TOP-TO-BOTTOM. First match wins!                     │           │
+│  │  ★ Put most specific patterns FIRST, .anyRequest() LAST.                   │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**SecurityConfig.java — Layer 1 (URL-Level Authorization)**
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  SecurityConfig.java — LAYER 1: URL-Level Role-Based Authorization
+//
+//  ★ @EnableWebSecurity    → Activates Spring Security web support
+//  ★ @EnableMethodSecurity → Enables @PreAuthorize / @PostAuthorize
+//
+//  ★ .hasRole("ADMIN")     → checks for authority "ROLE_ADMIN"
+//  ★ .hasAnyRole("A","B")  → checks for "ROLE_A" OR "ROLE_B"
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@Configuration
+@EnableWebSecurity                              // ★ Activate Spring Security
+@EnableMethodSecurity(prePostEnabled = true)    // ★ Enable @PreAuthorize / @PostAuthorize
+public class SecurityConfig {
+
+    // ── SecurityFilterChain — URL-Level Authorization (LAYER 1) ──────────────
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(auth -> auth
+
+                // ── Public endpoints (no authentication needed) ──────────────
+                .requestMatchers("/", "/public/**", "/api/public/**").permitAll()
+
+                // ── Admin-only endpoints ────────────────────────────────────
+                //    hasRole("ADMIN") checks for authority "ROLE_ADMIN"
+                .requestMatchers("/admin/**").hasRole("ADMIN")              // ★ LAYER 1
+
+                // ── Moderator OR Admin can access ─────────────────────────
+                //    hasAnyRole checks if user has ANY of the listed roles
+                .requestMatchers("/moderate/**").hasAnyRole("ADMIN", "MODERATOR")   // ★ LAYER 1
+
+                // ── User dashboard — any authenticated user ────────────────
+                .requestMatchers("/dashboard/**").authenticated()
+
+                // ── API — requires either USER or ADMIN role ──────────────
+                .requestMatchers("/api/users/**").hasAnyRole("USER", "ADMIN")       // ★ LAYER 1
+
+                // ── Reports — ADMIN only, using hasAuthority (full string) ─
+                .requestMatchers("/reports/**").hasAuthority("ROLE_ADMIN")  // ★ same as hasRole("ADMIN")
+
+                // ── Actuator — allow only ADMIN ────────────────────────────
+                .requestMatchers("/actuator/**").hasRole("ADMIN")
+
+                // ── Everything else — must be authenticated ────────────────
+                .anyRequest().authenticated()
+            )
+            .formLogin(Customizer.withDefaults())    // Form login
+            .httpBasic(Customizer.withDefaults())    // HTTP Basic (for API testing)
+            .csrf(csrf -> csrf.disable());           // Disable CSRF for REST APIs
+
+        return http.build();
+    }
+
+    // ── In-Memory Users with Roles (for demo) ────────────────────────────────
+    //    ★ In production, replace with a UserDetailsService backed by a database
+    @Bean
+    public UserDetailsService userDetailsService() {
+
+        // ── ADMIN user ────────────────────────────────────────────────────────
+        //    .roles("ADMIN") automatically creates authority "ROLE_ADMIN"
+        UserDetails admin = User.withUsername("admin")
+            .password(passwordEncoder().encode("admin123"))
+            .roles("ADMIN")                          // → authority: ROLE_ADMIN
+            .build();
+
+        // ── MODERATOR user ────────────────────────────────────────────────────
+        UserDetails moderator = User.withUsername("mod")
+            .password(passwordEncoder().encode("mod123"))
+            .roles("MODERATOR", "USER")              // → ROLE_MODERATOR, ROLE_USER
+            .build();
+
+        // ── Regular USER ──────────────────────────────────────────────────────
+        UserDetails user = User.withUsername("user")
+            .password(passwordEncoder().encode("user123"))
+            .roles("USER")                           // → authority: ROLE_USER
+            .build();
+
+        return new InMemoryUserDetailsManager(admin, moderator, user);
+    }
+
+    // ── Password Encoder ──────────────────────────────────────────────────────
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+```
+
+**Required Imports — SecurityConfig**
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Imports for SecurityConfig.java
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
+```
+
+---
+
+#### 21.7 ★ Layer 2 — Method-Level Security (@PreAuthorize and @PostAuthorize)
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ LAYER 2 — METHOD-LEVEL AUTHORIZATION                                                    │
+│    @PreAuthorize  → runs BEFORE method body                                                  │
+│    @PostAuthorize → runs AFTER method body (on the return value)                             │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ── @PreAuthorize ─────────────────────────────────────────────────          │           │
+│  │                                                                               │           │
+│  │  • Checked BEFORE the method executes                                        │           │
+│  │  • If check FAILS → method NEVER runs → 403 AccessDeniedException           │           │
+│  │  • Use when: you know the role from the request parameters/path             │           │
+│  │  • Supports full SpEL (Spring Expression Language)                           │           │
+│  │                                                                               │           │
+│  │  Common SpEL expressions:                                                    │           │
+│  │  ┌────────────────────────────────────────────────────────────────────────┐ │           │
+│  │  │  hasRole('ADMIN')                     → user has ROLE_ADMIN           │ │           │
+│  │  │  hasAnyRole('ADMIN','MOD')             → user has ROLE_ADMIN or MOD   │ │           │
+│  │  │  hasAuthority('ROLE_ADMIN')            → same as hasRole, full string  │ │           │
+│  │  │  isAuthenticated()                     → any authenticated user        │ │           │
+│  │  │  isAnonymous()                         → not logged in                 │ │           │
+│  │  │  #username == authentication.name      → parameter matches logged user │ │           │
+│  │  │  authentication.name == 'admin'        → specific user                 │ │           │
+│  │  │  hasRole('ADMIN') or #id == principal.id → admin OR own resource      │ │           │
+│  │  └────────────────────────────────────────────────────────────────────────┘ │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── @PostAuthorize ────────────────────────────────────────────────          │           │
+│  │                                                                               │           │
+│  │  • Checked AFTER the method executes (on the return value)                  │           │
+│  │  • The method ALWAYS runs; only the RETURN of the result is blocked         │           │
+│  │  • Special variable: returnObject (the return value of the method)         │           │
+│  │  • Use when: you need to check a field on the returned object              │           │
+│  │  • ★ WARNING: The method body ALWAYS runs! Use @PreAuthorize for          │           │
+│  │    preventing DB writes/deletes. @PostAuthorize is for reads only.         │           │
+│  │                                                                               │           │
+│  │  Common SpEL expressions:                                                    │           │
+│  │  ┌────────────────────────────────────────────────────────────────────────┐ │           │
+│  │  │  returnObject.owner == authentication.name  → caller owns the resource │ │           │
+│  │  │  returnObject.username == principal.username → user's own data         │ │           │
+│  │  │  returnObject != null                       → non-null result          │ │           │
+│  │  │  hasRole('ADMIN') or returnObject.public    → admin or public resource │ │           │
+│  │  └────────────────────────────────────────────────────────────────────────┘ │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 21.8 ★ @PreAuthorize and @PostAuthorize — Internal Flow Diagram
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ INTERNAL FLOW — HOW @PreAuthorize AND @PostAuthorize WORK                               │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ── @PreAuthorize FLOW ─────────────────────────────────────────────────────────────────    │
+│                                                                                              │
+│  Controller Caller                Spring AOP Proxy              Method Body                 │
+│  ────────────────                 ─────────────────             ───────────                 │
+│  │                                       │                           │                      │
+│  │  userController.deleteUser(42)        │                           │                      │
+│  │─────────────────────────────────────> │                           │                      │
+│  │                                       │                           │                      │
+│  │                            ┌──────────────────────────┐          │                      │
+│  │                            │  MethodSecurityInterceptor│          │                      │
+│  │                            │                            │          │                      │
+│  │                            │  @PreAuthorize            │          │                      │
+│  │                            │  ("hasRole('ADMIN')")     │          │                      │
+│  │                            │                            │          │                      │
+│  │                            │  1. Get Authentication    │          │                      │
+│  │                            │     from SecurityContext  │          │                      │
+│  │                            │  2. Evaluate SpEL:        │          │                      │
+│  │                            │     hasRole('ADMIN')?     │          │                      │
+│  │                            │                            │          │                      │
+│  │                            │  ✅ YES → proceed          │          │                      │
+│  │                            │  ❌ NO  → throw            │          │                      │
+│  │                            │     AccessDeniedException │          │                      │
+│  │                            └──────────┬───────────────┘          │                      │
+│  │                                       │ proceed (YES)             │                      │
+│  │                                       │──────────────────────────>│                      │
+│  │                                       │                           │  deleteUser runs     │
+│  │                                       │                           │  userRepo.delete(42) │
+│  │                                       │<──────────────────────────│                      │
+│  │                                       │  method returns           │                      │
+│  │  200 OK                               │                           │                      │
+│  │<──────────────────────────────────────│                           │                      │
+│  │                                       │                           │                      │
+│                                                                                              │
+│  ── @PostAuthorize FLOW ────────────────────────────────────────────────────────────────    │
+│                                                                                              │
+│  Controller Caller                Spring AOP Proxy              Method Body                 │
+│  ────────────────                 ─────────────────             ───────────                 │
+│  │                                       │                           │                      │
+│  │  docController.getDocument(99)        │                           │                      │
+│  │─────────────────────────────────────> │                           │                      │
+│  │                                       │──────────────────────────>│                      │
+│  │                                       │                           │                      │
+│  │                                       │                           │  Method ALWAYS runs  │
+│  │                                       │                           │  doc = docRepo.      │
+│  │                                       │                           │        findById(99)  │
+│  │                                       │<──────────────────────────│                      │
+│  │                                       │  returns doc              │                      │
+│  │                                       │                           │                      │
+│  │                            ┌──────────────────────────┐          │                      │
+│  │                            │  MethodSecurityInterceptor│          │                      │
+│  │                            │                            │          │                      │
+│  │                            │  @PostAuthorize           │          │                      │
+│  │                            │  ("returnObject.owner     │          │                      │
+│  │                            │   == authentication.name")│          │                      │
+│  │                            │                            │          │                      │
+│  │                            │  returnObject = doc        │          │                      │
+│  │                            │  authentication.name = "alice"       │                      │
+│  │                            │  doc.owner = "alice"      │          │                      │
+│  │                            │                            │          │                      │
+│  │                            │  ✅ alice == alice → return doc      │                      │
+│  │                            │  ❌ alice != bob   → throw exception  │                      │
+│  │                            └──────────┬───────────────┘          │                      │
+│  │  200 OK { doc }  OR 403              │                           │                      │
+│  │<──────────────────────────────────────│                           │                      │
+│  │                                       │                           │                      │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 21.9 ★ Layer 2 Code — Controller with @PreAuthorize and @PostAuthorize
+
+**AdminController.java — @PreAuthorize Examples**
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  AdminController.java — Method-Level Security with @PreAuthorize
+//
+//  ★ @PreAuthorize runs BEFORE the method body executes.
+//  ★ If the SpEL expression evaluates to false → AccessDeniedException → 403.
+//  ★ Requires @EnableMethodSecurity(prePostEnabled = true) on SecurityConfig!
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@RestController
+@RequestMapping("/admin")
+public class AdminController {
+
+    private final UserRepository userRepository;
+
+    public AdminController(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    // ── Only ADMIN can list all users ─────────────────────────────────────────
+    @GetMapping("/users")
+    @PreAuthorize("hasRole('ADMIN')")                    // ★ LAYER 2 — BEFORE method
+    public List<UserDto> getAllUsers() {
+        return userRepository.findAll()
+            .stream()
+            .map(UserDto::from)
+            .toList();
+    }
+
+    // ── Only ADMIN can delete a user ──────────────────────────────────────────
+    @DeleteMapping("/users/{id}")
+    @PreAuthorize("hasRole('ADMIN')")                    // ★ LAYER 2 — BEFORE method
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        userRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── ADMIN or MODERATOR can view reports ───────────────────────────────────
+    @GetMapping("/reports")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")   // ★ LAYER 2 — multiple roles
+    public List<ReportDto> getReports() {
+        return reportService.findAll();
+    }
+
+    // ── Only ADMIN, OR the user themselves can view their own profile ─────────
+    //    #userId is a SpEL reference to the method parameter 'userId'
+    //    authentication.name is the logged-in username
+    @GetMapping("/users/{userId}/profile")
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.id")   // ★ Complex SpEL
+    public UserProfileDto getProfile(@PathVariable Long userId) {
+        return userRepository.findProfileById(userId);
+    }
+
+    // ── Only authenticated users (any role) can access ────────────────────────
+    @GetMapping("/dashboard")
+    @PreAuthorize("isAuthenticated()")                  // ★ Any logged-in user
+    public DashboardDto getDashboard() {
+        return dashboardService.getDashboard();
+    }
+}
+```
+
+**DocumentController.java — @PostAuthorize Examples**
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  DocumentController.java — Method-Level Security with @PostAuthorize
+//
+//  ★ @PostAuthorize runs AFTER the method body executes.
+//  ★ The method ALWAYS runs; only the RETURN of the result is blocked.
+//  ★ Special variable 'returnObject' references the method's return value.
+//  ★ Use for: ownership checks on the returned data.
+//  ★ WARNING: Do NOT use @PostAuthorize for deletes/writes — use @PreAuthorize!
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@RestController
+@RequestMapping("/api/documents")
+public class DocumentController {
+
+    private final DocumentRepository documentRepository;
+
+    public DocumentController(DocumentRepository documentRepository) {
+        this.documentRepository = documentRepository;
+    }
+
+    // ── @PostAuthorize: user can only get their OWN document ─────────────────
+    //    returnObject = the Document returned by the method
+    //    returnObject.owner = the "owner" field of the Document entity
+    //    authentication.name = username of the currently logged-in user
+    @GetMapping("/{id}")
+    @PostAuthorize("returnObject.owner == authentication.name or hasRole('ADMIN')")
+    //              ↑ method runs first, then this is checked on the returned doc
+    public Document getDocument(@PathVariable Long id) {
+        return documentRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        //  ★ This runs for EVERY request, even if alice tries to get bob's doc.
+        //    If returnObject.owner = "bob" and authentication.name = "alice":
+        //      → "bob" == "alice" is false, and alice has no ADMIN role
+        //      → AccessDeniedException → 403 Forbidden
+    }
+
+    // ── @PostAuthorize: return only if the document is public OR user owns it ─
+    @GetMapping("/{id}/view")
+    @PostAuthorize("returnObject.isPublic() or returnObject.owner == authentication.name")
+    public Document viewDocument(@PathVariable Long id) {
+        return documentRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    // ── Combining @PreAuthorize + @PostAuthorize for defense in depth ─────────
+    @GetMapping("/{id}/sensitive")
+    @PreAuthorize("isAuthenticated()")                            // ★ BEFORE: must be logged in
+    @PostAuthorize("returnObject.owner == authentication.name")   // ★ AFTER: must own it
+    public Document getSensitiveDocument(@PathVariable Long id) {
+        return documentRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    // ── @PreAuthorize for writes — NEVER use @PostAuthorize for mutations! ────
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or @documentService.isOwner(#id, authentication.name)")
+    //             ↑ calling a Spring bean method inside SpEL with @beanName
+    public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
+        documentRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+}
+```
+
+**UserService.java — @PreAuthorize on the Service Layer**
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  UserService.java — Method Security on the SERVICE LAYER
+//
+//  ★ @PreAuthorize can be placed on ANY Spring-managed bean (Controller, Service,
+//    Repository), not just Controllers.
+//  ★ Placing it on the Service layer provides security even if someone bypasses
+//    the Controller (e.g., internal calls, batch jobs, testing).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@Service
+public class UserService {
+
+    private final UserRepository userRepository;
+
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    // ── Only ADMIN can access this service method ─────────────────────────────
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<User> findAllUsers() {
+        return userRepository.findAll();
+    }
+
+    // ── User can access their own data; ADMIN can access anyone's ────────────
+    @PreAuthorize("hasRole('ADMIN') or #username == authentication.name")
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    }
+
+    // ── Only ADMIN can promote a user to MODERATOR ───────────────────────────
+    @PreAuthorize("hasRole('ADMIN')")
+    public void promoteToModerator(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        user.getRoles().add(new Role("ROLE_MODERATOR"));
+        userRepository.save(user);
+    }
+
+    // ── @PostAuthorize on service — return only if the data belongs to caller ─
+    @PostAuthorize("returnObject.username == authentication.name or hasRole('ADMIN')")
+    public User getUserById(Long id) {
+        return userRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("User not found"));
+    }
+}
+```
+
+---
+
+#### 21.10 ★ Complete Example — All Three User Roles in Action
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ WHICH USER CAN ACCESS WHAT — ROLE MATRIX                                                │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────┬──────────┬─────────────┬───────────┐         │
+│  │  Endpoint / Action                        │  USER    │  MODERATOR  │  ADMIN    │         │
+│  ├──────────────────────────────────────────┼──────────┼─────────────┼───────────┤         │
+│  │                                           │          │             │           │         │
+│  │  GET  /public/**                          │  ✅       │  ✅          │  ✅        │         │
+│  │  GET  /dashboard/**                       │  ✅       │  ✅          │  ✅        │         │
+│  │  GET  /api/users/**                       │  ✅       │  ✅          │  ✅        │         │
+│  │  GET  /moderate/**                        │  ❌       │  ✅          │  ✅        │         │
+│  │  GET  /admin/users                        │  ❌       │  ❌          │  ✅        │         │
+│  │  DELETE /admin/users/{id}                 │  ❌       │  ❌          │  ✅        │         │
+│  │  GET  /reports/**                         │  ❌       │  ❌          │  ✅        │         │
+│  │                                           │          │             │           │         │
+│  │  @PreAuthorize("hasRole('ADMIN')")        │  ❌       │  ❌          │  ✅        │         │
+│  │  @PreAuthorize("hasAnyRole(A,MOD)")       │  ❌       │  ✅          │  ✅        │         │
+│  │  @PostAuthorize(returnObject.owner)       │  own ✅   │  own ✅      │  any ✅    │         │
+│  │                                           │          │             │           │         │
+│  └──────────────────────────────────────────┴──────────┴─────────────┴───────────┘         │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 21.11 ★ @PreAuthorize — SpEL Expression Reference
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ COMMON SpEL EXPRESSIONS FOR @PreAuthorize AND @PostAuthorize                            │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ┌────────────────────────────────────────────┬───────────────────────────┐ │           │
+│  │  │  Expression                                 │  What It Checks           │ │           │
+│  │  ├────────────────────────────────────────────┼───────────────────────────┤ │           │
+│  │  │  hasRole('ADMIN')                           │  Has ROLE_ADMIN          │ │           │
+│  │  │  hasAnyRole('ADMIN','MOD')                  │  Has ROLE_ADMIN or MOD   │ │           │
+│  │  │  hasAuthority('ROLE_ADMIN')                 │  Exact authority string  │ │           │
+│  │  │  isAuthenticated()                          │  Any logged-in user      │ │           │
+│  │  │  isAnonymous()                              │  Not authenticated       │ │           │
+│  │  │  isFullyAuthenticated()                     │  Not "remember-me" user  │ │           │
+│  │  │  principal.username == 'admin'              │  Specific username       │ │           │
+│  │  │  authentication.name == 'admin'             │  Same (alternate syntax) │ │           │
+│  │  │  #param == authentication.name              │  Method param matches    │ │           │
+│  │  │  #userId == authentication.principal.id     │  ID param matches user   │ │           │
+│  │  │  @myBean.check(#id, authentication.name)    │  Call a Spring @Bean     │ │           │
+│  │  │  hasRole('ADMIN') or #id == principal.id    │  Combine with or/and     │ │           │
+│  │  ├────────────────────────────────────────────┼───────────────────────────┤ │           │
+│  │  │  @PostAuthorize only:                       │                           │ │           │
+│  │  │  returnObject.owner == authentication.name  │  Returned obj's field    │ │           │
+│  │  │  returnObject != null                       │  Non-null return         │ │           │
+│  │  │  returnObject.active == true                │  Field on returned obj   │ │           │
+│  │  └────────────────────────────────────────────┴───────────────────────────┘ │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 21.12 ★ hasRole vs hasAnyRole vs hasAuthority vs hasAnyAuthority
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ DIFFERENCE — hasRole, hasAnyRole, hasAuthority, hasAnyAuthority                         │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ┌───────────────────────────┬──────────────────────────────────────────────┐ │          │
+│  │  │  Method                   │  Checks for                                  │ │          │
+│  │  ├───────────────────────────┼──────────────────────────────────────────────┤ │          │
+│  │  │                           │                                              │ │          │
+│  │  │  hasRole("ADMIN")         │  Authority "ROLE_ADMIN" (auto-prefixes ROLE_)│ │          │
+│  │  │  hasRole("USER")          │  Authority "ROLE_USER"                       │ │          │
+│  │  │                           │                                              │ │          │
+│  │  │  hasAnyRole("A","B")      │  Authority "ROLE_A" OR "ROLE_B"             │ │          │
+│  │  │                           │                                              │ │          │
+│  │  │  hasAuthority("ROLE_ADMIN")│  Exact string "ROLE_ADMIN" (no prefix       │ │          │
+│  │  │                           │  added — you must write "ROLE_" yourself)   │ │          │
+│  │  │                           │                                              │ │          │
+│  │  │  hasAnyAuthority("X","Y") │  Exact string "X" OR "Y"                   │ │          │
+│  │  │                           │                                              │ │          │
+│  │  └───────────────────────────┴──────────────────────────────────────────────┘ │          │
+│  │                                                                               │           │
+│  │  ── EQUIVALENCES ─────────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  hasRole("ADMIN")          ≡   hasAuthority("ROLE_ADMIN")                   │           │
+│  │  hasAnyRole("A","B")       ≡   hasAnyAuthority("ROLE_A","ROLE_B")           │           │
+│  │                                                                               │           │
+│  │  ── IN CODE ──────────────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  // SecurityConfig (URL level):                                              │           │
+│  │  .requestMatchers("/admin/**").hasRole("ADMIN")                              │           │
+│  │  .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")  // same thing    │           │
+│  │                                                                               │           │
+│  │  // Method level (@PreAuthorize):                                            │           │
+│  │  @PreAuthorize("hasRole('ADMIN')")                                           │           │
+│  │  @PreAuthorize("hasAuthority('ROLE_ADMIN')")  // same thing                 │           │
+│  │                                                                               │           │
+│  │  // User creation (InMemoryUserDetailsManager):                              │           │
+│  │  User.withUsername("admin")                                                  │           │
+│  │      .roles("ADMIN")           // stores as authority "ROLE_ADMIN"           │           │
+│  │      .authorities("ROLE_ADMIN") // same result, explicit                     │           │
+│  │      .build()                                                                │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 21.13 ★ Summary — Role-Based Authorization in Spring Security
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ SUMMARY — ROLE-BASED AUTHORIZATION IN SPRING SECURITY                                   │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ── WHAT IS RBAC ─────────────────────────────────────────────────           │           │
+│  │  • Users are assigned roles (ADMIN, USER, MODERATOR)                        │           │
+│  │  • Access to resources is controlled by the user's role                     │           │
+│  │  • Spring stores roles as GrantedAuthority with "ROLE_" prefix              │           │
+│  │  • hasRole("ADMIN") checks for "ROLE_ADMIN" automatically                  │           │
+│  │                                                                               │           │
+│  │  ── TWO ANNOTATIONS ───────────────────────────────────────────────          │           │
+│  │                                                                               │           │
+│  │  @EnableWebSecurity           → Activates URL-level security (Layer 1)      │           │
+│  │  @EnableMethodSecurity(       → Enables @PreAuthorize/@PostAuthorize        │           │
+│  │    prePostEnabled=true)         (Layer 2 — method-level security)           │           │
+│  │                                                                               │           │
+│  │  ── LAYER 1 — SecurityConfig (URL-level) ─────────────────────────          │           │
+│  │                                                                               │           │
+│  │  .requestMatchers("/admin/**").hasRole("ADMIN")                              │           │
+│  │  .requestMatchers("/mod/**").hasAnyRole("ADMIN","MODERATOR")                 │           │
+│  │  .anyRequest().authenticated()                                               │           │
+│  │                                                                               │           │
+│  │  • Applied to ALL requests matching the URL pattern                         │           │
+│  │  • Coarse-grained: protect entire path prefixes                             │           │
+│  │  • Evaluated by AuthorizationFilter in the filter chain                     │           │
+│  │  • Rule order matters — first match wins!                                   │           │
+│  │                                                                               │           │
+│  │  ── LAYER 2 — Controller/Service (method-level) ──────────────────          │           │
+│  │                                                                               │           │
+│  │  @PreAuthorize("hasRole('ADMIN')")     → checked BEFORE method runs         │           │
+│  │  @PostAuthorize("returnObject.owner    → checked AFTER method runs          │           │
+│  │    == authentication.name")              on the return value                 │           │
+│  │                                                                               │           │
+│  │  • Fine-grained: different rules per method                                 │           │
+│  │  • SpEL expressions for complex conditions (#param, @bean.method())         │           │
+│  │  • Applied via Spring AOP proxy (MethodSecurityInterceptor)                 │           │
+│  │  • Works on Controllers, Services, Repositories                             │           │
+│  │  • Use @PreAuthorize for writes/deletes; @PostAuthorize for reads only     │           │
+│  │                                                                               │           │
+│  │  ── BEST PRACTICE ────────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  • Use BOTH layers for defense in depth                                     │           │
+│  │  • Layer 1: coarse protection (entire /admin/** path)                       │           │
+│  │  • Layer 2: fine-grained protection (specific method/ownership logic)       │           │
+│  │  • NEVER use @PostAuthorize for mutations (writes/deletes)                  │           │
+│  │  • Put security at the SERVICE layer too (not just Controller)              │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+
+-  What is difference between `HasRole` and `hasAuthority` inside the method level annotation
+-  How this Authorization methods are invoked before reaching the controller layer method? `@PreAuthorize` is intercepted by `AuthrizationManagerBeforeMethodIntercepter` ? What is Spring Expression Language? How `SpelExpressionParser` class compile the logic inside of `PreAuthorize` and `PostAuthorize`
+- Different logical and relational operator present in the `PreAuthorize`? 
+- Show example of `PreAuthorize` and `postAuthorize` where it is using the controller method arguments , returned object and also the authentication object from the spring security
