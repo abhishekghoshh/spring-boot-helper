@@ -15643,9 +15643,9 @@ Complete Decision Table — All Query Approaches:
 
 ---
 
-## JPA Specification API
+### JPA Specification API
 
-### What Is the Specification API?
+#### What Is the Specification API?
 
 The **Specification API** is a Spring Data JPA abstraction built **on top of** the Criteria API. It solves two major problems with raw Criteria API usage:
 
@@ -15738,7 +15738,7 @@ Database Tables (same as Criteria API section):
 
 ---
 
-### Problem 1: Code Duplicity in Criteria API — Solved by Specification.toPredicate
+#### Problem 1: Code Duplicity in Criteria API — Solved by Specification.toPredicate
 
 **The Problem:** With raw Criteria API, the same predicate logic is duplicated across multiple service methods. If the "active = true" condition appears in 10 different search methods, you write `cb.equal(root.get("active"), true)` in all 10 places. When the business rule changes (e.g., "active" is renamed to "enabled"), you must update all 10 methods.
 
@@ -15919,7 +15919,7 @@ public class UserSpecs {
 
 ---
 
-### Problem 2: Boilerplate in Criteria API — Solved by JpaSpecificationExecutor
+#### Problem 2: Boilerplate in Criteria API — Solved by JpaSpecificationExecutor
 
 **The Problem:** Even after extracting predicates into `Specification` objects, you still need to write the `CriteriaBuilder` → `CriteriaQuery` → `Root` → `TypedQuery` boilerplate in every service method to execute them.
 
@@ -16089,7 +16089,7 @@ public class UserServiceAfter {
 
 ---
 
-### Complete Setup — Specifications + Repository + Service + Controller
+#### Complete Setup — Specifications + Repository + Service + Controller
 
 **Step 1: Specification class (define reusable predicates):**
 
@@ -16268,7 +16268,7 @@ public class UserController {
 
 ---
 
-### AND, OR, NOT, and Complex Predicates with Specification API
+#### AND, OR, NOT, and Complex Predicates with Specification API
 
 Specifications support composition using `.and()`, `.or()`, and `Specification.not()`.
 
@@ -16498,7 +16498,7 @@ public class UserService {
 
 ---
 
-### JOIN and Multiselect with Specification API
+#### JOIN and Multiselect with Specification API
 
 The Specification API's `toPredicate` method receives `Root`, `CriteriaQuery`, and `CriteriaBuilder` — the same objects used in the Criteria API. So you can perform JOINs inside a Specification. However, `JpaSpecificationExecutor.findAll()` always returns entities (not `Object[]`), so multiselect requires using EntityManager directly with the Specifications providing predicates.
 
@@ -16760,7 +16760,7 @@ public class UserService {
 
 ---
 
-### Pagination and Sorting with Specification API
+#### Pagination and Sorting with Specification API
 
 `JpaSpecificationExecutor` provides `findAll(Specification, Pageable)` which handles pagination and sorting automatically. No manual `setFirstResult`/`setMaxResults` or `orderBy` needed.
 
@@ -16985,7 +16985,7 @@ Pageable pageable = PageRequest.of(0, 10, sort);
 
 ---
 
-### Summary — Specification API
+#### Summary — Specification API
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────┐
