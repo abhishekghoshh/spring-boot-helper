@@ -18,9 +18,3 @@
 - [012 - How Many Ways Can We Manage Transactions?](./spring-transactions/012-ways-to-manage-transactions.md)
 - [013 - What is Transaction Propagation?](./spring-transactions/013-transaction-propagation.md)
 - [014 - What is Isolation Level?](./spring-transactions/014-isolation-level.md)
-
-
-## Theory
-
-> All topics have been moved to individual files listed in the Table of Contents above.
-
