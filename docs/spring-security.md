@@ -27685,4 +27685,2143 @@ import org.springframework.web.client.RestClient;
 └──────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- Explain PKCE with spring Security with code and diagram and diagram and how to configure it
+---
+
+#### 20.17 ★ PKCE — Proof Key for Code Exchange (RFC 7636)
+
+---
+
+##### 20.17.1 ★ What is PKCE and Why Does It Exist?
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ PKCE (Proof Key for Code Exchange) — "pixy"                                              │
+│    RFC 7636 — Extension to the Authorization Code Flow                                       │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ── THE PROBLEM ──────────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  In the standard Authorization Code flow:                                    │           │
+│  │                                                                               │           │
+│  │    1. Client redirects user to auth server                                   │           │
+│  │    2. User logs in and approves                                              │           │
+│  │    3. Auth server redirects back with an AUTHORIZATION CODE in the URL:     │           │
+│  │       http://localhost:8080/callback?code=abc123                             │           │
+│  │    4. Client exchanges the code + client_secret for tokens                  │           │
+│  │                                                                               │           │
+│  │  ★ VULNERABILITY: The authorization code travels through the browser        │           │
+│  │    redirect (front-channel). It can be INTERCEPTED by:                      │           │
+│  │                                                                               │           │
+│  │    • Malicious apps on mobile devices that register the same custom         │           │
+│  │      URL scheme (e.g., myapp://callback)                                    │           │
+│  │    • Browser extensions that read URLs                                       │           │
+│  │    • Network proxies / logs that capture redirect URLs                      │           │
+│  │    • Shared devices where browser history is accessible                     │           │
+│  │                                                                               │           │
+│  │  For CONFIDENTIAL clients (server-side apps):                                │           │
+│  │    → client_secret protects the token exchange step                         │           │
+│  │    → Even if code is intercepted, attacker can't exchange it                │           │
+│  │      without the secret                                                      │           │
+│  │                                                                               │           │
+│  │  For PUBLIC clients (SPAs, mobile apps, desktop apps):                       │           │
+│  │    → NO client_secret! (can't be stored securely)                           │           │
+│  │    → If code is intercepted → attacker CAN exchange it for tokens!         │           │
+│  │    → ★★★ THIS IS THE AUTHORIZATION CODE INTERCEPTION ATTACK ★★★           │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── THE SOLUTION: PKCE ───────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  PKCE adds a DYNAMIC, ONE-TIME SECRET to each authorization request.        │           │
+│  │  Instead of a static client_secret, the client generates a fresh random     │           │
+│  │  value for EVERY authorization request.                                      │           │
+│  │                                                                               │           │
+│  │  • The client proves it is the SAME client that started the flow            │           │
+│  │  • Even if the authorization code is intercepted, the attacker can't        │           │
+│  │    exchange it because they don't have the original random value            │           │
+│  │  • No shared secret needed — works perfectly for public clients             │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.17.2 ★ PKCE Terminology — code_verifier and code_challenge
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ PKCE KEY CONCEPTS — TWO VALUES THAT MAKE IT WORK                                        │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ┌───────────────────┬────────────────────────────────────────────────────┐ │           │
+│  │  │  Term              │  Description                                       │ │           │
+│  │  ├───────────────────┼────────────────────────────────────────────────────┤ │           │
+│  │  │                    │                                                    │ │           │
+│  │  │  code_verifier     │  A HIGH-ENTROPY cryptographic random string       │ │           │
+│  │  │                    │  generated by the CLIENT.                          │ │           │
+│  │  │                    │  • 43-128 characters long                         │ │           │
+│  │  │                    │  • Characters: [A-Z] [a-z] [0-9] - . _ ~         │ │           │
+│  │  │                    │  • Generated fresh for EVERY auth request         │ │           │
+│  │  │                    │  • Stored locally by the client (never sent       │ │           │
+│  │  │                    │    through the browser redirect)                   │ │           │
+│  │  │                    │  • Example: "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW..."│ │           │
+│  │  │                    │                                                    │ │           │
+│  │  ├───────────────────┼────────────────────────────────────────────────────┤ │           │
+│  │  │                    │                                                    │ │           │
+│  │  │  code_challenge    │  A TRANSFORMED version of the code_verifier.      │ │           │
+│  │  │                    │  Sent in the AUTHORIZATION REQUEST (front-channel).│ │           │
+│  │  │                    │                                                    │ │           │
+│  │  │                    │  Transformation method (code_challenge_method):    │ │           │
+│  │  │                    │                                                    │ │           │
+│  │  │                    │  • S256 (RECOMMENDED):                            │ │           │
+│  │  │                    │    code_challenge = BASE64URL(SHA256(code_verifier))│ │          │
+│  │  │                    │    → One-way hash: can't reverse to get verifier  │ │           │
+│  │  │                    │                                                    │ │           │
+│  │  │                    │  • plain (NOT recommended):                       │ │           │
+│  │  │                    │    code_challenge = code_verifier (no transform)  │ │           │
+│  │  │                    │    → Only use if client can't do SHA-256          │ │           │
+│  │  │                    │                                                    │ │           │
+│  │  ├───────────────────┼────────────────────────────────────────────────────┤ │           │
+│  │  │                    │                                                    │ │           │
+│  │  │  code_challenge    │  The method used to transform code_verifier      │ │           │
+│  │  │  _method           │  into code_challenge.                             │ │           │
+│  │  │                    │  • "S256" → SHA-256 hash + Base64URL encoding    │ │           │
+│  │  │                    │  • "plain" → no transformation                   │ │           │
+│  │  │                    │                                                    │ │           │
+│  │  └───────────────────┴────────────────────────────────────────────────────┘ │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── HOW THE TWO VALUES RELATE ────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │                    code_verifier                                              │           │
+│  │                    (random string, 43-128 chars)                             │           │
+│  │                         │                                                     │           │
+│  │                         │  SHA-256 hash                                       │           │
+│  │                         ▼                                                     │           │
+│  │                    SHA-256 digest                                             │           │
+│  │                    (32 bytes)                                                 │           │
+│  │                         │                                                     │           │
+│  │                         │  Base64URL encode                                   │           │
+│  │                         ▼                                                     │           │
+│  │                    code_challenge                                             │           │
+│  │                    (43 chars, URL-safe)                                       │           │
+│  │                                                                               │           │
+│  │  ★ KEY INSIGHT: You CANNOT reverse code_challenge back to code_verifier     │           │
+│  │    (SHA-256 is a one-way hash function). This is what makes PKCE secure.    │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.17.3 ★ PKCE Flow — Complete Step-by-Step Diagram
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ PKCE FLOW — AUTHORIZATION CODE + PKCE (Step-by-Step)                                     │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│     Client (SPA/Mobile)   Authorization Server    User (Browser)                            │
+│     ───────────────────   ────────────────────    ──────────────                            │
+│     │                        │                        │                                      │
+│     │                        │                        │                                      │
+│     │  ── STEP 1: Client generates code_verifier and code_challenge ──                      │
+│     │                        │                        │                                      │
+│     │  ┌─────────────────────────────────────────────────────┐                              │
+│     │  │  CLIENT (locally, before any network calls):        │                              │
+│     │  │                                                      │                              │
+│     │  │  1. Generate code_verifier:                         │                              │
+│     │  │     code_verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r │                              │
+│     │  │                      _wW1gFWFOEjXk..."              │                              │
+│     │  │     (43-128 random chars from [A-Za-z0-9-._~])     │                              │
+│     │  │                                                      │                              │
+│     │  │  2. Compute code_challenge:                         │                              │
+│     │  │     code_challenge = BASE64URL(SHA256(code_verifier))│                              │
+│     │  │                    = "E9Melhoa2OwvFrEMTJguCHaoeK1t8U │                              │
+│     │  │                       RWbuGJSstw-cM"                │                              │
+│     │  │                                                      │                              │
+│     │  │  3. Store code_verifier in memory / session storage │                              │
+│     │  │     (NEVER send it through the browser!)            │                              │
+│     │  └─────────────────────────────────────────────────────┘                              │
+│     │                        │                        │                                      │
+│     │                        │                        │                                      │
+│     │  ── STEP 2: Authorization Request (with code_challenge) ──                            │
+│     │                        │                        │                                      │
+│     │  302 Redirect → Auth Server                    │                                      │
+│     │  GET /oauth2/authorize?                        │                                      │
+│     │    response_type=code                          │                                      │
+│     │    &client_id=my-app                           │                                      │
+│     │    &redirect_uri=http://localhost:8080/callback │                                      │
+│     │    &scope=openid+profile                       │                                      │
+│     │    &state=xyz123                               │                                      │
+│     │    &code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM                      │
+│     │    &code_challenge_method=S256    ★★★ PKCE PARAMS ★★★                               │
+│     │───────────────────────>│                        │                                      │
+│     │                        │                        │                                      │
+│     │                        │  Auth Server:          │                                      │
+│     │                        │  → Stores code_challenge                                     │
+│     │                        │    and code_challenge_method                                  │
+│     │                        │    (associated with this                                      │
+│     │                        │     authorization session)                                    │
+│     │                        │                        │                                      │
+│     │                        │                        │                                      │
+│     │  ── STEP 3: User logs in and approves (same as normal Auth Code flow) ──              │
+│     │                        │                        │                                      │
+│     │                        │  Login page            │                                      │
+│     │                        │───────────────────────>│                                      │
+│     │                        │                        │  User enters                         │
+│     │                        │                        │  username/password                    │
+│     │                        │  POST /login           │                                      │
+│     │                        │<───────────────────────│                                      │
+│     │                        │                        │                                      │
+│     │                        │  Consent page          │                                      │
+│     │                        │───────────────────────>│                                      │
+│     │                        │                        │  User approves                       │
+│     │                        │  POST /approve         │                                      │
+│     │                        │<───────────────────────│                                      │
+│     │                        │                        │                                      │
+│     │                        │                        │                                      │
+│     │  ── STEP 4: Auth server redirects back with authorization code ──                     │
+│     │                        │                        │                                      │
+│     │  302 Redirect          │                        │                                      │
+│     │  Location: http://localhost:8080/callback       │                                      │
+│     │    ?code=SplxlOBeZQQYbYS6WxSbIA                │                                      │
+│     │    &state=xyz123       │                        │                                      │
+│     │<───────────────────────│                        │                                      │
+│     │                        │                        │                                      │
+│     │  ★ The authorization code travels through the browser (front-channel)                │
+│     │  ★ An attacker COULD intercept this code!                                            │
+│     │  ★ But they DON'T have the code_verifier...                                         │
+│     │                        │                        │                                      │
+│     │                        │                        │                                      │
+│     │  ── STEP 5: Token Exchange (with code_verifier) ★ THE KEY STEP ★ ──                  │
+│     │                        │                        │                                      │
+│     │  POST /oauth2/token    │                        │                                      │
+│     │  {                     │                        │                                      │
+│     │    grant_type=authorization_code                │                                      │
+│     │    code=SplxlOBeZQQYbYS6WxSbIA                 │                                      │
+│     │    redirect_uri=http://localhost:8080/callback  │                                      │
+│     │    client_id=my-app    │                        │                                      │
+│     │    code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk  ★★★ PKCE ★★★        │
+│     │  }                     │                        │                                      │
+│     │───────────────────────>│                        │                                      │
+│     │                        │                        │                                      │
+│     │                  Auth Server:                   │                                      │
+│     │                  ┌──────────────────────────────────────────────┐                     │
+│     │                  │  PKCE VERIFICATION:                          │                     │
+│     │                  │                                               │                     │
+│     │                  │  1. Retrieve stored code_challenge from      │                     │
+│     │                  │     the authorization session                │                     │
+│     │                  │                                               │                     │
+│     │                  │  2. Compute:                                  │                     │
+│     │                  │     expected = BASE64URL(SHA256(code_verifier))│                    │
+│     │                  │                                               │                     │
+│     │                  │  3. Compare:                                  │                     │
+│     │                  │     expected == stored code_challenge ?       │                     │
+│     │                  │                                               │                     │
+│     │                  │     ✅ MATCH → Client is legitimate!          │                     │
+│     │                  │        Issue tokens.                          │                     │
+│     │                  │                                               │                     │
+│     │                  │     ❌ MISMATCH → Reject request!             │                     │
+│     │                  │        Client is NOT the one that started    │                     │
+│     │                  │        the flow. Possible interception.      │                     │
+│     │                  └──────────────────────────────────────────────┘                     │
+│     │                        │                        │                                      │
+│     │  200 OK                │                        │                                      │
+│     │  {                     │                        │                                      │
+│     │    "access_token": "eyJ...",                   │                                      │
+│     │    "id_token": "eyJ...",                       │                                      │
+│     │    "refresh_token": "...",                     │                                      │
+│     │    "token_type": "Bearer",                    │                                      │
+│     │    "expires_in": 3600  │                        │                                      │
+│     │  }                     │                        │                                      │
+│     │<───────────────────────│                        │                                      │
+│     │                        │                        │                                      │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.17.4 ★ Why the Attacker Fails — PKCE Security Explained
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ WHY THE ATTACKER FAILS — PKCE PREVENTS AUTHORIZATION CODE INTERCEPTION                  │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ── WITHOUT PKCE (Vulnerable) ────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  Legitimate Client                Auth Server         Attacker               │           │
+│  │  ─────────────────                ───────────         ────────               │           │
+│  │  │                                   │                   │                    │           │
+│  │  │  GET /authorize?                  │                   │                    │           │
+│  │  │    code=abc123                    │                   │                    │           │
+│  │  │<──────────────────────────────────│                   │                    │           │
+│  │  │                                   │                   │                    │           │
+│  │  │  ★ Attacker intercepts code=abc123 via:             │                    │           │
+│  │  │    • Malicious app on same device                    │                    │           │
+│  │  │    • Browser extension                               │                    │           │
+│  │  │    • URL scheme hijacking (mobile)                   │                    │           │
+│  │  │                                   │    ┌─────────────┤                    │           │
+│  │  │                                   │    │ code=abc123 │                    │           │
+│  │  │                                   │    └─────────────┤                    │           │
+│  │  │                                   │                   │                    │           │
+│  │  │                                   │  POST /token      │                    │           │
+│  │  │                                   │  code=abc123      │                    │           │
+│  │  │                                   │  client_id=my-app │                    │           │
+│  │  │                                   │<──────────────────│                    │           │
+│  │  │                                   │                   │                    │           │
+│  │  │                                   │  200 OK           │                    │           │
+│  │  │                                   │  access_token=eyJ.│                    │           │
+│  │  │                                   │──────────────────>│                    │           │
+│  │  │                                   │                   │                    │           │
+│  │  │                                   │         ★ ATTACKER HAS TOKENS! ★     │           │
+│  │  │                                   │                   │                    │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── WITH PKCE (Protected) ────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  Legitimate Client                Auth Server         Attacker               │           │
+│  │  ─────────────────                ───────────         ────────               │           │
+│  │  │                                   │                   │                    │           │
+│  │  │  code_verifier = "dBjft..."       │                   │                    │           │
+│  │  │  code_challenge = SHA256(above)   │                   │                    │           │
+│  │  │                                   │                   │                    │           │
+│  │  │  GET /authorize?                  │                   │                    │           │
+│  │  │    code_challenge=E9Mel...        │                   │                    │           │
+│  │  │──────────────────────────────────>│                   │                    │           │
+│  │  │                                   │  Stores           │                    │           │
+│  │  │                                   │  code_challenge   │                    │           │
+│  │  │                                   │                   │                    │           │
+│  │  │  Redirect: code=abc123            │                   │                    │           │
+│  │  │<──────────────────────────────────│                   │                    │           │
+│  │  │                                   │                   │                    │           │
+│  │  │  ★ Attacker intercepts code=abc123                   │                    │           │
+│  │  │                                   │    ┌─────────────┤                    │           │
+│  │  │                                   │    │ code=abc123 │                    │           │
+│  │  │                                   │    └─────────────┤                    │           │
+│  │  │                                   │                   │                    │           │
+│  │  │                                   │  POST /token      │                    │           │
+│  │  │                                   │  code=abc123      │                    │           │
+│  │  │                                   │  code_verifier=???│  ★ Attacker       │           │
+│  │  │                                   │<──────────────────│  DOESN'T KNOW     │           │
+│  │  │                                   │                   │  the verifier!    │           │
+│  │  │                                   │                   │                    │           │
+│  │  │                             Auth Server:              │                    │           │
+│  │  │                             SHA256(???) ≠ E9Mel...    │                    │           │
+│  │  │                             ❌ MISMATCH! REJECTED!    │                    │           │
+│  │  │                                   │                   │                    │           │
+│  │  │                                   │  400 Bad Request  │                    │           │
+│  │  │                                   │  "invalid_grant"  │                    │           │
+│  │  │                                   │──────────────────>│                    │           │
+│  │  │                                   │                   │                    │           │
+│  │  │                                   │        ★ ATTACKER BLOCKED! ★          │           │
+│  │  │                                   │                   │                    │           │
+│  │  │                                   │                   │                    │           │
+│  │  │  ★ Meanwhile, legitimate client sends:               │                    │           │
+│  │  │  POST /token                      │                   │                    │           │
+│  │  │  code=abc123                      │                   │                    │           │
+│  │  │  code_verifier=dBjft...  ★ KNOWS the real verifier   │                    │           │
+│  │  │──────────────────────────────────>│                   │                    │           │
+│  │  │                                   │                   │                    │           │
+│  │  │                             Auth Server:              │                    │           │
+│  │  │                             SHA256(dBjft...) == E9Mel.│                    │           │
+│  │  │                             ✅ MATCH! Issue tokens.   │                    │           │
+│  │  │                                   │                   │                    │           │
+│  │  │  200 OK { access_token, ... }     │                   │                    │           │
+│  │  │<──────────────────────────────────│                   │                    │           │
+│  │  │                                   │                   │                    │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.17.5 ★ Authorization Code Flow — With vs Without PKCE (Side-by-Side)
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ SIDE-BY-SIDE — AUTHORIZATION CODE FLOW WITH AND WITHOUT PKCE                            │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  Step    Without PKCE                    With PKCE                           │           │
+│  │  ─────   ────────────────────────────    ─────────────────────────────────   │           │
+│  │                                                                               │           │
+│  │  1.      (nothing extra)                 Client generates:                   │           │
+│  │                                            • code_verifier (random)          │           │
+│  │                                            • code_challenge = SHA256(above)  │           │
+│  │                                                                               │           │
+│  │  2.      GET /authorize?                 GET /authorize?                     │           │
+│  │            response_type=code              response_type=code               │           │
+│  │            &client_id=app                  &client_id=app                   │           │
+│  │            &redirect_uri=...               &redirect_uri=...               │           │
+│  │            &scope=openid                   &scope=openid                    │           │
+│  │            &state=xyz                      &state=xyz                       │           │
+│  │                                          + &code_challenge=E9Mel...  ★★★   │           │
+│  │                                          + &code_challenge_method=S256 ★★★ │           │
+│  │                                                                               │           │
+│  │  3.      User logs in & approves         User logs in & approves            │           │
+│  │          (identical)                      (identical)                         │           │
+│  │                                                                               │           │
+│  │  4.      Redirect: ?code=abc123          Redirect: ?code=abc123             │           │
+│  │          (identical)                      (identical)                         │           │
+│  │                                                                               │           │
+│  │  5.      POST /token                     POST /token                        │           │
+│  │            grant_type=auth_code            grant_type=auth_code             │           │
+│  │            &code=abc123                    &code=abc123                      │           │
+│  │            &redirect_uri=...               &redirect_uri=...                │           │
+│  │            &client_id=app                  &client_id=app                    │           │
+│  │            &client_secret=secret           &code_verifier=dBjft...  ★★★     │           │
+│  │            (confidential client)          (NO client_secret needed!)        │           │
+│  │                                                                               │           │
+│  │  6.      Auth server:                    Auth server:                        │           │
+│  │          → Validates client_secret       → Computes SHA256(code_verifier)   │           │
+│  │          → Issues tokens                 → Compares with stored challenge   │           │
+│  │                                           → Match? → Issues tokens          │           │
+│  │                                                                               │           │
+│  │  ★ With PKCE, the code_verifier REPLACES the client_secret as the          │           │
+│  │    proof of identity during token exchange.                                  │           │
+│  │  ★ But even CONFIDENTIAL clients SHOULD use PKCE for defense in depth!     │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.17.6 ★ PKCE in Spring Security — Configuration
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ PKCE IN SPRING — BOTH CLIENT AND AUTHORIZATION SERVER                                   │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ── SPRING AUTHORIZATION SERVER (supports PKCE by default!) ──────           │           │
+│  │                                                                               │           │
+│  │  ★ Spring Authorization Server supports PKCE out of the box.                │           │
+│  │    No special configuration needed on the server side.                       │           │
+│  │    It automatically:                                                          │           │
+│  │    → Accepts code_challenge and code_challenge_method in /authorize          │           │
+│  │    → Stores the challenge with the authorization session                    │           │
+│  │    → Validates code_verifier during token exchange                          │           │
+│  │    → Supports both S256 and plain methods                                   │           │
+│  │                                                                               │           │
+│  │  To REQUIRE PKCE for a client, set:                                          │           │
+│  │  clientSettings(ClientSettings.builder()                                     │           │
+│  │      .requireProofKey(true)  ★★★                                            │           │
+│  │      .build())                                                               │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── SPRING OAUTH2 CLIENT (sends PKCE automatically!) ─────────────           │           │
+│  │                                                                               │           │
+│  │  ★ Spring's OAuth2 Client (spring-boot-starter-oauth2-client)               │           │
+│  │    automatically adds PKCE for PUBLIC clients.                              │           │
+│  │    For confidential clients, it needs explicit configuration:               │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**RegisteredClient with PKCE Required — Authorization Server**
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  RegisteredClient — Requiring PKCE on Authorization Server
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@Bean
+public RegisteredClientRepository registeredClientRepository() {
+
+    // ── PUBLIC Client (SPA / Mobile) — PKCE is MANDATORY ─────────────────────
+    RegisteredClient publicClient = RegisteredClient.withId(UUID.randomUUID().toString())
+        .clientId("spa-app")
+        .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)  // ★ No secret!
+        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+        .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+        .redirectUri("http://localhost:3000/callback")
+        .scope(OidcScopes.OPENID)
+        .scope(OidcScopes.PROFILE)
+        .clientSettings(ClientSettings.builder()
+            .requireProofKey(true)           // ★★★ PKCE REQUIRED
+            .requireAuthorizationConsent(true)
+            .build())
+        .build();
+
+    // ── CONFIDENTIAL Client — PKCE is OPTIONAL but RECOMMENDED ───────────────
+    RegisteredClient confidentialClient = RegisteredClient.withId(UUID.randomUUID().toString())
+        .clientId("web-app")
+        .clientSecret(passwordEncoder().encode("secret"))
+        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+        .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+        .redirectUri("http://localhost:8080/login/oauth2/code/web-app")
+        .scope(OidcScopes.OPENID)
+        .scope(OidcScopes.PROFILE)
+        .clientSettings(ClientSettings.builder()
+            .requireProofKey(true)           // ★ Even confidential clients SHOULD use PKCE
+            .requireAuthorizationConsent(true)
+            .build())
+        .build();
+
+    return new InMemoryRegisteredClientRepository(publicClient, confidentialClient);
+}
+```
+
+**application.yml — Client Application Using PKCE**
+
+```yaml
+# ═══════════════════════════════════════════════════════════════════════════════
+#  application.yml — OAuth2 Client with PKCE
+#  ★ Spring Boot's OAuth2 Client handles PKCE automatically for public clients.
+#  ★ For confidential clients, PKCE is also sent if the server supports it.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          my-app:
+            client-id: spa-app
+            # ★ No client-secret for public clients!
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: openid, profile
+            client-authentication-method: none   # ★ This triggers PKCE automatically!
+        provider:
+          my-app:
+            issuer-uri: http://localhost:9000
+```
+
+---
+
+##### 20.17.7 ★ Advantages of PKCE
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ ADVANTAGES OF PKCE                                                                       │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  1. PREVENTS AUTHORIZATION CODE INTERCEPTION ATTACK                          │           │
+│  │     • The primary purpose of PKCE                                            │           │
+│  │     • Even if an attacker steals the authorization code from the redirect   │           │
+│  │       URL, they CANNOT exchange it for tokens without the code_verifier     │           │
+│  │     • The code_verifier never travels through the browser (back-channel)    │           │
+│  │                                                                               │           │
+│  │  2. ENABLES SECURE PUBLIC CLIENTS                                            │           │
+│  │     • SPAs, mobile apps, and desktop apps can't store a client_secret       │           │
+│  │     • PKCE provides equivalent security without needing a static secret     │           │
+│  │     • Makes the Implicit flow OBSOLETE (OAuth 2.1 removes it entirely)     │           │
+│  │                                                                               │           │
+│  │  3. DYNAMIC PER-REQUEST SECRET                                               │           │
+│  │     • Unlike client_secret which is the same for every request,             │           │
+│  │       code_verifier is generated fresh for each authorization request       │           │
+│  │     • Compromising one verifier doesn't help with future requests           │           │
+│  │     • No long-lived secrets to protect                                       │           │
+│  │                                                                               │           │
+│  │  4. DEFENSE IN DEPTH (even for confidential clients)                         │           │
+│  │     • Confidential clients already have client_secret, but PKCE adds       │           │
+│  │       another layer of protection                                            │           │
+│  │     • OAuth 2.1 (draft) REQUIRES PKCE for ALL clients, including           │           │
+│  │       confidential ones                                                      │           │
+│  │     • Protects against compromised TLS or leaked client credentials         │           │
+│  │                                                                               │           │
+│  │  5. NO SERVER-SIDE STATE CHANGE REQUIRED                                     │           │
+│  │     • The auth server only needs to store the code_challenge temporarily   │           │
+│  │       (already stores the authorization session anyway)                     │           │
+│  │     • Minimal implementation overhead                                        │           │
+│  │                                                                               │           │
+│  │  6. PREVENTS CSRF-LIKE ATTACKS ON AUTHORIZATION ENDPOINT                    │           │
+│  │     • Since the code_verifier is tied to the specific authorization         │           │
+│  │       request, an attacker can't inject their own authorization code       │           │
+│  │       into the client's callback                                             │           │
+│  │     • Provides similar protection as the state parameter but stronger      │           │
+│  │                                                                               │           │
+│  │  7. SIMPLE TO IMPLEMENT                                                      │           │
+│  │     • Just two extra parameters: code_challenge and code_verifier           │           │
+│  │     • Standard SHA-256 + Base64URL — available in every platform            │           │
+│  │     • Spring Security handles it automatically                              │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.17.8 ★ Disadvantages of PKCE
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ DISADVANTAGES / LIMITATIONS OF PKCE                                                      │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  1. DOES NOT PROTECT AGAINST ALL ATTACKS                                     │           │
+│  │     • PKCE protects the authorization CODE, NOT the tokens                  │           │
+│  │     • If an attacker can intercept the token response itself                │           │
+│  │       (e.g., XSS on the client app), PKCE doesn't help                    │           │
+│  │     • Doesn't protect against phishing (user entering credentials          │           │
+│  │       on a fake login page)                                                  │           │
+│  │     • Doesn't protect against compromised authorization server              │           │
+│  │                                                                               │           │
+│  │  2. ADDED COMPLEXITY (MINOR)                                                 │           │
+│  │     • Client must generate cryptographically random values                  │           │
+│  │     • Client must implement SHA-256 + Base64URL encoding                    │           │
+│  │     • Client must store code_verifier temporarily (memory/session)          │           │
+│  │     • More parameters in the authorization and token requests               │           │
+│  │     • ★ Mitigated by: frameworks handle this automatically (Spring,         │           │
+│  │       AppAuth, MSAL, etc.)                                                   │           │
+│  │                                                                               │           │
+│  │  3. "plain" METHOD WEAKNESS                                                  │           │
+│  │     • If code_challenge_method=plain is used, code_challenge ==             │           │
+│  │       code_verifier (no hashing)                                             │           │
+│  │     • An attacker who intercepts the authorization REQUEST could            │           │
+│  │       extract the code_challenge and use it as code_verifier                │           │
+│  │     • ★ Solution: ALWAYS use S256, never plain                              │           │
+│  │                                                                               │           │
+│  │  4. DOESN'T ELIMINATE NEED FOR OTHER SECURITY MEASURES                      │           │
+│  │     • Still need HTTPS for all communications                               │           │
+│  │     • Still need proper redirect_uri validation                             │           │
+│  │     • Still need state parameter for CSRF protection                        │           │
+│  │     • Still need secure token storage on the client                         │           │
+│  │     • PKCE is one layer in a defense-in-depth strategy                     │           │
+│  │                                                                               │           │
+│  │  5. BACKWARDS COMPATIBILITY                                                  │           │
+│  │     • Older authorization servers may not support PKCE                      │           │
+│  │     • Need to check server capabilities before using PKCE                   │           │
+│  │     • ★ Less of an issue now — all modern auth servers support PKCE        │           │
+│  │       (Google, Microsoft, Okta, Auth0, Keycloak, Spring Auth Server)       │           │
+│  │                                                                               │           │
+│  │  6. DOES NOT REPLACE CLIENT AUTHENTICATION FOR CONFIDENTIAL CLIENTS        │           │
+│  │     • PKCE doesn't authenticate the CLIENT to the server                   │           │
+│  │     • It only proves the token requester is the same entity that started   │           │
+│  │       the authorization request                                              │           │
+│  │     • Confidential clients should STILL use client_secret + PKCE together  │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.17.9 ★ Real-World Use Cases — PKCE
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ REAL-WORLD USE CASES — WHERE PKCE IS USED                                               │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ── 1. SINGLE PAGE APPLICATIONS (SPAs) ───────────────────────────           │           │
+│  │                                                                               │           │
+│  │  ┌──────────────────────┐     ┌───────────┐     ┌──────────────┐           │           │
+│  │  │  React / Angular /   │     │ Auth      │     │ Resource     │           │           │
+│  │  │  Vue.js App          │ ──> │ Server    │ ──> │ Server (API) │           │           │
+│  │  │                      │     │ (Google,  │     │              │           │           │
+│  │  │  ★ Runs entirely in │     │  Okta,    │     │              │           │           │
+│  │  │    the browser       │     │  Auth0)   │     │              │           │           │
+│  │  │  ★ Can't hide a     │     └───────────┘     └──────────────┘           │           │
+│  │  │    client_secret     │                                                   │           │
+│  │  │  ★ PKCE replaces    │                                                   │           │
+│  │  │    the old Implicit  │                                                   │           │
+│  │  │    flow              │                                                   │           │
+│  │  └──────────────────────┘                                                   │           │
+│  │                                                                               │           │
+│  │  Example: Gmail web app, GitHub web UI, Spotify web player                  │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── 2. MOBILE APPLICATIONS ───────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  ┌──────────────────────┐     ┌───────────┐                                │           │
+│  │  │  iOS / Android App   │     │ Auth      │                                │           │
+│  │  │                      │ ──> │ Server    │                                │           │
+│  │  │  ★ Uses AppAuth SDK │     │           │                                │           │
+│  │  │  ★ Custom URL scheme│     └───────────┘                                │           │
+│  │  │    (myapp://callback)│                                                   │           │
+│  │  │  ★ Other apps could │                                                   │           │
+│  │  │    register same     │                                                   │           │
+│  │  │    URL scheme!       │                                                   │           │
+│  │  │  ★ PKCE prevents    │                                                   │           │
+│  │  │    code theft        │                                                   │           │
+│  │  └──────────────────────┘                                                   │           │
+│  │                                                                               │           │
+│  │  Example: Banking apps, social media apps (Instagram, Twitter/X),           │           │
+│  │  fitness apps (Strava), ride-sharing apps (Uber)                            │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── 3. DESKTOP APPLICATIONS ──────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  ┌──────────────────────┐     ┌───────────┐                                │           │
+│  │  │  Electron / Native   │     │ Auth      │                                │           │
+│  │  │  Desktop App         │ ──> │ Server    │                                │           │
+│  │  │                      │     │           │                                │           │
+│  │  │  ★ VS Code           │     └───────────┘                                │           │
+│  │  │  ★ Slack Desktop    │                                                   │           │
+│  │  │  ★ Spotify Desktop  │                                                   │           │
+│  │  │  ★ Can't securely   │                                                   │           │
+│  │  │    store secrets in  │                                                   │           │
+│  │  │    distributed binary│                                                   │           │
+│  │  └──────────────────────┘                                                   │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── 4. CLI TOOLS ─────────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  $ gh auth login                                                             │           │
+│  │  → Opens browser for GitHub OAuth login                                     │           │
+│  │  → Uses PKCE + Authorization Code flow                                      │           │
+│  │  → Callback to localhost:PORT (ephemeral port)                              │           │
+│  │                                                                               │           │
+│  │  $ az login                                                                  │           │
+│  │  → Opens browser for Azure AD login                                         │           │
+│  │  → Uses PKCE + Authorization Code flow                                      │           │
+│  │                                                                               │           │
+│  │  $ gcloud auth login                                                         │           │
+│  │  → Opens browser for Google login                                           │           │
+│  │  → Uses PKCE + Authorization Code flow                                      │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── 5. CONFIDENTIAL WEB SERVERS (defense in depth) ───────────────           │           │
+│  │                                                                               │           │
+│  │  ┌──────────────────────┐     ┌───────────┐                                │           │
+│  │  │  Spring Boot /       │     │ Auth      │                                │           │
+│  │  │  Node.js / Django    │ ──> │ Server    │                                │           │
+│  │  │  Server-side App     │     │           │                                │           │
+│  │  │                      │     └───────────┘                                │           │
+│  │  │  ★ Has client_secret│                                                   │           │
+│  │  │  ★ Uses PKCE anyway │                                                   │           │
+│  │  │    for extra safety  │                                                   │           │
+│  │  │  ★ OAuth 2.1 will   │                                                   │           │
+│  │  │    REQUIRE this!     │                                                   │           │
+│  │  └──────────────────────┘                                                   │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.17.10 ★ PKCE in OAuth 2.0 vs OAuth 2.1
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ PKCE IN OAUTH 2.0 vs OAUTH 2.1                                                          │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ┌──────────────────────────────┬─────────────────────────────────────────┐ │           │
+│  │  │  Aspect                      │  OAuth 2.0           │  OAuth 2.1       │ │           │
+│  │  ├──────────────────────────────┼──────────────────────┼──────────────────┤ │           │
+│  │  │                              │                      │                  │ │           │
+│  │  │  PKCE for public clients     │  Recommended (RFC    │  REQUIRED ★      │ │           │
+│  │  │                              │  7636, optional)     │                  │ │           │
+│  │  │                              │                      │                  │ │           │
+│  │  │  PKCE for confidential       │  Optional            │  REQUIRED ★      │ │           │
+│  │  │  clients                     │                      │                  │ │           │
+│  │  │                              │                      │                  │ │           │
+│  │  │  Implicit flow               │  Allowed (but        │  REMOVED ★★★    │ │           │
+│  │  │                              │  discouraged)        │                  │ │           │
+│  │  │                              │                      │                  │ │           │
+│  │  │  Password grant              │  Allowed             │  REMOVED ★★★    │ │           │
+│  │  │                              │                      │                  │ │           │
+│  │  │  code_challenge_method       │  S256 or plain       │  S256 only ★     │ │           │
+│  │  │                              │                      │  (plain removed) │ │           │
+│  │  │                              │                      │                  │ │           │
+│  │  │  Recommended auth flow       │  Auth Code + PKCE    │  Auth Code +     │ │           │
+│  │  │  for public clients          │  (best practice)     │  PKCE (ONLY way) │ │           │
+│  │  │                              │                      │                  │ │           │
+│  │  └──────────────────────────────┴──────────────────────┴──────────────────┘ │           │
+│  │                                                                               │           │
+│  │  ★ KEY TAKEAWAY: OAuth 2.1 makes PKCE mandatory for ALL clients.            │           │
+│  │    Start using PKCE NOW — it will be required by the standard.              │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.17.11 ★ Summary — PKCE (Proof Key for Code Exchange)
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ SUMMARY — PKCE (Proof Key for Code Exchange, RFC 7636)                                   │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ── WHAT IS IT ───────────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  • Extension to Authorization Code flow that prevents code interception     │           │
+│  │  • Client generates a random code_verifier and sends its SHA-256 hash      │           │
+│  │    (code_challenge) in the authorization request                            │           │
+│  │  • During token exchange, client sends the original code_verifier           │           │
+│  │  • Auth server verifies SHA256(code_verifier) == stored code_challenge      │           │
+│  │  • Proves the token requester is the same entity that started the flow     │           │
+│  │                                                                               │           │
+│  │  ── HOW IT WORKS (in one line) ───────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  Client generates verifier → sends hash to /authorize → gets code →         │           │
+│  │  sends original verifier to /token → server verifies hash matches →        │           │
+│  │  issues tokens                                                               │           │
+│  │                                                                               │           │
+│  │  ── TWO KEY VALUES ───────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  • code_verifier:  Random string (43-128 chars), kept secret by client     │           │
+│  │  • code_challenge: BASE64URL(SHA256(code_verifier)), sent in /authorize    │           │
+│  │                                                                               │           │
+│  │  ── ADVANTAGES ───────────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  ✅ Prevents authorization code interception attacks                         │           │
+│  │  ✅ Enables secure public clients (SPAs, mobile, desktop)                   │           │
+│  │  ✅ Dynamic per-request secret (no static secrets to leak)                  │           │
+│  │  ✅ Defense in depth for confidential clients                               │           │
+│  │  ✅ Simple to implement, framework-supported                               │           │
+│  │  ✅ Makes the Implicit flow obsolete                                        │           │
+│  │                                                                               │           │
+│  │  ── DISADVANTAGES ────────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  ❌ Doesn't protect tokens after issuance (XSS can still steal them)       │           │
+│  │  ❌ "plain" method offers weak security (always use S256)                   │           │
+│  │  ❌ Doesn't replace other security measures (HTTPS, state, etc.)           │           │
+│  │  ❌ Doesn't authenticate the client (only proves same-origin request)      │           │
+│  │                                                                               │           │
+│  │  ── SPRING SECURITY ─────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  • Auth Server: Supports PKCE by default; enforce with                     │           │
+│  │    .clientSettings(ClientSettings.builder().requireProofKey(true))          │           │
+│  │  • Client: Automatically adds PKCE when                                     │           │
+│  │    client-authentication-method: none (public client)                       │           │
+│  │                                                                               │           │
+│  │  ── USE CASES ────────────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  • SPAs (React, Angular, Vue)                                               │           │
+│  │  • Mobile apps (iOS, Android — via AppAuth)                                 │           │
+│  │  • Desktop apps (Electron, native)                                          │           │
+│  │  • CLI tools (gh, az, gcloud)                                               │           │
+│  │  • Server-side apps (defense in depth — OAuth 2.1 requires it!)            │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 20.18 ★ Integrating PKCE with Spring Security — Complete Working Example
+
+---
+
+##### 20.18.1 ★ Architecture Overview — 3 Applications with PKCE
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ ARCHITECTURE — PKCE INTEGRATION WITH SPRING SECURITY (3 Applications)                    │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐            │
+│  │                                                                              │            │
+│  │  ┌───────────────────────────────────────────────────────────┐              │            │
+│  │  │  1. AUTHORIZATION SERVER  (Port 9000)                      │              │            │
+│  │  │     → Spring Authorization Server                          │              │            │
+│  │  │     → Supports PKCE out of the box                         │              │            │
+│  │  │     → RegisteredClient with requireProofKey(true)          │              │            │
+│  │  │     → Validates code_challenge at /authorize               │              │            │
+│  │  │     → Validates code_verifier at /token                    │              │            │
+│  │  │     → Endpoints: /oauth2/authorize, /oauth2/token,         │              │            │
+│  │  │       /oauth2/jwks, /.well-known/openid-configuration     │              │            │
+│  │  └───────────────────────────────────────────────────────────┘              │            │
+│  │                      ▲               ▲                                       │            │
+│  │    1. GET /authorize │               │ 3. User logs in                      │            │
+│  │    + code_challenge  │               │    & approves                         │            │
+│  │    + code_challenge  │               │                                       │            │
+│  │      _method=S256    │               │                                       │            │
+│  │                      │               │                                       │            │
+│  │    4. POST /token    │               │                                       │            │
+│  │    + code_verifier   │               │                                       │            │
+│  │                      │               │                                       │            │
+│  │  ┌──────────────────┴───┐   ┌──────┴─────────────────────────┐             │            │
+│  │  │  2. CLIENT APP         │   │  User's Browser                │             │            │
+│  │  │  (Port 8080)           │   │                                 │             │            │
+│  │  │                        │   │  → Redirected to auth server   │             │            │
+│  │  │  Scenario A:           │   │  → Enters username/password   │             │            │
+│  │  │  Server-side Client    │   │  → Approves scopes            │             │            │
+│  │  │  (Spring MVC +         │   │  → Redirected back to client  │             │            │
+│  │  │   OAuth2 Client)       │   │                                 │             │            │
+│  │  │                        │   └─────────────────────────────────┘             │            │
+│  │  │  Scenario B:           │                                                  │            │
+│  │  │  Public Client         │                                                  │            │
+│  │  │  (SPA / React /        │                                                  │            │
+│  │  │   Mobile App)          │                                                  │            │
+│  │  │                        │                                                  │            │
+│  │  └──────────┬─────────────┘                                                  │            │
+│  │             │                                                                │            │
+│  │             │ 5. GET /api/data                                               │            │
+│  │             │    Authorization: Bearer <token>                               │            │
+│  │             ▼                                                                │            │
+│  │  ┌───────────────────────────────────────────────────────────┐              │            │
+│  │  │  3. RESOURCE SERVER  (Port 8090)                            │              │            │
+│  │  │     → Validates JWT access token                           │              │            │
+│  │  │     → ZERO PKCE awareness needed!                          │              │            │
+│  │  │     → Token is the same regardless of PKCE                 │              │            │
+│  │  └───────────────────────────────────────────────────────────┘              │            │
+│  │                                                                              │            │
+│  └─────────────────────────────────────────────────────────────────────────────┘            │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.18.2 ★ Complete PKCE Flow Inside Spring Security — Internal Filter Diagram
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ INTERNAL SPRING SECURITY FLOW — PKCE STEP BY STEP (What happens inside)                  │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│     Client App              Spring Auth Server Filters            Auth Server Internals     │
+│     ──────────              ─────────────────────────            ──────────────────────     │
+│     │                              │                                   │                    │
+│     │                              │                                   │                    │
+│     │  ── PHASE 1: Client starts OAuth2 login ───────────────────────                      │
+│     │                              │                                   │                    │
+│     │  User clicks "Login"        │                                   │                    │
+│     │  → Spring's OAuth2          │                                   │                    │
+│     │    AuthorizationRequest     │                                   │                    │
+│     │    RequestRedirectFilter    │                                   │                    │
+│     │    intercepts               │                                   │                    │
+│     │                              │                                   │                    │
+│     │  ┌────────────────────────────────────────────────┐             │                    │
+│     │  │  OAuth2AuthorizationRequestRedirectFilter       │             │                    │
+│     │  │                                                  │             │                    │
+│     │  │  1. Detects: client-authentication-method=none  │             │                    │
+│     │  │     OR requireProofKey=true for the client      │             │                    │
+│     │  │                                                  │             │                    │
+│     │  │  2. DefaultOAuth2AuthorizationRequestResolver:  │             │                    │
+│     │  │     → Generates code_verifier (43-128 random)   │             │                    │
+│     │  │     → Computes code_challenge = BASE64URL(      │             │                    │
+│     │  │         SHA256(code_verifier))                   │             │                    │
+│     │  │     → Stores code_verifier in the               │             │                    │
+│     │  │       OAuth2AuthorizationRequest (session/state) │             │                    │
+│     │  │                                                  │             │                    │
+│     │  │  3. Builds redirect URL:                        │             │                    │
+│     │  │     GET /oauth2/authorize?                      │             │                    │
+│     │  │       response_type=code                        │             │                    │
+│     │  │       &client_id=pkce-client                    │             │                    │
+│     │  │       &redirect_uri=http://localhost:8080/...   │             │                    │
+│     │  │       &scope=openid+profile                     │             │                    │
+│     │  │       &state=abc123                             │             │                    │
+│     │  │       &code_challenge=E9Melhoa2Owv...  ★★★     │             │                    │
+│     │  │       &code_challenge_method=S256      ★★★     │             │                    │
+│     │  │                                                  │             │                    │
+│     │  │  4. 302 Redirect → Authorization Server         │             │                    │
+│     │  └────────────────────────────────────────────────┘             │                    │
+│     │                              │                                   │                    │
+│     │  ────────────────────────────>                                   │                    │
+│     │                              │                                   │                    │
+│     │                              │                                   │                    │
+│     │  ── PHASE 2: Auth Server processes /authorize ──────────────────                     │
+│     │                              │                                   │                    │
+│     │                    OAuth2AuthorizationEndpointFilter             │                    │
+│     │                              │                                   │                    │
+│     │                              │  1. OAuth2AuthorizationCodeRequestAuthentication       │
+│     │                              │     AuthenticationConverter:                           │
+│     │                              │     → Extracts code_challenge from query params       │
+│     │                              │     → Extracts code_challenge_method (S256)            │
+│     │                              │     → Validates client has requireProofKey=true        │
+│     │                              │       and code_challenge IS present                    │
+│     │                              │       (rejects if missing when required!)              │
+│     │                              │                                   │                    │
+│     │                              │  2. OAuth2AuthorizationCodeRequestAuthentication       │
+│     │                              │     Provider:                                          │
+│     │                              │     → Validates client_id, redirect_uri, scopes       │
+│     │                              │     → Stores in OAuth2Authorization:                   │
+│     │                              │       ┌──────────────────────────────────┐             │
+│     │                              │       │  authorization.attributes = {    │             │
+│     │                              │       │    "code_challenge": "E9Mel...", │             │
+│     │                              │       │    "code_challenge_method":"S256"│             │
+│     │                              │       │  }                               │             │
+│     │                              │       └──────────────────────────────────┘             │
+│     │                              │     → Redirects to /login (if not authenticated)      │
+│     │                              │                                   │                    │
+│     │                              │  3. User logs in (form login)     │                    │
+│     │                              │  4. User approves consent         │                    │
+│     │                              │                                   │                    │
+│     │                              │  5. Generates authorization_code  │                    │
+│     │                              │     → Associates code with the   │                    │
+│     │                              │       stored code_challenge       │                    │
+│     │                              │                                   │                    │
+│     │  302 Redirect                │                                   │                    │
+│     │  Location: /callback?code=SplxlO...&state=abc123                │                    │
+│     │  <────────────────────────────                                   │                    │
+│     │                              │                                   │                    │
+│     │                              │                                   │                    │
+│     │  ── PHASE 3: Client exchanges code for token (with code_verifier) ──                 │
+│     │                              │                                   │                    │
+│     │  ┌────────────────────────────────────────────────┐             │                    │
+│     │  │  OAuth2LoginAuthenticationFilter                │             │                    │
+│     │  │  (on the CLIENT application)                    │             │                    │
+│     │  │                                                  │             │                    │
+│     │  │  1. Receives callback with ?code=SplxlO...      │             │                    │
+│     │  │                                                  │             │                    │
+│     │  │  2. OAuth2AuthorizationCodeAuthenticationProvider│             │                    │
+│     │  │     → Retrieves stored code_verifier from       │             │                    │
+│     │  │       the OAuth2AuthorizationRequest             │             │                    │
+│     │  │                                                  │             │                    │
+│     │  │  3. Calls DefaultAuthorizationCodeTokenResponse │             │                    │
+│     │  │     Client → builds token request:              │             │                    │
+│     │  │                                                  │             │                    │
+│     │  │     POST /oauth2/token                          │             │                    │
+│     │  │     grant_type=authorization_code               │             │                    │
+│     │  │     &code=SplxlO...                             │             │                    │
+│     │  │     &redirect_uri=http://localhost:8080/...     │             │                    │
+│     │  │     &client_id=pkce-client                      │             │                    │
+│     │  │     &code_verifier=dBjftJeZ4CVP...  ★★★        │             │                    │
+│     │  │                                                  │             │                    │
+│     │  └────────────────────────────────────────────────┘             │                    │
+│     │                              │                                   │                    │
+│     │  ────────────────────────────>                                   │                    │
+│     │                              │                                   │                    │
+│     │                    OAuth2TokenEndpointFilter                     │                    │
+│     │                              │                                   │                    │
+│     │                              │  1. OAuth2AuthorizationCodeAuthentication              │
+│     │                              │     Provider:                                          │
+│     │                              │                                   │                    │
+│     │                              │  ┌───────────────────────────────────────────┐        │
+│     │                              │  │  ★★★ PKCE VERIFICATION ★★★                │        │
+│     │                              │  │                                            │        │
+│     │                              │  │  a. Retrieve stored code_challenge from   │        │
+│     │                              │  │     OAuth2Authorization.attributes         │        │
+│     │                              │  │                                            │        │
+│     │                              │  │  b. Retrieve code_verifier from request   │        │
+│     │                              │  │                                            │        │
+│     │                              │  │  c. Compute:                               │        │
+│     │                              │  │     computed = BASE64URL(SHA256(            │        │
+│     │                              │  │                   code_verifier))           │        │
+│     │                              │  │                                            │        │
+│     │                              │  │  d. Compare:                               │        │
+│     │                              │  │     computed == stored code_challenge ?    │        │
+│     │                              │  │                                            │        │
+│     │                              │  │  ✅ YES → Continue to issue tokens         │        │
+│     │                              │  │  ❌ NO  → 400 { "error":"invalid_grant" } │        │
+│     │                              │  └───────────────────────────────────────────┘        │
+│     │                              │                                   │                    │
+│     │                              │  2. If PKCE valid:                │                    │
+│     │                              │     → JwtGenerator signs tokens   │                    │
+│     │                              │     → Returns access_token,       │                    │
+│     │                              │       id_token, refresh_token     │                    │
+│     │                              │                                   │                    │
+│     │  200 OK { access_token, id_token, refresh_token }               │                    │
+│     │  <────────────────────────────                                   │                    │
+│     │                              │                                   │                    │
+│     │                              │                                   │                    │
+│     │  ── PHASE 4: Client calls Resource Server ──────────────────────                     │
+│     │                              │                                   │                    │
+│     │  GET /api/users                                                  │                    │
+│     │  Authorization: Bearer <access_token>                            │                    │
+│     │  ──────────────────────────────────────> Resource Server (8090)  │                    │
+│     │                                          → Validates JWT         │                    │
+│     │                                          → ✅ Authorized          │                    │
+│     │  200 OK { user data }                                            │                    │
+│     │  <────────────────────────────────────── Resource Server          │                    │
+│     │                              │                                   │                    │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.18.3 ★ Key Spring Security Classes Involved in PKCE
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ KEY CLASSES — PKCE PROCESSING IN SPRING SECURITY                                        │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ── CLIENT-SIDE (spring-boot-starter-oauth2-client) ──────────────           │           │
+│  │                                                                               │           │
+│  │  Class                                    Role in PKCE                       │           │
+│  │  ─────────────────────────────────────    ──────────────────────────────     │           │
+│  │                                                                               │           │
+│  │  OAuth2AuthorizationRequestRedirectFilter Intercepts /oauth2/authorization  │           │
+│  │                                            request, delegates to resolver   │           │
+│  │                                                                               │           │
+│  │  DefaultOAuth2AuthorizationRequestResolver Generates code_verifier and      │           │
+│  │                                            code_challenge, adds them to     │           │
+│  │                                            the authorization URL.           │           │
+│  │                                            ★ Automatically detects when     │           │
+│  │                                            PKCE is needed (public client    │           │
+│  │                                            or server requires it)           │           │
+│  │                                                                               │           │
+│  │  OAuth2AuthorizationRequest               Stores code_verifier in its       │           │
+│  │                                            "additionalParameters" map.      │           │
+│  │                                            Serialized to session/state.     │           │
+│  │                                                                               │           │
+│  │  OAuth2LoginAuthenticationFilter           Processes the callback, retrieves │           │
+│  │                                            code_verifier from stored request│           │
+│  │                                                                               │           │
+│  │  DefaultAuthorizationCodeTokenResponse     Builds token request with        │           │
+│  │  Client                                    code_verifier parameter          │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── SERVER-SIDE (spring-security-oauth2-authorization-server) ────           │           │
+│  │                                                                               │           │
+│  │  Class                                    Role in PKCE                       │           │
+│  │  ─────────────────────────────────────    ──────────────────────────────     │           │
+│  │                                                                               │           │
+│  │  OAuth2AuthorizationEndpointFilter         Receives /authorize with         │           │
+│  │                                            code_challenge and               │           │
+│  │                                            code_challenge_method            │           │
+│  │                                                                               │           │
+│  │  OAuth2AuthorizationCodeRequestAuthentication Stores code_challenge in      │           │
+│  │  Provider                                  OAuth2Authorization.attributes   │           │
+│  │                                                                               │           │
+│  │  OAuth2TokenEndpointFilter                 Receives /token with             │           │
+│  │                                            code_verifier                    │           │
+│  │                                                                               │           │
+│  │  OAuth2AuthorizationCodeAuthenticationProvider                              │           │
+│  │                                            ★★★ THE PKCE VALIDATOR ★★★      │           │
+│  │                                            → Retrieves stored               │           │
+│  │                                              code_challenge                 │           │
+│  │                                            → Computes SHA256(code_verifier) │           │
+│  │                                            → Compares with stored challenge │           │
+│  │                                            → Rejects if mismatch           │           │
+│  │                                                                               │           │
+│  │  RegisteredClient.ClientSettings           .requireProofKey(true) to       │           │
+│  │                                            enforce PKCE for a client        │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.18.4 ★ Application 1 — Authorization Server with PKCE (Port 9000)
+
+**pom.xml — Authorization Server**
+
+```xml
+<!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+<!--  pom.xml — Authorization Server with PKCE Support                              -->
+<!--  ★ Same dependencies as section 20.14 — PKCE is built-in!                     -->
+<!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+
+<dependencies>
+
+    <!-- ── Spring Authorization Server ──────────────────────────────────────── -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-oauth2-authorization-server</artifactId>
+    </dependency>
+
+    <!-- ── Web (for serving login/consent pages) ────────────────────────────── -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+</dependencies>
+```
+
+**application.yml — Authorization Server**
+
+```yaml
+# ═══════════════════════════════════════════════════════════════════════════════
+#  application.yml — Authorization Server (Port 9000)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+server:
+  port: 9000
+```
+
+**AuthorizationServerConfig.java — Full Configuration with PKCE**
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  AuthorizationServerConfig.java — Authorization Server with PKCE
+//
+//  ★ PKCE is supported by default in Spring Authorization Server.
+//  ★ We just need to configure RegisteredClients with requireProofKey(true)
+//     to ENFORCE PKCE (reject requests without code_challenge).
+//  ★ If requireProofKey(false) (default), PKCE is optional —
+//     the server accepts code_challenge if sent but doesn't require it.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@Configuration
+@EnableWebSecurity
+public class AuthorizationServerConfig {
+
+    // ── 1. Authorization Server Security Filter Chain ─────────────────────────
+    //    ★ Standard config — NO special PKCE configuration needed here!
+    //    ★ PKCE support is built into the authorization and token endpoints.
+    @Bean
+    @Order(1)
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http)
+            throws Exception {
+
+        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+
+        http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
+            .oidc(Customizer.withDefaults());    // Enable OpenID Connect 1.0
+
+        http.exceptionHandling(exceptions -> exceptions
+            .defaultAuthenticationEntryPointFor(
+                new LoginUrlAuthenticationEntryPoint("/login"),
+                new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
+            )
+        );
+
+        return http.build();
+    }
+
+    // ── 2. Default Security Filter Chain (form login for user authentication) ─
+    @Bean
+    @Order(2)
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(authorize -> authorize
+                .anyRequest().authenticated()
+            )
+            .formLogin(Customizer.withDefaults());
+
+        return http.build();
+    }
+
+    // ── 3. RegisteredClient Repository ────────────────────────────────────────
+    //    ★★★ THIS IS WHERE PKCE IS CONFIGURED ★★★
+    //    ★ requireProofKey(true) enforces PKCE for the client
+    @Bean
+    public RegisteredClientRepository registeredClientRepository() {
+
+        // ── PUBLIC Client (SPA / Mobile) — PKCE REQUIRED, NO client_secret ──
+        RegisteredClient publicClient = RegisteredClient.withId(UUID.randomUUID().toString())
+            .clientId("pkce-public-client")
+            // ★ NO .clientSecret() — public client!
+            .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)  // ★ Public client
+            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+            .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+            .redirectUri("http://localhost:8080/login/oauth2/code/pkce-public-client")
+            .scope(OidcScopes.OPENID)
+            .scope(OidcScopes.PROFILE)
+            .scope("read")
+            .clientSettings(ClientSettings.builder()
+                .requireProofKey(true)              // ★★★ PKCE IS MANDATORY
+                .requireAuthorizationConsent(true)
+                .build())
+            .tokenSettings(TokenSettings.builder()
+                .accessTokenTimeToLive(Duration.ofHours(1))
+                .refreshTokenTimeToLive(Duration.ofDays(30))
+                .build())
+            .build();
+
+        // ── CONFIDENTIAL Client — PKCE REQUIRED + client_secret (defense in depth) ──
+        RegisteredClient confidentialClient = RegisteredClient.withId(UUID.randomUUID().toString())
+            .clientId("pkce-confidential-client")
+            .clientSecret(passwordEncoder().encode("secret"))
+            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+            .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
+            .redirectUri("http://localhost:8080/login/oauth2/code/pkce-confidential-client")
+            .scope(OidcScopes.OPENID)
+            .scope(OidcScopes.PROFILE)
+            .scope("read")
+            .clientSettings(ClientSettings.builder()
+                .requireProofKey(true)              // ★★★ PKCE ENFORCED even for confidential!
+                .requireAuthorizationConsent(true)
+                .build())
+            .tokenSettings(TokenSettings.builder()
+                .accessTokenTimeToLive(Duration.ofHours(1))
+                .refreshTokenTimeToLive(Duration.ofDays(30))
+                .build())
+            .build();
+
+        return new InMemoryRegisteredClientRepository(publicClient, confidentialClient);
+    }
+
+    // ── 4. JWK Source (RSA key pair for signing JWTs) ─────────────────────────
+    @Bean
+    public JWKSource<SecurityContext> jwkSource() {
+        KeyPair keyPair = generateRsaKey();
+        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+        RSAKey rsaKey = new RSAKey.Builder(publicKey)
+            .privateKey(privateKey)
+            .keyID(UUID.randomUUID().toString())
+            .build();
+        JWKSet jwkSet = new JWKSet(rsaKey);
+        return new ImmutableJWKSet<>(jwkSet);
+    }
+
+    private static KeyPair generateRsaKey() {
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            keyPairGenerator.initialize(2048);
+            return keyPairGenerator.generateKeyPair();
+        } catch (Exception ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
+
+    // ── 5. JWT Decoder ────────────────────────────────────────────────────────
+    @Bean
+    public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
+        return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);
+    }
+
+    // ── 6. Authorization Server Settings ──────────────────────────────────────
+    @Bean
+    public AuthorizationServerSettings authorizationServerSettings() {
+        return AuthorizationServerSettings.builder().build();
+    }
+
+    // ── 7. User Details Service (in-memory users for login) ───────────────────
+    @Bean
+    public UserDetailsService userDetailsService() {
+        UserDetails user = User.withUsername("user")
+            .password(passwordEncoder().encode("password"))
+            .roles("USER")
+            .build();
+        return new InMemoryUserDetailsManager(user);
+    }
+
+    // ── 8. Password Encoder ──────────────────────────────────────────────────
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+```
+
+**Required Imports — Authorization Server**
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Imports for AuthorizationServerConfig.java
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.proc.SecurityContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.MediaType;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.core.oidc.OidcScopes;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
+import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
+import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
+import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
+import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.web.accept.ContentNegotiationStrategy;
+import org.springframework.web.accept.HeaderContentNegotiationStrategy;
+
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
+import java.util.UUID;
+```
+
+---
+
+##### 20.18.5 ★ Application 2 — Client Application with PKCE (Port 8080)
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ CLIENT APPLICATION — TWO SCENARIOS                                                       │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  Scenario A: CONFIDENTIAL CLIENT with PKCE (server-side Spring Boot app)    │           │
+│  │  → Has client_secret + PKCE → Defense in depth                              │           │
+│  │  → Spring adds PKCE automatically when server requires it                   │           │
+│  │                                                                               │           │
+│  │  Scenario B: PUBLIC CLIENT with PKCE (SPA acting through Spring backend)    │           │
+│  │  → No client_secret, PKCE only                                              │           │
+│  │  → client-authentication-method: none triggers automatic PKCE              │           │
+│  │                                                                               │           │
+│  │  ★ Both scenarios shown below in the same application.yml                   │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**pom.xml — Client Application**
+
+```xml
+<!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+<!--  pom.xml — Client Application with PKCE                                       -->
+<!-- ═══════════════════════════════════════════════════════════════════════════════ -->
+
+<dependencies>
+
+    <!-- ── OAuth2 Client (handles PKCE automatically!) ──────────────────────── -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-oauth2-client</artifactId>
+    </dependency>
+
+    <!-- ── Web ──────────────────────────────────────────────────────────────── -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- ── WebFlux (for WebClient to call resource server) ──────────────────── -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-webflux</artifactId>
+    </dependency>
+
+</dependencies>
+```
+
+**application.yml — Client Application (Both Public and Confidential Scenarios)**
+
+```yaml
+# ═══════════════════════════════════════════════════════════════════════════════
+#  application.yml — Client Application with PKCE (Port 8080)
+#
+#  ★ TWO client registrations shown:
+#    1. pkce-public-client     → Public client, PKCE is automatic
+#    2. pkce-confidential-client → Confidential client, PKCE + client_secret
+# ═══════════════════════════════════════════════════════════════════════════════
+
+server:
+  port: 8080
+
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+
+          # ── Scenario A: PUBLIC Client — PKCE automatic! ──────────────────
+          pkce-public-client:
+            client-id: pkce-public-client
+            # ★ NO client-secret! (public client)
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: openid, profile, read
+            client-authentication-method: none   # ★★★ This triggers PKCE!
+            #
+            # ★ When client-authentication-method=none:
+            #   Spring's DefaultOAuth2AuthorizationRequestResolver
+            #   AUTOMATICALLY:
+            #     1. Generates code_verifier
+            #     2. Computes code_challenge = BASE64URL(SHA256(code_verifier))
+            #     3. Adds code_challenge + code_challenge_method=S256
+            #        to the authorization URL
+            #     4. Stores code_verifier in session
+            #     5. Sends code_verifier during token exchange
+
+          # ── Scenario B: CONFIDENTIAL Client — PKCE + client_secret ───────
+          pkce-confidential-client:
+            client-id: pkce-confidential-client
+            client-secret: secret
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: openid, profile, read
+            client-authentication-method: client_secret_basic
+            #
+            # ★ For confidential clients, PKCE is NOT automatically added
+            #   by default. The server's requireProofKey(true) setting
+            #   tells Spring to add PKCE.
+            #
+            # ★ Spring 6.x+ automatically sends PKCE when the server's
+            #   .well-known/openid-configuration advertises it OR
+            #   when the auth server rejects the first request.
+
+        provider:
+          pkce-public-client:
+            issuer-uri: http://localhost:9000
+          pkce-confidential-client:
+            issuer-uri: http://localhost:9000
+```
+
+**SecurityConfig.java — Client Application**
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  SecurityConfig.java — Client Application Security Config
+//
+//  ★ Standard OAuth2 login config.
+//  ★ PKCE is handled AUTOMATICALLY by Spring — no custom code needed!
+//  ★ For confidential clients that need PKCE, we customize the
+//     OAuth2AuthorizationRequestResolver.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+            ClientRegistrationRepository clientRegistrationRepository) throws Exception {
+
+        // ── Create a custom request resolver that enables PKCE for ALL clients ──
+        DefaultOAuth2AuthorizationRequestResolver authorizationRequestResolver =
+            new DefaultOAuth2AuthorizationRequestResolver(
+                clientRegistrationRepository,
+                "/oauth2/authorization"
+            );
+
+        // ★★★ KEY LINE: Force PKCE for ALL clients (including confidential ones)
+        // This customizer adds code_challenge and code_challenge_method
+        // to every authorization request, regardless of client type.
+        authorizationRequestResolver.setAuthorizationRequestCustomizer(
+            OAuth2AuthorizationRequestCustomizers.withPkce()  // ★★★ ENABLE PKCE!
+        );
+
+        http
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/", "/public").permitAll()
+                .anyRequest().authenticated()
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(authorization -> authorization
+                    .authorizationRequestResolver(authorizationRequestResolver)  // ★★★ Use PKCE resolver
+                )
+            )
+            .oauth2Client(Customizer.withDefaults());
+
+        return http.build();
+    }
+}
+```
+
+**Required Imports — Client SecurityConfig**
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Imports for SecurityConfig.java (Client Application)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestCustomizers;
+import org.springframework.security.web.SecurityFilterChain;
+```
+
+**ClientController.java — Controller that Calls Resource Server**
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ClientController.java — Calls Resource Server with the access token
+//  ★ The access token was obtained via PKCE flow — but you use it the same way!
+//  ★ There is NO difference in how you use the token after PKCE.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@RestController
+public class ClientController {
+
+    private final WebClient webClient;
+
+    public ClientController(WebClient.Builder webClientBuilder) {
+        this.webClient = webClientBuilder.build();
+    }
+
+    // ── Home page (public) ────────────────────────────────────────────────────
+    @GetMapping("/")
+    public String home() {
+        return "Welcome! <a href='/dashboard'>Login with PKCE</a>";
+    }
+
+    // ── Dashboard (protected — requires OAuth2 login) ─────────────────────────
+    @GetMapping("/dashboard")
+    public Map<String, Object> dashboard(
+            @RegisteredOAuth2AuthorizedClient("pkce-public-client")
+            OAuth2AuthorizedClient authorizedClient,
+            @AuthenticationPrincipal OidcUser oidcUser) {
+
+        // ── Call the resource server using the access token ───────────────────
+        String accessToken = authorizedClient.getAccessToken().getTokenValue();
+
+        String resourceResponse = webClient
+            .get()
+            .uri("http://localhost:8090/api/users")
+            .headers(headers -> headers.setBearerAuth(accessToken))
+            .retrieve()
+            .bodyToMono(String.class)
+            .block();
+
+        return Map.of(
+            "user", oidcUser.getFullName(),
+            "email", oidcUser.getEmail() != null ? oidcUser.getEmail() : "N/A",
+            "resourceServerResponse", resourceResponse != null ? resourceResponse : "No data",
+            "accessToken", accessToken.substring(0, 20) + "...",  // First 20 chars only
+            "tokenType", authorizedClient.getAccessToken().getTokenType().getValue()
+        );
+    }
+}
+```
+
+**Required Imports — ClientController**
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Imports for ClientController.java
+// ═══════════════════════════════════════════════════════════════════════════════
+
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.Map;
+```
+
+---
+
+##### 20.18.6 ★ Application 3 — Resource Server (Port 8090) — ZERO PKCE Changes!
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ RESOURCE SERVER — NO PKCE AWARENESS NEEDED!                                              │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  The Resource Server is IDENTICAL to section 20.14.3.                        │           │
+│  │  It doesn't know or care about PKCE!                                         │           │
+│  │                                                                               │           │
+│  │  ★ Why? Because PKCE only affects the authorization code exchange.          │           │
+│  │    By the time the access token reaches the resource server, it's a         │           │
+│  │    normal JWT — signed, validated, and used the same way.                   │           │
+│  │                                                                               │           │
+│  │  ★ The JWT looks the same whether PKCE was used or not:                     │           │
+│  │  {                                                                            │           │
+│  │    "iss": "http://localhost:9000",                                           │           │
+│  │    "sub": "user",                                                            │           │
+│  │    "aud": "pkce-public-client",                                              │           │
+│  │    "scope": "openid profile read",                                          │           │
+│  │    "iat": 1715184000,                                                        │           │
+│  │    "exp": 1715187600                                                         │           │
+│  │  }                                                                            │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**application.yml — Resource Server**
+
+```yaml
+# ═══════════════════════════════════════════════════════════════════════════════
+#  application.yml — Resource Server (Port 8090)
+#  ★ IDENTICAL to section 20.14.3 — ZERO PKCE changes!
+# ═══════════════════════════════════════════════════════════════════════════════
+
+server:
+  port: 8090
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9000
+```
+
+**ResourceServerConfig.java**
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ResourceServerConfig.java — Resource Server (ZERO PKCE awareness!)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@Configuration
+@EnableWebSecurity
+public class ResourceServerConfig {
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/api/**").hasAuthority("SCOPE_read")
+                .anyRequest().authenticated()
+            )
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(Customizer.withDefaults())
+            );
+        return http.build();
+    }
+}
+```
+
+**ApiController.java — Resource Server**
+
+```java
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ApiController.java — Resource Server API
+// ═══════════════════════════════════════════════════════════════════════════════
+
+@RestController
+@RequestMapping("/api")
+public class ApiController {
+
+    @GetMapping("/users")
+    public Map<String, Object> getUsers(@AuthenticationPrincipal Jwt jwt) {
+        return Map.of(
+            "message", "Hello from Resource Server!",
+            "authenticatedUser", jwt.getSubject(),
+            "scopes", jwt.getClaimAsStringList("scope"),
+            "tokenIssuedAt", jwt.getIssuedAt(),
+            "tokenExpiresAt", jwt.getExpiresAt()
+        );
+    }
+}
+```
+
+---
+
+##### 20.18.7 ★ What Happens on the Wire — Raw HTTP with PKCE
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ RAW HTTP — WHAT SPRING SENDS OVER THE WIRE (WITH PKCE)                                  │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ── 1. AUTHORIZATION REQUEST (Client → Auth Server) ─────────────            │           │
+│  │                                                                               │           │
+│  │  ★ Spring's DefaultOAuth2AuthorizationRequestResolver builds this URL:      │           │
+│  │                                                                               │           │
+│  │  GET /oauth2/authorize?                                                      │           │
+│  │    response_type=code                                                        │           │
+│  │    &client_id=pkce-public-client                                             │           │
+│  │    &redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Flogin%2Foauth2%2F          │           │
+│  │      code%2Fpkce-public-client                                               │           │
+│  │    &scope=openid%20profile%20read                                            │           │
+│  │    &state=abc123def456                                                       │           │
+│  │    &code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM  ★★★        │           │
+│  │    &code_challenge_method=S256                                    ★★★        │           │
+│  │  HTTP/1.1                                                                    │           │
+│  │  Host: localhost:9000                                                         │           │
+│  │                                                                               │           │
+│  │  ★ code_challenge and code_challenge_method are the ONLY additions!         │           │
+│  │  ★ Everything else is identical to standard Authorization Code flow.        │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── 2. AUTHORIZATION RESPONSE (Auth Server → Client) ────────────            │           │
+│  │                                                                               │           │
+│  │  HTTP/1.1 302 Found                                                          │           │
+│  │  Location: http://localhost:8080/login/oauth2/code/pkce-public-client        │           │
+│  │    ?code=SplxlOBeZQQYbYS6WxSbIA                                             │           │
+│  │    &state=abc123def456                                                       │           │
+│  │                                                                               │           │
+│  │  ★ IDENTICAL to standard flow — no PKCE params in the redirect!             │           │
+│  │  ★ The authorization code is still in the URL (vulnerable to interception)  │           │
+│  │  ★ BUT the attacker can't use it without code_verifier!                    │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── 3. TOKEN REQUEST (Client → Auth Server) ── PUBLIC CLIENT ─────           │           │
+│  │                                                                               │           │
+│  │  POST /oauth2/token HTTP/1.1                                                 │           │
+│  │  Host: localhost:9000                                                         │           │
+│  │  Content-Type: application/x-www-form-urlencoded                             │           │
+│  │                                                                               │           │
+│  │  grant_type=authorization_code                                               │           │
+│  │  &code=SplxlOBeZQQYbYS6WxSbIA                                               │           │
+│  │  &redirect_uri=http://localhost:8080/login/oauth2/code/pkce-public-client    │           │
+│  │  &client_id=pkce-public-client                                               │           │
+│  │  &code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk  ★★★          │           │
+│  │                                                                               │           │
+│  │  ★ NO client_secret (public client)                                         │           │
+│  │  ★ code_verifier is sent instead — this is what the server validates        │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── 4. TOKEN REQUEST — CONFIDENTIAL CLIENT (with PKCE + secret) ──           │           │
+│  │                                                                               │           │
+│  │  POST /oauth2/token HTTP/1.1                                                 │           │
+│  │  Host: localhost:9000                                                         │           │
+│  │  Content-Type: application/x-www-form-urlencoded                             │           │
+│  │  Authorization: Basic cGtjZS1jb25maWRlbnRpYWwtY2xpZW50OnNlY3JldA==         │           │
+│  │                 ↑ Base64(pkce-confidential-client:secret)                    │           │
+│  │                                                                               │           │
+│  │  grant_type=authorization_code                                               │           │
+│  │  &code=SplxlOBeZQQYbYS6WxSbIA                                               │           │
+│  │  &redirect_uri=http://localhost:8080/login/oauth2/code/pkce-confidential     │           │
+│  │  &code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk  ★★★          │           │
+│  │                                                                               │           │
+│  │  ★ BOTH client_secret (in Authorization header) AND code_verifier!          │           │
+│  │  ★ Double protection = defense in depth!                                    │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── 5. TOKEN RESPONSE (Auth Server → Client) ────────────────────            │           │
+│  │                                                                               │           │
+│  │  HTTP/1.1 200 OK                                                             │           │
+│  │  Content-Type: application/json                                               │           │
+│  │                                                                               │           │
+│  │  {                                                                            │           │
+│  │    "access_token": "eyJraWQiOiI3ZjM4YmQ0Ny...",                            │           │
+│  │    "refresh_token": "dGhpcyBpcyBhIHJlZnJlc2g...",                          │           │
+│  │    "id_token": "eyJhbGciOiJSUzI1NiIs...",                                  │           │
+│  │    "token_type": "Bearer",                                                   │           │
+│  │    "expires_in": 3600,                                                        │           │
+│  │    "scope": "openid profile read"                                            │           │
+│  │  }                                                                            │           │
+│  │                                                                               │           │
+│  │  ★ IDENTICAL response whether PKCE was used or not!                         │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.18.8 ★ Testing with curl — Manual PKCE Flow
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ TESTING WITH curl — MANUAL PKCE FLOW                                                    │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ── Step 1: Generate code_verifier and code_challenge ────────────           │           │
+│  │                                                                               │           │
+│  │  # Generate a random code_verifier (43-128 chars)                           │           │
+│  │  $ CODE_VERIFIER=$(openssl rand -base64 32 | tr -d '=/+' | cut -c1-43)     │           │
+│  │  $ echo "code_verifier: $CODE_VERIFIER"                                     │           │
+│  │                                                                               │           │
+│  │  # Compute code_challenge = BASE64URL(SHA256(code_verifier))                │           │
+│  │  $ CODE_CHALLENGE=$(echo -n "$CODE_VERIFIER" | \                            │           │
+│  │      openssl dgst -sha256 -binary | \                                       │           │
+│  │      openssl base64 -A | \                                                   │           │
+│  │      tr '+/' '-_' | tr -d '=')                                              │           │
+│  │  $ echo "code_challenge: $CODE_CHALLENGE"                                   │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── Step 2: Open this URL in a browser (authorization request) ────          │           │
+│  │                                                                               │           │
+│  │  http://localhost:9000/oauth2/authorize?\                                    │           │
+│  │    response_type=code\                                                       │           │
+│  │    &client_id=pkce-public-client\                                            │           │
+│  │    &redirect_uri=http://localhost:8080/login/oauth2/code/pkce-public-client\ │           │
+│  │    &scope=openid+profile+read\                                               │           │
+│  │    &code_challenge=$CODE_CHALLENGE\                                          │           │
+│  │    &code_challenge_method=S256                                               │           │
+│  │                                                                               │           │
+│  │  → Log in as: user / password                                               │           │
+│  │  → Approve the scopes                                                        │           │
+│  │  → Copy the "code" from the redirect URL                                    │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── Step 3: Exchange code for tokens (with code_verifier) ────────           │           │
+│  │                                                                               │           │
+│  │  $ AUTH_CODE=<paste-code-from-redirect>                                     │           │
+│  │                                                                               │           │
+│  │  $ curl -X POST http://localhost:9000/oauth2/token \                         │           │
+│  │      -d "grant_type=authorization_code" \                                    │           │
+│  │      -d "code=$AUTH_CODE" \                                                  │           │
+│  │      -d "redirect_uri=http://localhost:8080/login/oauth2/code/pkce-public-client" \     │
+│  │      -d "client_id=pkce-public-client" \                                     │           │
+│  │      -d "code_verifier=$CODE_VERIFIER"                                      │           │
+│  │                                                                               │           │
+│  │  ★ Response: { access_token, id_token, refresh_token, ... }                 │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── Step 4: Test with WRONG code_verifier (should FAIL!) ─────────           │           │
+│  │                                                                               │           │
+│  │  $ curl -X POST http://localhost:9000/oauth2/token \                         │           │
+│  │      -d "grant_type=authorization_code" \                                    │           │
+│  │      -d "code=$AUTH_CODE" \                                                  │           │
+│  │      -d "redirect_uri=http://localhost:8080/login/oauth2/code/pkce-public-client" \     │
+│  │      -d "client_id=pkce-public-client" \                                     │           │
+│  │      -d "code_verifier=WRONG_VERIFIER_VALUE_HERE"                           │           │
+│  │                                                                               │           │
+│  │  ★ Response: { "error": "invalid_grant" }  ← ★ REJECTED!                  │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── Step 5: Test WITHOUT code_verifier (should FAIL!) ────────────           │           │
+│  │                                                                               │           │
+│  │  $ curl -X POST http://localhost:9000/oauth2/token \                         │           │
+│  │      -d "grant_type=authorization_code" \                                    │           │
+│  │      -d "code=$AUTH_CODE" \                                                  │           │
+│  │      -d "redirect_uri=http://localhost:8080/login/oauth2/code/pkce-public-client" \     │
+│  │      -d "client_id=pkce-public-client"                                      │           │
+│  │                                                                               │           │
+│  │  ★ Response: { "error": "invalid_grant" }  ← ★ REJECTED (no verifier)!    │           │
+│  │                                                                               │           │
+│  │                                                                               │           │
+│  │  ── Step 6: Use the access token to call Resource Server ─────────           │           │
+│  │                                                                               │           │
+│  │  $ curl http://localhost:8090/api/users \                                    │           │
+│  │      -H "Authorization: Bearer eyJraWQi..."                                 │           │
+│  │                                                                               │           │
+│  │  ★ Response: { "message": "Hello from Resource Server!", ... }              │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.18.9 ★ What YOU Write vs What Spring Does Automatically
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ WHAT YOU WRITE vs WHAT SPRING HANDLES AUTOMATICALLY FOR PKCE                            │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ┌──────────────────────────────────┬──────────────────────────────────────┐ │           │
+│  │  │  YOU WRITE (configuration)        │  SPRING DOES (automatically)         │ │           │
+│  │  ├──────────────────────────────────┼──────────────────────────────────────┤ │           │
+│  │  │                                   │                                      │ │           │
+│  │  │  ── AUTHORIZATION SERVER ──       │                                      │ │           │
+│  │  │                                   │                                      │ │           │
+│  │  │  RegisteredClient with:           │  • Accepts code_challenge in         │ │           │
+│  │  │  .requireProofKey(true)           │    /authorize request               │ │           │
+│  │  │                                   │  • Stores code_challenge with the   │ │           │
+│  │  │  (ONE line of config!)            │    authorization session            │ │           │
+│  │  │                                   │  • Validates code_verifier at       │ │           │
+│  │  │                                   │    /token endpoint                  │ │           │
+│  │  │                                   │  • SHA-256 computation              │ │           │
+│  │  │                                   │  • Rejects mismatched verifiers    │ │           │
+│  │  │                                   │  • Rejects missing code_challenge   │ │           │
+│  │  │                                   │    when requireProofKey=true        │ │           │
+│  │  │                                   │                                      │ │           │
+│  │  ├──────────────────────────────────┼──────────────────────────────────────┤ │           │
+│  │  │                                   │                                      │ │           │
+│  │  │  ── CLIENT (PUBLIC) ──            │                                      │ │           │
+│  │  │                                   │                                      │ │           │
+│  │  │  application.yml:                 │  • Generates code_verifier           │ │           │
+│  │  │  client-authentication-method:    │    (cryptographically random)        │ │           │
+│  │  │    none                           │  • Computes SHA-256 code_challenge  │ │           │
+│  │  │                                   │  • Adds to authorization URL        │ │           │
+│  │  │  (ONE line of config!)            │  • Stores verifier in session       │ │           │
+│  │  │                                   │  • Sends verifier during token      │ │           │
+│  │  │                                   │    exchange                          │ │           │
+│  │  │                                   │                                      │ │           │
+│  │  ├──────────────────────────────────┼──────────────────────────────────────┤ │           │
+│  │  │                                   │                                      │ │           │
+│  │  │  ── CLIENT (CONFIDENTIAL) ──      │                                      │ │           │
+│  │  │                                   │                                      │ │           │
+│  │  │  SecurityConfig:                  │  Same as above, PLUS:               │ │           │
+│  │  │  OAuth2AuthorizationRequest       │  • Sends client_secret in           │ │           │
+│  │  │  Customizers.withPkce()           │    Authorization header             │ │           │
+│  │  │                                   │  • Sends code_verifier in body     │ │           │
+│  │  │  (ONE method call!)               │                                      │ │           │
+│  │  │                                   │                                      │ │           │
+│  │  ├──────────────────────────────────┼──────────────────────────────────────┤ │           │
+│  │  │                                   │                                      │ │           │
+│  │  │  ── RESOURCE SERVER ──            │                                      │ │           │
+│  │  │                                   │                                      │ │           │
+│  │  │  NOTHING! Zero PKCE config!       │  • Validates JWT as usual           │ │           │
+│  │  │                                   │  • No PKCE awareness needed        │ │           │
+│  │  │                                   │                                      │ │           │
+│  │  └──────────────────────────────────┴──────────────────────────────────────┘ │           │
+│  │                                                                               │           │
+│  │  ★ TOTAL PKCE CODE YOU WRITE: ~3 lines of configuration!                   │           │
+│  │    1. requireProofKey(true) on the RegisteredClient                         │           │
+│  │    2. client-authentication-method: none (for public clients)               │           │
+│  │    3. OAuth2AuthorizationRequestCustomizers.withPkce() (for confidential)   │           │
+│  │                                                                               │           │
+│  │  ★ Spring handles ALL the cryptography, state management, and validation!  │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.18.10 ★ Common Errors and Troubleshooting — PKCE
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ COMMON ERRORS — PKCE INTEGRATION TROUBLESHOOTING                                        │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ┌───────────────────────────┬────────────────────────────────────────────┐ │           │
+│  │  │  Error                    │  Cause & Fix                                │ │           │
+│  │  ├───────────────────────────┼────────────────────────────────────────────┤ │           │
+│  │  │                           │                                             │ │           │
+│  │  │  "invalid_grant" at       │  CAUSE: code_verifier doesn't match the    │ │           │
+│  │  │  /token endpoint          │  code_challenge sent during /authorize.    │ │           │
+│  │  │                           │                                             │ │           │
+│  │  │                           │  FIX: Ensure the same code_verifier is     │ │           │
+│  │  │                           │  stored and sent. Spring does this auto-   │ │           │
+│  │  │                           │  matically — if you see this, check if    │ │           │
+│  │  │                           │  your session storage is working properly. │ │           │
+│  │  │                           │                                             │ │           │
+│  │  ├───────────────────────────┼────────────────────────────────────────────┤ │           │
+│  │  │                           │                                             │ │           │
+│  │  │  "invalid_request" —      │  CAUSE: requireProofKey=true but client   │ │           │
+│  │  │  code_challenge required  │  didn't send code_challenge.               │ │           │
+│  │  │                           │                                             │ │           │
+│  │  │                           │  FIX: For public clients, set              │ │           │
+│  │  │                           │  client-authentication-method: none.       │ │           │
+│  │  │                           │  For confidential clients, add             │ │           │
+│  │  │                           │  OAuth2AuthorizationRequestCustomizers     │ │           │
+│  │  │                           │  .withPkce() to the request resolver.      │ │           │
+│  │  │                           │                                             │ │           │
+│  │  ├───────────────────────────┼────────────────────────────────────────────┤ │           │
+│  │  │                           │                                             │ │           │
+│  │  │  "unauthorized_client"    │  CAUSE: Client registered with             │ │           │
+│  │  │                           │  CLIENT_SECRET_BASIC but no secret sent.   │ │           │
+│  │  │                           │                                             │ │           │
+│  │  │                           │  FIX: For public clients, use              │ │           │
+│  │  │                           │  ClientAuthenticationMethod.NONE on       │ │           │
+│  │  │                           │  the RegisteredClient (auth server).       │ │           │
+│  │  │                           │                                             │ │           │
+│  │  ├───────────────────────────┼────────────────────────────────────────────┤ │           │
+│  │  │                           │                                             │ │           │
+│  │  │  PKCE not being sent      │  CAUSE: Confidential client doesn't add   │ │           │
+│  │  │  for confidential client  │  PKCE by default.                          │ │           │
+│  │  │                           │                                             │ │           │
+│  │  │                           │  FIX: Add the withPkce() customizer:       │ │           │
+│  │  │                           │  authorizationRequestResolver              │ │           │
+│  │  │                           │    .setAuthorizationRequestCustomizer(     │ │           │
+│  │  │                           │      OAuth2AuthorizationRequest            │ │           │
+│  │  │                           │      Customizers.withPkce())               │ │           │
+│  │  │                           │                                             │ │           │
+│  │  ├───────────────────────────┼────────────────────────────────────────────┤ │           │
+│  │  │                           │                                             │ │           │
+│  │  │  Session lost between     │  CAUSE: code_verifier stored in HTTP      │ │           │
+│  │  │  /authorize and /callback │  session, but session expired or was lost. │ │           │
+│  │  │                           │                                             │ │           │
+│  │  │                           │  FIX: Ensure session management is         │ │           │
+│  │  │                           │  configured. For stateless SPAs, use      │ │           │
+│  │  │                           │  a custom OAuth2AuthorizationRequest      │ │           │
+│  │  │                           │  Repository (e.g., cookie-based).          │ │           │
+│  │  │                           │                                             │ │           │
+│  │  └───────────────────────────┴────────────────────────────────────────────┘ │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+##### 20.18.11 ★ Summary — Integrating PKCE with Spring Security
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+│  ★ SUMMARY — PKCE INTEGRATION WITH SPRING SECURITY                                         │
+├──────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐           │
+│  │                                                                               │           │
+│  │  ── AUTHORIZATION SERVER ─────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  • Dependency: spring-boot-starter-oauth2-authorization-server              │           │
+│  │  • PKCE built-in — NO special filter or endpoint config!                    │           │
+│  │  • Enforce PKCE: RegisteredClient.clientSettings(                           │           │
+│  │      ClientSettings.builder().requireProofKey(true))                        │           │
+│  │  • Public client: .clientAuthenticationMethod(NONE), no clientSecret()     │           │
+│  │  • Confidential client: .clientSecret() + .requireProofKey(true)           │           │
+│  │                                                                               │           │
+│  │  ── CLIENT APPLICATION ───────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  • Dependency: spring-boot-starter-oauth2-client                            │           │
+│  │  • Public client: set client-authentication-method: none in YAML            │           │
+│  │    → Spring AUTOMATICALLY adds PKCE!                                        │           │
+│  │  • Confidential client: add OAuth2AuthorizationRequestCustomizers           │           │
+│  │    .withPkce() to the authorization request resolver                        │           │
+│  │  • Spring handles: code_verifier generation, SHA-256 hashing,              │           │
+│  │    session storage, and sending verifier during token exchange              │           │
+│  │                                                                               │           │
+│  │  ── RESOURCE SERVER ──────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  • ZERO changes! No PKCE awareness needed.                                  │           │
+│  │  • JWT validation is identical regardless of PKCE.                          │           │
+│  │                                                                               │           │
+│  │  ── KEY SPRING CLASSES ───────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  Client-side:                                                                │           │
+│  │  • DefaultOAuth2AuthorizationRequestResolver → generates PKCE values       │           │
+│  │  • OAuth2AuthorizationRequestCustomizers.withPkce() → enables PKCE         │           │
+│  │  • OAuth2AuthorizationRequest → stores code_verifier                       │           │
+│  │                                                                               │           │
+│  │  Server-side:                                                                │           │
+│  │  • OAuth2AuthorizationCodeAuthenticationProvider → validates PKCE           │           │
+│  │  • ClientSettings.requireProofKey(true) → enforces PKCE                    │           │
+│  │                                                                               │           │
+│  │  ── FLOW IN ONE LINE ─────────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  Client generates verifier → sends SHA-256 hash in /authorize →            │           │
+│  │  user logs in → client gets code → client sends verifier to /token →       │           │
+│  │  server verifies hash → issues tokens → client calls Resource Server       │           │
+│  │                                                                               │           │
+│  │  ── TOTAL CONFIG EFFORT ──────────────────────────────────────────           │           │
+│  │                                                                               │           │
+│  │  Public client:       2 lines (requireProofKey + auth method none)         │           │
+│  │  Confidential client: 2 lines (requireProofKey + withPkce() customizer)    │           │
+│  │  Resource server:     0 lines                                               │           │
+│  │                                                                               │           │
+│  └──────────────────────────────────────────────────────────────────────────────┘           │
+│                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+
