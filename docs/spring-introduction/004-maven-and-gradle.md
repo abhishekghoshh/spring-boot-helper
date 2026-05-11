@@ -1,8 +1,8 @@
-### Maven — Project Management and Build Tool
+## Maven — Project Management and Build Tool
 
 ---
 
-#### What is Maven?
+### What is Maven?
 
 **Apache Maven** is an open-source **project management and build automation tool** for Java (and JVM-based) projects. It was created by Jason van Zyl in 2002 as part of the Apache Turbine project and became a top-level Apache project in 2004.
 
@@ -39,11 +39,11 @@ Maven goes far beyond a simple build script. It enforces a **standard project st
 
 ---
 
-#### How Maven Helps Developers — Through POM
+### How Maven Helps Developers — Through POM
 
 The `pom.xml` (Project Object Model) is a single XML file at the root of your project that tells Maven **everything** it needs to know about your project.
 
-##### Build Generation
+#### Build Generation
 
 Maven's build lifecycle defines a sequence of phases. Running `mvn package` automatically runs `validate → compile → test → package` in order.
 
@@ -70,7 +70,7 @@ Maven's build lifecycle defines a sequence of phases. Running `mvn package` auto
 </build>
 ```
 
-##### Dependency Resolution
+#### Dependency Resolution
 
 Maven maintains a **local repository** (`~/.m2/repository`) and downloads dependencies from **remote repositories** (Maven Central, Nexus, Artifactory). Dependencies are declared in `pom.xml` and Maven resolves the **full transitive dependency graph** automatically.
 
@@ -117,7 +117,7 @@ Maven maintains a **local repository** (`~/.m2/repository`) and downloads depend
 | `system` | compile + test | NO | Explicit filesystem path (avoid) |
 | `import` | POM only | NO | Import another POM's dependency management |
 
-##### Documentation
+#### Documentation
 
 Maven can generate a full project website with reports:
 
@@ -129,7 +129,7 @@ mvn surefire-report:report  # generate HTML test report
 
 ---
 
-#### Maven Project Structure
+### Maven Project Structure
 
 Maven enforces a **standard directory layout**. Every Maven project looks the same — any Java developer can navigate it instantly.
 
@@ -181,7 +181,7 @@ Maven enforces a **standard directory layout**. Every Maven project looks the sa
 
 ---
 
-#### Maven Commands
+### Maven Commands
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -241,7 +241,7 @@ Maven enforces a **standard directory layout**. Every Maven project looks the sa
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-##### `mvn wrapper:wrapper` — The Maven Wrapper
+#### `mvn wrapper:wrapper` — The Maven Wrapper
 
 The **Maven Wrapper** (`mvnw`) pins a specific Maven version to your project so all developers and CI/CD pipelines use **exactly the same Maven version** without any global installation required.
 
@@ -276,7 +276,7 @@ When you run `./mvnw`:
 
 ---
 
-#### Maven Build Lifecycle Phases
+### Maven Build Lifecycle Phases
 
 Maven has **three built-in lifecycles**: `default` (build), `clean`, and `site`. The `default` lifecycle has 23 phases. The 7 key phases you work with daily are:
 
@@ -311,7 +311,7 @@ Maven has **three built-in lifecycles**: `default` (build), `clean`, and `site`.
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-##### Phase 1 — `validate`
+#### Phase 1 — `validate`
 
 ```bash
 mvn validate
@@ -324,7 +324,7 @@ Checks that the project structure is correct and `pom.xml` is well-formed. Maven
 
 No output files are generated. Fails fast with a clear error if the project is misconfigured.
 
-##### Phase 2 — `compile`
+#### Phase 2 — `compile`
 
 ```bash
 mvn compile
@@ -377,7 +377,7 @@ target/
                 └── UserService.class
 ```
 
-##### Phase 3 — `test`
+#### Phase 3 — `test`
 
 ```bash
 mvn test
@@ -430,7 +430,7 @@ mvn test -Dtest=UserServiceTest#findById_throwsWhenNotFound
 </build>
 ```
 
-##### Phase 4 — `package`
+#### Phase 4 — `package`
 
 ```bash
 mvn package
@@ -490,7 +490,7 @@ cp target/myapp-1.0.0.war /opt/tomcat/webapps/
 </build>
 ```
 
-##### Phase 5 — `verify`
+#### Phase 5 — `verify`
 
 ```bash
 mvn verify
@@ -587,7 +587,7 @@ mvn pmd:check
 </plugin>
 ```
 
-##### Phase 6 — `install`
+#### Phase 6 — `install`
 
 ```bash
 mvn install
@@ -642,7 +642,7 @@ mvn clean install -U
 rm -rf ~/.m2/repository/com/example/my-library/
 ```
 
-##### Phase 7 — `deploy`
+#### Phase 7 — `deploy`
 
 ```bash
 mvn deploy
@@ -707,7 +707,7 @@ mvn clean deploy
 
 ---
 
-#### Why Running One Phase Also Runs All Previous Phases
+### Why Running One Phase Also Runs All Previous Phases
 
 Maven's lifecycle phases form a **sequential chain** — each phase depends on all prior phases completing successfully. This is by design:
 
@@ -740,7 +740,7 @@ Maven's lifecycle phases form a **sequential chain** — each phase depends on a
 
 ---
 
-#### Maven Plugins
+### Maven Plugins
 
 A **Maven plugin** is a collection of **goals** (executable tasks). All of Maven's functionality comes from plugins — there is no built-in "compile" logic; the `maven-compiler-plugin` provides it.
 
@@ -786,7 +786,7 @@ mvn org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile
 
 ---
 
-#### Adding/Modifying Tasks in the Build Section
+### Adding/Modifying Tasks in the Build Section
 
 The `<build>` section in `pom.xml` is where you configure plugins and bind goals to lifecycle phases:
 
@@ -903,7 +903,7 @@ The `<build>` section in `pom.xml` is where you configure plugins and bind goals
 
 ---
 
-#### How Maven Depends on `pom.xml`
+### How Maven Depends on `pom.xml`
 
 `pom.xml` is the **single source of truth** for everything Maven does. Without `pom.xml`, Maven cannot function at all:
 
@@ -941,9 +941,9 @@ The `<build>` section in `pom.xml` is where you configure plugins and bind goals
 
 ---
 
-#### Parent and Child POM — POM Hierarchy
+### Parent and Child POM — POM Hierarchy
 
-##### The Super POM
+#### The Super POM
 
 Every `pom.xml` implicitly inherits from the **Super POM** — Maven's built-in default POM that defines:
 - Standard directory locations (`src/main/java`, `target/`, etc.)
@@ -956,7 +956,7 @@ You never see it, but it is always there. To inspect it:
 mvn help:effective-pom   # shows the fully-merged POM (your pom + parent POMs + Super POM)
 ```
 
-##### Parent and Child POMs
+#### Parent and Child POMs
 
 In a **multi-module** project (common in microservices or monorepos), a **parent POM** manages shared configuration and dependency versions. Child POMs inherit from it.
 
@@ -1094,7 +1094,7 @@ Inheritance rules:
 
 ---
 
-#### All Parts of `pom.xml` — Complete Reference
+### All Parts of `pom.xml` — Complete Reference
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -1400,7 +1400,7 @@ Inheritance rules:
 
 ---
 
-#### `settings.xml` — Maven Global Configuration
+### `settings.xml` — Maven Global Configuration
 
 `settings.xml` configures Maven's behaviour for the **user or system** — things that should NOT be in `pom.xml` (which is project-specific and committed to version control). It lives at:
 
@@ -1565,7 +1565,7 @@ mvn --encrypt-password myNexusPassword
 
 ---
 
-#### How Spring Boot Uses Maven and `pom.xml`
+### How Spring Boot Uses Maven and `pom.xml`
 
 Spring Boot has deep integration with Maven through the `spring-boot-starter-parent` and `spring-boot-maven-plugin`.
 
