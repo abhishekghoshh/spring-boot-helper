@@ -5037,3 +5037,11 @@ public UserResponse update(@RequestBody @Validated(OnUpdate.class) UserRequest r
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
+
+
+
+- @Controller vs @RestController vs @ControllerAdvice
+- @Component vs @Bean
+- @Component vs @Service vs @COnfiguration vs Repository
+- @@RequestMapping vs @GetMapping vs @PostMapping vs @PutMapping vs@@DeleteMapping
+
