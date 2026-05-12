@@ -1890,3 +1890,1298 @@ class UserIntegrationTest {
 │  ✓ Avoid @SpringBootTest for every test (slow)                                  │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+
+---
+
+#### What is a Servlet Container?
+
+A **Servlet Container** (also called a **Web Container** or **Servlet Engine**) is the runtime environment that manages the lifecycle of Java Servlets. It is the component that actually receives raw HTTP requests from clients over the network, converts them into Java objects (`HttpServletRequest` / `HttpServletResponse`), routes them to the correct Servlet, and sends the HTTP response bytes back to the client.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  What a Servlet Container Does:                                                  │
+│                                                                                  │
+│  1. Listens on a TCP port (e.g., 8080) for incoming HTTP connections            │
+│  2. Parses raw HTTP bytes into HttpServletRequest + HttpServletResponse objects  │
+│  3. Manages Servlet lifecycle:                                                   │
+│       • Loads Servlet class (on first request or at startup)                    │
+│       • Calls init(ServletConfig) — once, when Servlet is created               │
+│       • Calls service(request, response) — on every request                     │
+│       • Calls destroy() — when Servlet is removed or container shuts down       │
+│  4. Manages a thread pool — each request is handled on a separate thread        │
+│  5. Manages sessions (HttpSession) across stateless HTTP                        │
+│  6. Executes the Filter chain before reaching the Servlet                       │
+│  7. Handles connection keep-alive, chunked encoding, SSL/TLS termination        │
+│  8. Sends serialised HTTP response bytes back over the network                  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Servlet Lifecycle — Managed Entirely by the Container
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Servlet Lifecycle (managed by the Servlet Container):                            │
+│                                                                                  │
+│  Container starts (or first request arrives)                                     │
+│      │                                                                           │
+│      ▼                                                                           │
+│  1. Load Servlet class                                                           │
+│      → Class.forName("com.example.MyServlet")                                   │
+│      → Container uses ClassLoader to load the .class file                       │
+│      │                                                                           │
+│      ▼                                                                           │
+│  2. Instantiate                                                                  │
+│      → MyServlet servlet = new MyServlet()                                      │
+│      → Only ONE instance created (singleton per Servlet definition)             │
+│      │                                                                           │
+│      ▼                                                                           │
+│  3. init(ServletConfig config)                                                   │
+│      → Called ONCE after instantiation                                           │
+│      → Used for one-time setup (DB connections, resource loading)               │
+│      → ServletConfig provides init parameters from web.xml / @WebServlet       │
+│      │                                                                           │
+│      ▼                                                                           │
+│  4. service(HttpServletRequest req, HttpServletResponse res)                     │
+│      → Called on EVERY request (from a thread pool thread)                       │
+│      → HttpServlet.service() dispatches based on HTTP method:                   │
+│           GET  → doGet(req, res)                                                │
+│           POST → doPost(req, res)                                               │
+│           PUT  → doPut(req, res)                                                │
+│           DELETE → doDelete(req, res)                                            │
+│      → Multiple threads may call service() concurrently on the SAME instance   │
+│      │                                                                           │
+│      ▼                                                                           │
+│  5. destroy()                                                                    │
+│      → Called ONCE when container shuts down or Servlet is unloaded             │
+│      → Used for cleanup (close DB connections, flush caches)                    │
+│                                                                                  │
+│  Timeline:                                                                       │
+│  ──────────────────────────────────────────────────────────────────────────────  │
+│  init()   service()  service()  service()  service()  ...  destroy()            │
+│   (1x)    (thread1)  (thread2)  (thread1)  (thread3)       (1x)                │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Servlet Container Examples
+
+```text
+┌────────────────────┬─────────────────────────────────────────────────────────────┐
+│ Container          │ Description                                                 │
+├────────────────────┼─────────────────────────────────────────────────────────────┤
+│ Apache Tomcat      │ Most widely used. Implements Servlet + JSP specs.           │
+│                    │ Spring Boot embeds Tomcat by default.                       │
+│ Eclipse Jetty      │ Lightweight, embeddable. Used in many frameworks.          │
+│ Undertow           │ High-performance, non-blocking. Red Hat / WildFly.         │
+│ GlassFish          │ Reference implementation of Jakarta EE (full app server).  │
+│ WildFly            │ Full Jakarta EE app server (includes a Servlet container). │
+└────────────────────┴─────────────────────────────────────────────────────────────┘
+```
+
+##### Servlet Container in Spring Boot
+
+In Spring Boot, the Servlet Container is **embedded inside your application JAR**. You don't install Tomcat separately — Spring Boot starts it programmatically:
+
+```java
+// What Spring Boot does internally (simplified):
+public class TomcatServletWebServerFactory {
+
+    public WebServer getWebServer(ServletContextInitializer... initializers) {
+        Tomcat tomcat = new Tomcat();                        // create Tomcat instance
+        tomcat.setPort(8080);                                // set port from server.port
+        tomcat.getConnector();                               // create NIO connector
+        Context context = tomcat.addContext("", docBase);    // create servlet context
+
+        // Register DispatcherServlet into Tomcat
+        Tomcat.addServlet(context, "dispatcherServlet", dispatcherServlet);
+        context.addServletMappingDecoded("/", "dispatcherServlet");
+
+        tomcat.start();                                      // start listening
+        return new TomcatWebServer(tomcat);
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Traditional Deployment vs Spring Boot:                                          │
+│                                                                                  │
+│  Traditional:                                                                    │
+│  ┌──────────────────────────────────────┐                                       │
+│  │  Tomcat (installed on server)        │ ← YOU install and configure Tomcat    │
+│  │  ├── webapps/                        │                                       │
+│  │  │   ├── app1.war                    │ ← YOU deploy WAR files               │
+│  │  │   └── app2.war                    │                                       │
+│  │  └── conf/server.xml                 │ ← YOU configure ports, connectors    │
+│  └──────────────────────────────────────┘                                       │
+│                                                                                  │
+│  Spring Boot:                                                                    │
+│  ┌──────────────────────────────────────┐                                       │
+│  │  myapp.jar                           │ ← single artifact                    │
+│  │  ├── Your code (.class files)        │                                       │
+│  │  ├── Tomcat JARs (embedded)          │ ← Tomcat is a library dependency     │
+│  │  └── Spring Boot Loader              │                                       │
+│  └──────────────────────────────────────┘                                       │
+│  java -jar myapp.jar → Tomcat starts inside the JVM                             │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Raw Servlet Example (Before Spring)
+
+```java
+// A raw Servlet — what developers wrote before Spring MVC
+@WebServlet(urlPatterns = "/users")
+public class UserServlet extends HttpServlet {
+
+    @Override
+    public void init(ServletConfig config) throws ServletException {
+        super.init(config);
+        // One-time setup: initialize DB connection pool, load resources
+        System.out.println("UserServlet initialized");
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse res)
+            throws ServletException, IOException {
+        // Container calls this for every GET /users request
+        String userId = req.getParameter("id");
+
+        res.setContentType("application/json");
+        res.setStatus(HttpServletResponse.SC_OK);
+        PrintWriter out = res.getWriter();
+        out.write("{\"id\":\"" + userId + "\",\"name\":\"Alice\"}");
+        out.flush();
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse res)
+            throws ServletException, IOException {
+        // Container calls this for every POST /users request
+        BufferedReader reader = req.getReader();
+        StringBuilder body = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            body.append(line);
+        }
+        // Manually parse JSON, validate, save to DB, write response...
+        // No DI, no automatic JSON conversion, no validation framework
+    }
+
+    @Override
+    public void destroy() {
+        // Cleanup: close DB connections
+        System.out.println("UserServlet destroyed");
+    }
+}
+```
+
+---
+
+#### What is DispatcherServlet?
+
+The **DispatcherServlet** is Spring MVC's **front controller** — a single Servlet that receives ALL incoming HTTP requests and dispatches them to the appropriate `@Controller` method. It is the bridge between the Servlet Container world (raw `HttpServletRequest`/`HttpServletResponse`) and the Spring MVC world (`@RequestMapping`, `@PathVariable`, `@RequestBody`, etc.).
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  DispatcherServlet — The Single Entry Point:                                     │
+│                                                                                  │
+│  Without DispatcherServlet (raw Servlets):                                       │
+│  ┌──────────────────────────────────────────┐                                   │
+│  │  Servlet Container                        │                                   │
+│  │  ┌──────────────────────────────────────┐ │                                   │
+│  │  │ /users   → UserServlet.doGet()       │ │  ← one Servlet PER URL pattern  │
+│  │  │ /orders  → OrderServlet.doGet()      │ │                                   │
+│  │  │ /products→ ProductServlet.doGet()    │ │                                   │
+│  │  │ /login   → LoginServlet.doPost()     │ │                                   │
+│  │  └──────────────────────────────────────┘ │                                   │
+│  └──────────────────────────────────────────┘                                   │
+│                                                                                  │
+│  With DispatcherServlet (Spring MVC):                                            │
+│  ┌──────────────────────────────────────────┐                                   │
+│  │  Servlet Container                        │                                   │
+│  │  ┌──────────────────────────────────────┐ │                                   │
+│  │  │ /*  → DispatcherServlet              │ │  ← ONE Servlet for ALL URLs      │
+│  │  │        ├→ UserController.getById()   │ │                                   │
+│  │  │        ├→ OrderController.create()   │ │  ← dispatches to @Controller     │
+│  │  │        ├→ ProductController.list()   │ │    methods via HandlerMapping     │
+│  │  │        └→ AuthController.login()     │ │                                   │
+│  │  └──────────────────────────────────────┘ │                                   │
+│  └──────────────────────────────────────────┘                                   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### DispatcherServlet Internals — Key Methods
+
+The `DispatcherServlet` extends `HttpServlet` and overrides the `service()` method. Internally, the main dispatch logic lives in `doDispatch()`:
+
+```java
+// Simplified DispatcherServlet source code — what actually runs on each request
+public class DispatcherServlet extends FrameworkServlet {
+
+    // These are initialized at startup from the Spring ApplicationContext
+    private List<HandlerMapping>        handlerMappings;
+    private List<HandlerAdapter>        handlerAdapters;
+    private List<HandlerExceptionResolver> exceptionResolvers;
+    private List<ViewResolver>          viewResolvers;
+
+    @Override
+    protected void initStrategies(ApplicationContext context) {
+        // Called once at startup — loads all strategy beans from IoC container
+        initHandlerMappings(context);       // find all HandlerMapping beans
+        initHandlerAdapters(context);       // find all HandlerAdapter beans
+        initHandlerExceptionResolvers(context);
+        initViewResolvers(context);
+        initMultipartResolver(context);     // file upload handling
+        initLocaleResolver(context);        // i18n
+        initThemeResolver(context);
+    }
+
+    // ── THE CORE METHOD — called on every HTTP request ────────────────────────
+    protected void doDispatch(HttpServletRequest request,
+                              HttpServletResponse response) throws Exception {
+
+        HandlerExecutionChain mappedHandler = null;
+        ModelAndView mv = null;
+
+        try {
+            // ── STEP 1: Find the handler (controller method) for this request ──
+            mappedHandler = getHandler(request);
+            //   → iterates through handlerMappings
+            //   → RequestMappingHandlerMapping matches URL + HTTP method
+            //   → returns HandlerExecutionChain (handler + interceptors)
+
+            if (mappedHandler == null) {
+                noHandlerFound(request, response);   // → 404
+                return;
+            }
+
+            // ── STEP 2: Find the adapter that can invoke this handler ──────────
+            HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
+            //   → RequestMappingHandlerAdapter handles @RequestMapping methods
+
+            // ── STEP 3: Execute pre-handle interceptors ────────────────────────
+            if (!mappedHandler.applyPreHandle(request, response)) {
+                return;   // interceptor said stop (e.g., auth check failed)
+            }
+
+            // ── STEP 4: Actually invoke the controller method ──────────────────
+            mv = ha.handle(request, response, mappedHandler.getHandler());
+            //   RequestMappingHandlerAdapter internally:
+            //   1. Resolves method arguments:
+            //      @PathVariable → extract from URL path
+            //      @RequestParam → extract from query string
+            //      @RequestBody  → read request body, deserialise via
+            //                       HttpMessageConverter (Jackson for JSON)
+            //      @RequestHeader → extract from HTTP headers
+            //   2. Calls the actual controller method via reflection:
+            //      Method.invoke(controllerInstance, resolvedArgs)
+            //   3. Handles return value:
+            //      @ResponseBody → serialise to JSON via Jackson
+            //      String        → treat as view name
+            //      ModelAndView  → use as-is
+
+            // ── STEP 5: Execute post-handle interceptors ───────────────────────
+            mappedHandler.applyPostHandle(request, response, mv);
+
+        } catch (Exception ex) {
+            // ── STEP 6: Exception handling ─────────────────────────────────────
+            mv = processHandlerException(request, response,
+                                         mappedHandler, ex);
+            //   → @ControllerAdvice / @ExceptionHandler methods invoked here
+        }
+
+        // ── STEP 7: Render view (if ModelAndView returned) ─────────────────────
+        if (mv != null && !mv.wasCleared()) {
+            render(mv, request, response);
+            //   → ViewResolver resolves view name to View object
+            //   → View.render() writes HTML to response
+        }
+
+        // ── STEP 8: After-completion interceptors ──────────────────────────────
+        mappedHandler.triggerAfterCompletion(request, response, null);
+    }
+
+    private HandlerExecutionChain getHandler(HttpServletRequest request)
+            throws Exception {
+        // Iterate through all registered HandlerMappings
+        for (HandlerMapping mapping : this.handlerMappings) {
+            HandlerExecutionChain handler = mapping.getHandler(request);
+            if (handler != null) {
+                return handler;   // first match wins
+            }
+        }
+        return null;   // no handler found → 404
+    }
+}
+```
+
+##### How Spring Boot Auto-Configures DispatcherServlet
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Spring Boot Auto-Configuration of DispatcherServlet:                            │
+│                                                                                  │
+│  When spring-boot-starter-web is on the classpath:                               │
+│                                                                                  │
+│  1. DispatcherServletAutoConfiguration activates                                │
+│       @ConditionalOnClass(DispatcherServlet.class) ✓                            │
+│       @ConditionalOnWebApplication ✓                                            │
+│                                                                                  │
+│  2. Creates DispatcherServlet bean                                               │
+│       @Bean("dispatcherServlet")                                                │
+│       public DispatcherServlet dispatcherServlet() {                            │
+│           return new DispatcherServlet();                                        │
+│       }                                                                          │
+│                                                                                  │
+│  3. DispatcherServletRegistrationBean registers it with Tomcat                  │
+│       → URL mapping: "/" (handles ALL requests)                                 │
+│       → Load-on-startup: -1 (created when first request arrives                │
+│         or at app startup if set to ≥ 0)                                        │
+│                                                                                  │
+│  4. DispatcherServlet.onRefresh(ApplicationContext) called                       │
+│       → initStrategies() loads HandlerMappings, HandlerAdapters, etc.           │
+│       → from the Spring IoC container (ApplicationContext)                      │
+│                                                                                  │
+│  You never write this code — Spring Boot does it all automatically.             │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### DispatcherServlet Inheritance Hierarchy
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  DispatcherServlet Class Hierarchy:                                               │
+│                                                                                  │
+│  jakarta.servlet.Servlet               (interface — defines service())           │
+│      │                                                                           │
+│      └── jakarta.servlet.GenericServlet (abstract — lifecycle: init/destroy)     │
+│              │                                                                   │
+│              └── jakarta.servlet.http.HttpServlet                                │
+│                      │  → service() dispatches to doGet/doPost/doPut/doDelete   │
+│                      │                                                           │
+│                      └── FrameworkServlet (Spring)                               │
+│                              │  → Overrides service() to call processRequest()  │
+│                              │  → processRequest() calls doService()            │
+│                              │  → Publishes ServletRequestHandledEvent          │
+│                              │  → Holds reference to WebApplicationContext      │
+│                              │                                                   │
+│                              └── DispatcherServlet (Spring MVC)                 │
+│                                      → doService() calls doDispatch()           │
+│                                      → doDispatch() is the main dispatch loop   │
+│                                      → Delegates to HandlerMapping,             │
+│                                        HandlerAdapter, ViewResolver, etc.       │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### What is HandlerMapping?
+
+A **HandlerMapping** is a Spring MVC strategy interface that maps an incoming HTTP request to a **handler** (typically a `@Controller` method). When `DispatcherServlet` receives a request, it asks each registered `HandlerMapping`: *"Do you have a handler for this request?"* The first one that returns a match wins.
+
+```java
+// HandlerMapping interface — the contract
+public interface HandlerMapping {
+
+    /**
+     * Given an HTTP request, return the handler (controller method)
+     * and any interceptors that should be applied.
+     * Returns null if this HandlerMapping has no handler for the request.
+     */
+    HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception;
+}
+```
+
+##### Types of HandlerMapping
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  HandlerMapping Implementations (ordered by priority):                            │
+│                                                                                  │
+│  ┌───────────────────────────────────┬───────────────────────────────────────┐   │
+│  │ HandlerMapping                    │ What it maps                          │   │
+│  ├───────────────────────────────────┼───────────────────────────────────────┤   │
+│  │ RequestMappingHandlerMapping      │ @RequestMapping / @GetMapping /      │   │
+│  │ (most commonly used)              │ @PostMapping annotations on          │   │
+│  │                                   │ @Controller and @RestController      │   │
+│  │                                   │ methods. This is what you use 99%    │   │
+│  │                                   │ of the time.                         │   │
+│  ├───────────────────────────────────┼───────────────────────────────────────┤   │
+│  │ BeanNameUrlHandlerMapping         │ Maps URLs to bean names starting     │   │
+│  │                                   │ with "/". Legacy — rarely used.      │   │
+│  ├───────────────────────────────────┼───────────────────────────────────────┤   │
+│  │ SimpleUrlHandlerMapping           │ Explicit URL-to-handler map defined  │   │
+│  │                                   │ in configuration. Used for static    │   │
+│  │                                   │ resources.                           │   │
+│  ├───────────────────────────────────┼───────────────────────────────────────┤   │
+│  │ RouterFunctionMapping             │ Maps functional endpoints defined    │   │
+│  │                                   │ with RouterFunction (WebFlux style   │   │
+│  │                                   │ available in MVC since Spring 5.2).  │   │
+│  └───────────────────────────────────┴───────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### How RequestMappingHandlerMapping Works Internally
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  RequestMappingHandlerMapping — Startup Phase:                                   │
+│                                                                                  │
+│  During application startup (afterPropertiesSet / InitializingBean):             │
+│                                                                                  │
+│  1. Scan all beans in the ApplicationContext                                     │
+│  2. For each bean annotated with @Controller or @RequestMapping at class level:  │
+│     3. Scan all methods for @RequestMapping / @GetMapping / @PostMapping ...     │
+│     4. For each annotated method, create a RequestMappingInfo object:            │
+│        ┌──────────────────────────────────────────────────────────────┐          │
+│        │ RequestMappingInfo:                                          │          │
+│        │   patterns:  ["/api/v1/users/{id}"]                         │          │
+│        │   methods:   [GET]                                           │          │
+│        │   params:    []                                              │          │
+│        │   headers:   []                                              │          │
+│        │   consumes:  [application/json]                             │          │
+│        │   produces:  [application/json]                             │          │
+│        └──────────────────────────────────────────────────────────────┘          │
+│     5. Register mapping: RequestMappingInfo → HandlerMethod                     │
+│        (HandlerMethod = controller bean + Method reference)                     │
+│                                                                                  │
+│  Result: an in-memory registry (HashMap) of all URL patterns → handler methods  │
+│                                                                                  │
+│  Registry contents (example):                                                    │
+│  ┌──────────────────────────────────────────┬────────────────────────────────┐   │
+│  │ RequestMappingInfo                       │ HandlerMethod                  │   │
+│  ├──────────────────────────────────────────┼────────────────────────────────┤   │
+│  │ GET /api/v1/users                        │ UserController#list()         │   │
+│  │ GET /api/v1/users/{id}                   │ UserController#getById(Long)  │   │
+│  │ POST /api/v1/users                       │ UserController#create(Req)    │   │
+│  │ PUT /api/v1/users/{id}                   │ UserController#update(L, Req) │   │
+│  │ DELETE /api/v1/users/{id}                │ UserController#delete(Long)   │   │
+│  │ GET /api/v1/orders                       │ OrderController#list()        │   │
+│  │ POST /api/v1/orders                      │ OrderController#create(Req)   │   │
+│  └──────────────────────────────────────────┴────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  RequestMappingHandlerMapping — Runtime Phase (on each request):                 │
+│                                                                                  │
+│  Input: HttpServletRequest for "GET /api/v1/users/42"                           │
+│                                                                                  │
+│  1. Extract request URL: "/api/v1/users/42"                                     │
+│  2. Extract HTTP method: GET                                                     │
+│  3. Look up in the registry:                                                     │
+│       → Match URL pattern "/api/v1/users/{id}" using PathPattern matching       │
+│       → Match HTTP method GET                                                   │
+│       → Match content type, accept headers if specified                         │
+│  4. Extract path variables: {id} = "42"                                         │
+│  5. Store in request attributes:                                                │
+│       request.setAttribute(BEST_MATCHING_HANDLER_ATTRIBUTE, handlerMethod)      │
+│       request.setAttribute(URI_TEMPLATE_VARIABLES_ATTRIBUTE, {id=42})           │
+│  6. Wrap handler + interceptors into HandlerExecutionChain                      │
+│  7. Return to DispatcherServlet                                                 │
+│                                                                                  │
+│  If NO match found:                                                              │
+│    → Return null                                                                │
+│    → DispatcherServlet tries next HandlerMapping                                │
+│    → If all return null → 404 Not Found                                         │
+│                                                                                  │
+│  If MULTIPLE matches found:                                                      │
+│    → Most specific pattern wins                                                 │
+│    → "/api/v1/users/42" beats "/api/v1/users/{id}" beats "/api/v1/**"          │
+│    → If ambiguous → IllegalStateException ("Ambiguous handler methods")         │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### HandlerExecutionChain — Handler + Interceptors
+
+```java
+// What getHandler() returns — not just the handler, but also interceptors
+public class HandlerExecutionChain {
+    private final Object handler;                    // the controller method
+    private final List<HandlerInterceptor> interceptors;  // interceptors to apply
+
+    // DispatcherServlet calls these in order:
+    boolean applyPreHandle(request, response);       // all interceptors' preHandle()
+    void applyPostHandle(request, response, mv);     // all interceptors' postHandle()
+    void triggerAfterCompletion(request, response, ex); // all interceptors' afterCompletion()
+}
+```
+
+##### HandlerAdapter — The Bridge Between DispatcherServlet and Controller Methods
+
+After `HandlerMapping` finds the handler, the `DispatcherServlet` needs a `HandlerAdapter` to actually invoke it. The adapter knows how to resolve method arguments and handle return values:
+
+```java
+public interface HandlerAdapter {
+
+    // Can this adapter handle the given handler?
+    boolean supports(Object handler);
+
+    // Invoke the handler and return a ModelAndView
+    ModelAndView handle(HttpServletRequest request,
+                        HttpServletResponse response,
+                        Object handler) throws Exception;
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  RequestMappingHandlerAdapter — What Happens Inside handle():                    │
+│                                                                                  │
+│  handle(request, response, handlerMethod)                                        │
+│      │                                                                           │
+│      ▼                                                                           │
+│  1. Resolve Method Arguments (ArgumentResolvers):                                │
+│     ┌─────────────────────────────────────────────────────────────────────┐      │
+│     │ @PathVariable Long id                                               │      │
+│     │   → PathVariableMethodArgumentResolver                             │      │
+│     │   → reads from URI_TEMPLATE_VARIABLES_ATTRIBUTE → "42" → 42L      │      │
+│     │                                                                     │      │
+│     │ @RequestBody UserRequest request                                    │      │
+│     │   → RequestResponseBodyMethodProcessor                             │      │
+│     │   → reads request body bytes                                       │      │
+│     │   → selects HttpMessageConverter (MappingJackson2HttpMessageConverter)│     │
+│     │   → deserialises JSON → UserRequest object                         │      │
+│     │   → runs @Valid validation (if present) via Hibernate Validator    │      │
+│     │                                                                     │      │
+│     │ @RequestParam String name                                           │      │
+│     │   → RequestParamMethodArgumentResolver                             │      │
+│     │   → reads from query string: ?name=Alice → "Alice"                │      │
+│     │                                                                     │      │
+│     │ @RequestHeader("Authorization") String auth                         │      │
+│     │   → RequestHeaderMethodArgumentResolver                            │      │
+│     │   → reads from HTTP header                                         │      │
+│     └─────────────────────────────────────────────────────────────────────┘      │
+│      │                                                                           │
+│      ▼                                                                           │
+│  2. Invoke Controller Method via Reflection:                                     │
+│     Method.invoke(controllerBean, resolvedArgs)                                 │
+│     → UserController.getById(42L) called                                        │
+│      │                                                                           │
+│      ▼                                                                           │
+│  3. Handle Return Value (ReturnValueHandlers):                                   │
+│     ┌─────────────────────────────────────────────────────────────────────┐      │
+│     │ ResponseEntity<UserResponse>                                        │      │
+│     │   → HttpEntityMethodProcessor                                      │      │
+│     │   → extracts status code, headers, body                           │      │
+│     │   → selects HttpMessageConverter for body serialisation            │      │
+│     │   → MappingJackson2HttpMessageConverter.write(userResponse)        │      │
+│     │   → Jackson ObjectMapper serialises UserResponse → JSON bytes     │      │
+│     │   → writes to HttpServletResponse output stream                   │      │
+│     │   → sets Content-Type: application/json                           │      │
+│     └─────────────────────────────────────────────────────────────────────┘      │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### What is the IoC Container?
+
+**IoC (Inversion of Control) Container** — also called the **Spring Container** or **ApplicationContext** — is the core of the Spring Framework. It is responsible for **creating**, **configuring**, **wiring**, and **managing the lifecycle** of all objects (called **beans**) in your application.
+
+**Inversion of Control** means that objects do **not** create their own dependencies. Instead, the container **injects** dependencies into objects. This is also called **Dependency Injection (DI)**.
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Without IoC (traditional code):                                                 │
+│                                                                                  │
+│  public class OrderService {                                                     │
+│      // The class creates its own dependencies — tight coupling                 │
+│      private UserRepository userRepo = new UserRepositoryImpl();                │
+│      private EmailService emailService = new EmailServiceImpl("smtp.gmail.com");│
+│      private PaymentGateway gateway = new StripePaymentGateway("sk_key");       │
+│                                                                                  │
+│      // Problems:                                                                │
+│      // 1. Cannot swap implementations without code change                      │
+│      // 2. Cannot unit test — stuck with real EmailService, real Stripe         │
+│      // 3. Every class manages its own dependency graph                         │
+│      // 4. Circular dependencies cause StackOverflow                            │
+│  }                                                                               │
+│                                                                                  │
+│  With IoC (Spring):                                                              │
+│                                                                                  │
+│  @Service                                                                        │
+│  public class OrderService {                                                     │
+│      // Dependencies INJECTED by the container — loose coupling                 │
+│      private final UserRepository userRepo;          // interface               │
+│      private final EmailService emailService;        // interface               │
+│      private final PaymentGateway gateway;           // interface               │
+│                                                                                  │
+│      public OrderService(UserRepository userRepo,                               │
+│                          EmailService emailService,                              │
+│                          PaymentGateway gateway) {                               │
+│          this.userRepo = userRepo;                                              │
+│          this.emailService = emailService;                                      │
+│          this.gateway = gateway;                                                │
+│      }                                                                           │
+│      // Container provides the right implementations at runtime                 │
+│      // In tests: pass mocks → new OrderService(mockRepo, mockEmail, mockGw)   │
+│  }                                                                               │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### IoC Container Hierarchy
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Spring IoC Container — Interface Hierarchy:                                     │
+│                                                                                  │
+│  BeanFactory (root interface)                                                    │
+│      │  → Basic container: creates beans, resolves dependencies                 │
+│      │  → Lazy initialization by default                                        │
+│      │  → Methods: getBean(name), getBean(class), containsBean(name)           │
+│      │                                                                           │
+│      └── ApplicationContext (extends BeanFactory)                               │
+│              │  → Full-featured container (this is what Spring Boot uses)       │
+│              │  → Eager initialization by default (beans created at startup)    │
+│              │  → Additional features over BeanFactory:                         │
+│              │     • Event publishing (ApplicationEvent)                        │
+│              │     • Message source (i18n)                                      │
+│              │     • Environment abstraction (profiles, properties)             │
+│              │     • Resource loading (classpath:, file:, http:)                │
+│              │     • AOP integration                                            │
+│              │     • @PostConstruct / @PreDestroy lifecycle hooks               │
+│              │                                                                   │
+│              ├── AnnotationConfigApplicationContext                              │
+│              │     → For standalone (non-web) Spring apps                       │
+│              │     → Reads @Configuration + @ComponentScan                      │
+│              │                                                                   │
+│              ├── AnnotationConfigServletWebServerApplicationContext              │
+│              │     → For Spring Boot web apps (Servlet-based)                   │
+│              │     → This is what SpringApplication.run() creates               │
+│              │     → Starts embedded Tomcat/Jetty/Undertow                      │
+│              │                                                                   │
+│              └── AnnotationConfigReactiveWebServerApplicationContext            │
+│                    → For Spring WebFlux (reactive) apps                          │
+│                    → Starts embedded Netty                                       │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### How the IoC Container Creates and Manages Beans
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  IoC Container — Bean Lifecycle (complete):                                      │
+│                                                                                  │
+│  SpringApplication.run(MyApplication.class, args)                               │
+│      │                                                                           │
+│      ▼                                                                           │
+│  1. Create ApplicationContext                                                    │
+│      → AnnotationConfigServletWebServerApplicationContext                       │
+│      │                                                                           │
+│      ▼                                                                           │
+│  2. Scan for Bean Definitions                                                    │
+│      → @ComponentScan scans base package + sub-packages                         │
+│      → Finds classes annotated with:                                            │
+│         @Component, @Service, @Repository, @Controller, @RestController,        │
+│         @Configuration, @Bean methods                                            │
+│      → Creates BeanDefinition objects (metadata, NOT instances yet):            │
+│         ┌─────────────────────────────────────────────────────┐                 │
+│         │ BeanDefinition for "userService":                    │                 │
+│         │   beanClass: UserServiceImpl.class                   │                 │
+│         │   scope: singleton (default)                         │                 │
+│         │   lazyInit: false                                    │                 │
+│         │   dependsOn: [userRepository, userMapper]           │                 │
+│         │   initMethod: null                                   │                 │
+│         │   destroyMethod: null                                │                 │
+│         └─────────────────────────────────────────────────────┘                 │
+│      │                                                                           │
+│      ▼                                                                           │
+│  3. BeanFactoryPostProcessor Phase                                               │
+│      → Modify bean definitions BEFORE any beans are created                     │
+│      → PropertySourcesPlaceholderConfigurer resolves ${...} placeholders        │
+│      → ConfigurationClassPostProcessor processes @Configuration classes         │
+│      │                                                                           │
+│      ▼                                                                           │
+│  4. Instantiate Beans (in dependency order)                                      │
+│      → Container resolves the dependency graph (topological sort)               │
+│      → Creates beans in order: dependencies first, dependents second            │
+│                                                                                  │
+│      For each bean:                                                              │
+│      ┌──────────────────────────────────────────────────────────────────┐        │
+│      │ a) Constructor call                                              │        │
+│      │    → new UserServiceImpl(userRepository, userMapper)             │        │
+│      │    → Dependencies are resolved and injected via constructor     │        │
+│      │                                                                  │        │
+│      │ b) Populate properties                                           │        │
+│      │    → @Autowired fields set (if field injection used)            │        │
+│      │    → @Value("${...}") properties resolved and set              │        │
+│      │                                                                  │        │
+│      │ c) BeanPostProcessor.postProcessBeforeInitialization()          │        │
+│      │    → @PostConstruct method called                               │        │
+│      │    → CommonAnnotationBeanPostProcessor handles this             │        │
+│      │                                                                  │        │
+│      │ d) InitializingBean.afterPropertiesSet()                        │        │
+│      │    → If bean implements InitializingBean                        │        │
+│      │                                                                  │        │
+│      │ e) Custom init-method                                            │        │
+│      │    → @Bean(initMethod = "init") if specified                    │        │
+│      │                                                                  │        │
+│      │ f) BeanPostProcessor.postProcessAfterInitialization()           │        │
+│      │    → AOP proxies created here                                   │        │
+│      │    → @Transactional → CGLIB proxy wrapping the bean             │        │
+│      │    → @Cacheable → proxy with cache logic                       │        │
+│      │    → @Async → proxy with async execution logic                 │        │
+│      └──────────────────────────────────────────────────────────────────┘        │
+│      │                                                                           │
+│      ▼                                                                           │
+│  5. Beans Are Ready — Application Context Refreshed                             │
+│      → ApplicationReadyEvent published                                          │
+│      → DispatcherServlet initialized with HandlerMappings from context          │
+│      → Embedded Tomcat started                                                  │
+│      → Application is live                                                      │
+│      │                                                                           │
+│      ▼                                                                           │
+│  6. Runtime — Beans serve requests                                               │
+│      → Singleton beans shared across all requests                               │
+│      → Prototype beans: new instance created per getBean() call                 │
+│      │                                                                           │
+│      ▼                                                                           │
+│  7. Shutdown                                                                     │
+│      → @PreDestroy methods called                                               │
+│      → DisposableBean.destroy() called                                          │
+│      → Custom destroy-method called                                             │
+│      → ApplicationContext closed                                                │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Bean Scopes
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Bean Scopes:                                                                    │
+│                                                                                  │
+│  ┌─────────────┬─────────────────────────────────────────────────────────────┐  │
+│  │ Scope       │ Description                                                 │  │
+│  ├─────────────┼─────────────────────────────────────────────────────────────┤  │
+│  │ singleton   │ ONE instance per ApplicationContext (DEFAULT).              │  │
+│  │ (default)   │ All injections of this bean point to the SAME object.      │  │
+│  │             │ Created at startup (eager). Thread-safe design required.   │  │
+│  ├─────────────┼─────────────────────────────────────────────────────────────┤  │
+│  │ prototype   │ NEW instance every time getBean() is called or injected.   │  │
+│  │             │ Container does NOT manage lifecycle after creation —        │  │
+│  │             │ no @PreDestroy called.                                      │  │
+│  ├─────────────┼─────────────────────────────────────────────────────────────┤  │
+│  │ request     │ ONE instance per HTTP request (web apps only).             │  │
+│  │             │ Destroyed when the request completes.                      │  │
+│  ├─────────────┼─────────────────────────────────────────────────────────────┤  │
+│  │ session     │ ONE instance per HTTP session (web apps only).             │  │
+│  │             │ Destroyed when the session expires.                        │  │
+│  ├─────────────┼─────────────────────────────────────────────────────────────┤  │
+│  │ application │ ONE instance per ServletContext (web apps only).            │  │
+│  │             │ Similar to singleton but scoped to the web layer.          │  │
+│  └─────────────┴─────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Dependency Injection Types
+
+```java
+// ── 1. Constructor Injection (RECOMMENDED) ──────────────────────────────────────
+@Service
+public class OrderService {
+    private final UserRepository userRepo;
+    private final PaymentGateway paymentGateway;
+
+    // Spring sees this constructor and injects matching beans
+    // @Autowired is optional when there's only one constructor (Spring 4.3+)
+    public OrderService(UserRepository userRepo, PaymentGateway paymentGateway) {
+        this.userRepo = userRepo;
+        this.paymentGateway = paymentGateway;
+    }
+}
+
+// ── 2. Setter Injection ─────────────────────────────────────────────────────────
+@Service
+public class NotificationService {
+    private EmailService emailService;
+
+    @Autowired
+    public void setEmailService(EmailService emailService) {
+        this.emailService = emailService;
+    }
+    // Used for optional dependencies — bean can function without it
+}
+
+// ── 3. Field Injection (NOT RECOMMENDED — hard to test) ─────────────────────────
+@Service
+public class ReportService {
+    @Autowired
+    private DataSource dataSource;    // injected directly into the field
+    // Cannot set this in unit tests without reflection or a Spring context
+}
+```
+
+##### How the IoC Container Resolves Dependencies
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Dependency Resolution — What the Container Does:                                │
+│                                                                                  │
+│  Given:                                                                          │
+│    @Service                                                                      │
+│    class UserServiceImpl implements UserService {                                │
+│        UserServiceImpl(UserRepository repo, UserMapper mapper) { ... }          │
+│    }                                                                             │
+│                                                                                  │
+│  Container resolution:                                                           │
+│  1. "I need to create UserServiceImpl"                                          │
+│  2. "Its constructor requires UserRepository and UserMapper"                    │
+│  3. "Let me find a bean of type UserRepository..."                              │
+│       → Found: userRepository (JPA proxy created by Spring Data)               │
+│  4. "Let me find a bean of type UserMapper..."                                  │
+│       → Found: userMapper (component-scanned @Component)                       │
+│  5. "Both dependencies resolved. Calling constructor:"                          │
+│       new UserServiceImpl(userRepository, userMapper)                           │
+│  6. "Bean created. Running BeanPostProcessors..."                               │
+│       → @Transactional detected → wrap in CGLIB proxy                          │
+│  7. "Registering in singleton cache as 'userServiceImpl'"                       │
+│                                                                                  │
+│  If Step 3 or 4 fails:                                                           │
+│  → NoSuchBeanDefinitionException:                                               │
+│    "No qualifying bean of type 'UserMapper' available"                          │
+│                                                                                  │
+│  If multiple beans match:                                                        │
+│  → NoUniqueBeanDefinitionException:                                             │
+│    "Expected single matching bean but found 2: impl1, impl2"                   │
+│  → Fix with: @Primary on preferred bean, or @Qualifier("impl1") at injection  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### Complete Request-Response Flow — All Components Working Together
+
+This is the end-to-end flow showing the **Servlet Container**, **DispatcherServlet**, **HandlerMapping**, **IoC Container**, and the **exact methods** called on each bean, for a `GET /api/v1/users/42` request:
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                  │
+│   CLIENT                                                                         │
+│   GET /api/v1/users/42                                                           │
+│   Headers: Accept: application/json                                              │
+│            Authorization: Bearer eyJhbGci...                                    │
+│      │                                                                           │
+│      │  TCP connection on port 8080                                              │
+│      ▼                                                                           │
+│  ╔══════════════════════════════════════════════════════════════════════════════╗ │
+│  ║  SERVLET CONTAINER (Embedded Tomcat)                                       ║ │
+│  ║                                                                            ║ │
+│  ║  1. Tomcat NIO Connector                                                   ║ │
+│  ║     • Acceptor thread accepts the TCP connection (ServerSocket.accept())   ║ │
+│  ║     • Reads raw HTTP bytes from the socket                                ║ │
+│  ║     • Parses HTTP request line: "GET /api/v1/users/42 HTTP/1.1"          ║ │
+│  ║     • Parses headers into key-value map                                   ║ │
+│  ║     • Creates:                                                             ║ │
+│  ║       - org.apache.catalina.connector.Request (→ HttpServletRequest)      ║ │
+│  ║       - org.apache.catalina.connector.Response (→ HttpServletResponse)    ║ │
+│  ║                                                                            ║ │
+│  ║  2. Tomcat assigns a thread from the NIO thread pool (default: 200)       ║ │
+│  ║     → Thread: "http-nio-8080-exec-7"                                      ║ │
+│  ║                                                                            ║ │
+│  ║  3. Tomcat Pipeline → Valve chain → ApplicationFilterChain                ║ │
+│  ║     ┌──────────────────────────────────────────────────────────────────┐   ║ │
+│  ║     │  FILTER CHAIN (executed in order):                               │   ║ │
+│  ║     │                                                                  │   ║ │
+│  ║     │  CharacterEncodingFilter.doFilter(req, res, chain)              │   ║ │
+│  ║     │    → req.setCharacterEncoding("UTF-8")                          │   ║ │
+│  ║     │    → chain.doFilter(req, res)                                   │   ║ │
+│  ║     │         │                                                        │   ║ │
+│  ║     │         ▼                                                        │   ║ │
+│  ║     │  CorsFilter.doFilter(req, res, chain)                           │   ║ │
+│  ║     │    → checks Origin header, adds Access-Control-* headers        │   ║ │
+│  ║     │    → chain.doFilter(req, res)                                   │   ║ │
+│  ║     │         │                                                        │   ║ │
+│  ║     │         ▼                                                        │   ║ │
+│  ║     │  SecurityFilterChain (Spring Security — 15+ filters):           │   ║ │
+│  ║     │    SecurityContextHolderFilter.doFilter()                        │   ║ │
+│  ║     │      → creates empty SecurityContext                             │   ║ │
+│  ║     │    JwtAuthenticationFilter.doFilter() (your custom filter)       │   ║ │
+│  ║     │      → extracts "Bearer eyJhbGci..." from Authorization header │   ║ │
+│  ║     │      → validates JWT signature and expiry                       │   ║ │
+│  ║     │      → creates UsernamePasswordAuthenticationToken              │   ║ │
+│  ║     │      → SecurityContextHolder.getContext()                        │   ║ │
+│  ║     │            .setAuthentication(authToken)                         │   ║ │
+│  ║     │    AuthorizationFilter.doFilter()                                │   ║ │
+│  ║     │      → checks if authenticated user has required role           │   ║ │
+│  ║     │    → chain.doFilter(req, res)                                   │   ║ │
+│  ║     │         │                                                        │   ║ │
+│  ║     └─────────┼────────────────────────────────────────────────────────┘   ║ │
+│  ║               │                                                            ║ │
+│  ║               ▼                                                            ║ │
+│  ║  4. Request reaches the Servlet registered at "/"                          ║ │
+│  ║     → DispatcherServlet (the ONLY Servlet in a Spring Boot app)           ║ │
+│  ║     → Tomcat calls: dispatcherServlet.service(request, response)          ║ │
+│  ║                                                                            ║ │
+│  ╚═══════════════╪═══════════════════════════════════════════════════════════╝ │
+│                  │                                                               │
+│                  ▼                                                               │
+│  ╔══════════════════════════════════════════════════════════════════════════════╗ │
+│  ║  DISPATCHER SERVLET                                                        ║ │
+│  ║                                                                            ║ │
+│  ║  FrameworkServlet.service(req, res)                                        ║ │
+│  ║    → FrameworkServlet.processRequest(req, res)                            ║ │
+│  ║       → DispatcherServlet.doService(req, res)                             ║ │
+│  ║          → DispatcherServlet.doDispatch(req, res)   ← main entry point   ║ │
+│  ║                                                                            ║ │
+│  ║  ┌─── doDispatch() Step-by-Step: ──────────────────────────────────────┐  ║ │
+│  ║  │                                                                      │  ║ │
+│  ║  │  STEP 1: Find Handler via HandlerMapping                            │  ║ │
+│  ║  │  ────────────────────────────────────────                            │  ║ │
+│  ║  │  HandlerExecutionChain mappedHandler = getHandler(request);          │  ║ │
+│  ║  │                                                                      │  ║ │
+│  ║  │  → Iterates through registered HandlerMappings:                     │  ║ │
+│  ║  │                                                                      │  ║ │
+│  ║  │  ┌──────────────────────────────────────────────────────────────┐   │  ║ │
+│  ║  │  │  RequestMappingHandlerMapping.getHandler(request)            │   │  ║ │
+│  ║  │  │                                                              │   │  ║ │
+│  ║  │  │  • Extract URL: "/api/v1/users/42"                          │   │  ║ │
+│  ║  │  │  • Extract method: GET                                       │   │  ║ │
+│  ║  │  │  • Search mapping registry:                                  │   │  ║ │
+│  ║  │  │    "GET /api/v1/users/{id}" matches!                        │   │  ║ │
+│  ║  │  │  • Resolve: handler = UserController#getById(Long)          │   │  ║ │
+│  ║  │  │  • Extract path variables: {id} → "42"                     │   │  ║ │
+│  ║  │  │  • Collect interceptors: [LoggingInterceptor, ...]          │   │  ║ │
+│  ║  │  │  • Return HandlerExecutionChain:                            │   │  ║ │
+│  ║  │  │      handler: HandlerMethod[UserController#getById]         │   │  ║ │
+│  ║  │  │      interceptors: [LoggingInterceptor]                     │   │  ║ │
+│  ║  │  └──────────────────────────────────────────────────────────────┘   │  ║ │
+│  ║  │                                                                      │  ║ │
+│  ║  │  STEP 2: Find HandlerAdapter                                        │  ║ │
+│  ║  │  ────────────────────────────────                                    │  ║ │
+│  ║  │  HandlerAdapter ha = getHandlerAdapter(handler);                     │  ║ │
+│  ║  │  → RequestMappingHandlerAdapter (handles @RequestMapping methods)   │  ║ │
+│  ║  │                                                                      │  ║ │
+│  ║  │  STEP 3: Pre-Handle Interceptors                                    │  ║ │
+│  ║  │  ────────────────────────────────                                    │  ║ │
+│  ║  │  mappedHandler.applyPreHandle(request, response)                     │  ║ │
+│  ║  │  → LoggingInterceptor.preHandle(req, res, handler)                  │  ║ │
+│  ║  │    → MDC.put("method", "GET")                                       │  ║ │
+│  ║  │    → MDC.put("path", "/api/v1/users/42")                           │  ║ │
+│  ║  │    → log.info("START GET /api/v1/users/42")                        │  ║ │
+│  ║  │    → return true (continue processing)                              │  ║ │
+│  ║  │                                                                      │  ║ │
+│  ║  │  STEP 4: Invoke Handler (Controller Method)                         │  ║ │
+│  ║  │  ──────────────────────────────────────────                          │  ║ │
+│  ║  │  mv = ha.handle(request, response, handler)                          │  ║ │
+│  ║  │                                                                      │  ║ │
+│  ║  │  RequestMappingHandlerAdapter internally:                            │  ║ │
+│  ║  │                                                                      │  ║ │
+│  ║  │  4a. Resolve arguments:                                              │  ║ │
+│  ║  │      @PathVariable Long id                                           │  ║ │
+│  ║  │        → PathVariableMethodArgumentResolver.resolveArgument()       │  ║ │
+│  ║  │        → reads {id}="42" from request attributes                   │  ║ │
+│  ║  │        → converts String "42" → Long 42L (ConversionService)       │  ║ │
+│  ║  │                                                                      │  ║ │
+│  ║  │  4b. Invoke controller method via reflection:                        │  ║ │
+│  ║  │      Method.invoke(userControllerBean, 42L)                          │  ║ │
+│  ║  │                                                                      │  ║ │
+│  ║  └──┼───────────────────────────────────────────────────────────────────┘  ║ │
+│  ╚═════╪════════════════════════════════════════════════════════════════════════╝ │
+│        │                                                                         │
+│        ▼                                                                         │
+│  ╔══════════════════════════════════════════════════════════════════════════════╗ │
+│  ║  IOC CONTAINER (ApplicationContext) — Beans Serving the Request            ║ │
+│  ║                                                                            ║ │
+│  ║  ┌──────────────────────────────────────────────────────────────────────┐  ║ │
+│  ║  │  UserController.getById(42L)                     [@RestController]  │  ║ │
+│  ║  │  ────────────────────────────────────────────────────────────────── │  ║ │
+│  ║  │                                                                     │  ║ │
+│  ║  │  public ResponseEntity<UserResponse> getById(@PathVariable Long id)│  ║ │
+│  ║  │  {                                                                  │  ║ │
+│  ║  │      return ResponseEntity.ok(userService.findById(id));           │  ║ │
+│  ║  │  }                                                                  │  ║ │
+│  ║  │      │                                                              │  ║ │
+│  ║  │      │ calls userService (injected via constructor by IoC container)│  ║ │
+│  ║  │      ▼                                                              │  ║ │
+│  ║  └──────┼──────────────────────────────────────────────────────────────┘  ║ │
+│  ║         │                                                                  ║ │
+│  ║  ┌──────▼──────────────────────────────────────────────────────────────┐  ║ │
+│  ║  │  CGLIB Proxy for UserServiceImpl              (AOP / @Transactional)│  ║ │
+│  ║  │  ─────────────────────────────────────────────────────────────────  │  ║ │
+│  ║  │                                                                     │  ║ │
+│  ║  │  The IoC container wrapped UserServiceImpl in a CGLIB proxy        │  ║ │
+│  ║  │  because @Transactional(readOnly=true) is on the class.            │  ║ │
+│  ║  │                                                                     │  ║ │
+│  ║  │  proxy.findById(42L) →                                             │  ║ │
+│  ║  │    TransactionInterceptor.invoke()                                 │  ║ │
+│  ║  │      → PlatformTransactionManager.getTransaction()                │  ║ │
+│  ║  │      → DataSource.getConnection()                                 │  ║ │
+│  ║  │        → HikariPool.getConnection() (from connection pool)        │  ║ │
+│  ║  │      → connection.setAutoCommit(false)                             │  ║ │
+│  ║  │      → connection.setReadOnly(true)  (readOnly=true optimisation) │  ║ │
+│  ║  │      → delegate to ACTUAL UserServiceImpl.findById(42L)           │  ║ │
+│  ║  │      │                                                              │  ║ │
+│  ║  │      ▼                                                              │  ║ │
+│  ║  └──────┼──────────────────────────────────────────────────────────────┘  ║ │
+│  ║         │                                                                  ║ │
+│  ║  ┌──────▼──────────────────────────────────────────────────────────────┐  ║ │
+│  ║  │  UserServiceImpl.findById(42L)                         [@Service]  │  ║ │
+│  ║  │  ─────────────────────────────────────────────────────────────────  │  ║ │
+│  ║  │                                                                     │  ║ │
+│  ║  │  public UserResponse findById(Long id) {                           │  ║ │
+│  ║  │      log.debug("Fetching user id={}", id);                        │  ║ │
+│  ║  │      User user = userRepository.findById(id)                      │  ║ │
+│  ║  │          .orElseThrow(() ->                                        │  ║ │
+│  ║  │              new UserNotFoundException("User not found: " + id)); │  ║ │
+│  ║  │      return userMapper.toResponse(user);                          │  ║ │
+│  ║  │  }                                                                  │  ║ │
+│  ║  │      │                                                              │  ║ │
+│  ║  │      │ calls userRepository (injected via constructor by IoC)      │  ║ │
+│  ║  │      ▼                                                              │  ║ │
+│  ║  └──────┼──────────────────────────────────────────────────────────────┘  ║ │
+│  ║         │                                                                  ║ │
+│  ║  ┌──────▼──────────────────────────────────────────────────────────────┐  ║ │
+│  ║  │  Spring Data JPA Proxy for UserRepository        [@Repository]     │  ║ │
+│  ║  │  ─────────────────────────────────────────────────────────────────  │  ║ │
+│  ║  │                                                                     │  ║ │
+│  ║  │  UserRepository is an INTERFACE:                                   │  ║ │
+│  ║  │    public interface UserRepository extends JpaRepository<User, Long>│  ║ │
+│  ║  │                                                                     │  ║ │
+│  ║  │  IoC container creates a proxy (SimpleJpaRepository) at startup:   │  ║ │
+│  ║  │    → JpaRepositoryFactory.getRepository(UserRepository.class)     │  ║ │
+│  ║  │    → Creates a JDK dynamic proxy implementing UserRepository      │  ║ │
+│  ║  │    → Backed by SimpleJpaRepository (default implementation)       │  ║ │
+│  ║  │                                                                     │  ║ │
+│  ║  │  proxy.findById(42L) →                                             │  ║ │
+│  ║  │    SimpleJpaRepository.findById(42L)                               │  ║ │
+│  ║  │      → EntityManager.find(User.class, 42L)                        │  ║ │
+│  ║  │        → Hibernate Session.find(User.class, 42L)                  │  ║ │
+│  ║  │          → First Level Cache (Persistence Context) check          │  ║ │
+│  ║  │            → MISS (first access in this transaction)              │  ║ │
+│  ║  │          → Generate SQL:                                           │  ║ │
+│  ║  │            SELECT u.id, u.name, u.email, u.created_at             │  ║ │
+│  ║  │            FROM users u WHERE u.id = ?                             │  ║ │
+│  ║  │          → PreparedStatement.setLong(1, 42L)                      │  ║ │
+│  ║  │          → PreparedStatement.executeQuery()                        │  ║ │
+│  ║  │            → JDBC driver sends SQL to MySQL over TCP              │  ║ │
+│  ║  │            → MySQL executes query, returns ResultSet              │  ║ │
+│  ║  │          → Hibernate hydrates ResultSet → User entity object      │  ║ │
+│  ║  │            → user.setId(42L)                                       │  ║ │
+│  ║  │            → user.setName("Alice")                                 │  ║ │
+│  ║  │            → user.setEmail("alice@example.com")                    │  ║ │
+│  ║  │            → user.setCreatedAt(LocalDateTime.of(...))             │  ║ │
+│  ║  │          → Store User in First Level Cache                        │  ║ │
+│  ║  │      → return Optional.of(user)                                    │  ║ │
+│  ║  │      │                                                              │  ║ │
+│  ║  └──────┼──────────────────────────────────────────────────────────────┘  ║ │
+│  ║         │                                                                  ║ │
+│  ║         │  Back in UserServiceImpl.findById():                            ║ │
+│  ║         │  Optional<User> is present → unwrap User entity                 ║ │
+│  ║         │                                                                  ║ │
+│  ║  ┌──────▼──────────────────────────────────────────────────────────────┐  ║ │
+│  ║  │  UserMapper.toResponse(user)                       [@Component]    │  ║ │
+│  ║  │  ─────────────────────────────────────────────────────────────────  │  ║ │
+│  ║  │                                                                     │  ║ │
+│  ║  │  public UserResponse toResponse(User user) {                       │  ║ │
+│  ║  │      return new UserResponse(                                      │  ║ │
+│  ║  │          user.getId(),        // 42L                               │  ║ │
+│  ║  │          user.getName(),      // "Alice"                           │  ║ │
+│  ║  │          user.getEmail(),     // "alice@example.com"               │  ║ │
+│  ║  │          user.getCreatedAt()  // 2026-05-11T10:30:00              │  ║ │
+│  ║  │      );                                                             │  ║ │
+│  ║  │  }                                                                  │  ║ │
+│  ║  │  → Returns UserResponse DTO                                        │  ║ │
+│  ║  └──────┼──────────────────────────────────────────────────────────────┘  ║ │
+│  ║         │                                                                  ║ │
+│  ║         │  Back in CGLIB Proxy (TransactionInterceptor):                  ║ │
+│  ║         │  → No exception thrown → commit transaction                     ║ │
+│  ║         │    → connection.commit()                                        ║ │
+│  ║         │    → connection.setReadOnly(false)                              ║ │
+│  ║         │    → HikariPool.releaseConnection(connection)                   ║ │
+│  ║         │  → Return UserResponse to controller                            ║ │
+│  ║         │                                                                  ║ │
+│  ║  ┌──────▼──────────────────────────────────────────────────────────────┐  ║ │
+│  ║  │  Back in UserController.getById():                                  │  ║ │
+│  ║  │  → ResponseEntity.ok(userResponse)                                 │  ║ │
+│  ║  │  → Returns ResponseEntity<UserResponse> with status 200            │  ║ │
+│  ║  └──────┼──────────────────────────────────────────────────────────────┘  ║ │
+│  ║         │                                                                  ║ │
+│  ╚═════════╪════════════════════════════════════════════════════════════════════╝ │
+│            │                                                                     │
+│            ▼                                                                     │
+│  ╔══════════════════════════════════════════════════════════════════════════════╗ │
+│  ║  BACK IN DISPATCHER SERVLET — doDispatch() continues:                      ║ │
+│  ║                                                                            ║ │
+│  ║  STEP 5: Post-Handle Interceptors                                          ║ │
+│  ║  ─────────────────────────────────                                         ║ │
+│  ║  mappedHandler.applyPostHandle(request, response, mv)                      ║ │
+│  ║  → LoggingInterceptor.postHandle(req, res, handler, mv)                   ║ │
+│  ║    → log.info("END GET /api/v1/users/42 — 200 — 15ms")                   ║ │
+│  ║                                                                            ║ │
+│  ║  STEP 6: Resolve Return Value                                              ║ │
+│  ║  ────────────────────────────                                              ║ │
+│  ║  @RestController → @ResponseBody implicit on all methods                   ║ │
+│  ║  → HttpEntityMethodProcessor.handleReturnValue()                          ║ │
+│  ║    → Extract status: 200 OK                                               ║ │
+│  ║    → Extract body: UserResponse object                                    ║ │
+│  ║    → Content negotiation:                                                 ║ │
+│  ║      Client Accept: application/json                                      ║ │
+│  ║      → Select MappingJackson2HttpMessageConverter                         ║ │
+│  ║    → Jackson ObjectMapper.writeValue(outputStream, userResponse)          ║ │
+│  ║      → Introspects UserResponse via reflection (or getter methods)        ║ │
+│  ║      → Serialises to JSON:                                                ║ │
+│  ║        {"id":42,"name":"Alice","email":"alice@example.com",               ║ │
+│  ║         "createdAt":"2026-05-11T10:30:00"}                                ║ │
+│  ║    → Set response headers:                                                ║ │
+│  ║      Content-Type: application/json                                       ║ │
+│  ║      Content-Length: 89                                                    ║ │
+│  ║    → Write JSON bytes to HttpServletResponse.getOutputStream()            ║ │
+│  ║                                                                            ║ │
+│  ║  STEP 7: After-Completion Interceptors                                     ║ │
+│  ║  ──────────────────────────────────                                        ║ │
+│  ║  mappedHandler.triggerAfterCompletion(request, response, null)             ║ │
+│  ║  → LoggingInterceptor.afterCompletion(req, res, handler, ex)              ║ │
+│  ║    → MDC.clear()   // clean up thread-local logging context               ║ │
+│  ║                                                                            ║ │
+│  ╚══════════════════════════════════════════════════════════════════════════════╝ │
+│            │                                                                     │
+│            ▼                                                                     │
+│  ╔══════════════════════════════════════════════════════════════════════════════╗ │
+│  ║  SERVLET CONTAINER (Tomcat) — Response Phase:                              ║ │
+│  ║                                                                            ║ │
+│  ║  → Tomcat flushes HttpServletResponse to the socket                       ║ │
+│  ║  → NIO Connector writes HTTP response bytes:                              ║ │
+│  ║                                                                            ║ │
+│  ║    HTTP/1.1 200 OK                                                         ║ │
+│  ║    Content-Type: application/json                                          ║ │
+│  ║    Content-Length: 89                                                       ║ │
+│  ║    Date: Mon, 12 May 2026 10:30:00 GMT                                    ║ │
+│  ║                                                                            ║ │
+│  ║    {"id":42,"name":"Alice","email":"alice@example.com",                    ║ │
+│  ║     "createdAt":"2026-05-11T10:30:00"}                                    ║ │
+│  ║                                                                            ║ │
+│  ║  → Thread "http-nio-8080-exec-7" returned to the pool                     ║ │
+│  ║  → Connection kept alive (or closed based on Keep-Alive header)           ║ │
+│  ║                                                                            ║ │
+│  ╚══════════════════════════════════════════════════════════════════════════════╝ │
+│            │                                                                     │
+│            ▼                                                                     │
+│   CLIENT receives:                                                               │
+│   HTTP 200 OK                                                                    │
+│   {"id":42,"name":"Alice","email":"alice@example.com",                          │
+│    "createdAt":"2026-05-11T10:30:00"}                                           │
+│                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Summary — Every Method Called in Order
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Complete Method Call Trace — GET /api/v1/users/42:                               │
+│                                                                                  │
+│   #  Component                       Method Called                               │
+│  ─── ──────────────────────────────  ────────────────────────────────────────── │
+│   1  Tomcat NIO Connector            ServerSocket.accept()                       │
+│   2  Tomcat NIO Connector            parse HTTP → HttpServletRequest             │
+│   3  CharacterEncodingFilter         doFilter(req, res, chain)                   │
+│   4  CorsFilter                      doFilter(req, res, chain)                   │
+│   5  JwtAuthenticationFilter         doFilter(req, res, chain)                   │
+│   6  SecurityContextHolder           getContext().setAuthentication(token)        │
+│   7  AuthorizationFilter             doFilter(req, res, chain)                   │
+│   8  DispatcherServlet               service(req, res)                           │
+│   9  FrameworkServlet                 processRequest(req, res)                    │
+│  10  DispatcherServlet               doService(req, res)                         │
+│  11  DispatcherServlet               doDispatch(req, res)                        │
+│  12  RequestMappingHandlerMapping    getHandler(req)                             │
+│  13  RequestMappingHandlerMapping    lookupHandlerMethod(lookupPath, req)        │
+│  14  DispatcherServlet               getHandlerAdapter(handler)                  │
+│  15  LoggingInterceptor              preHandle(req, res, handler)                │
+│  16  RequestMappingHandlerAdapter    handle(req, res, handler)                   │
+│  17  PathVariableMethodArgResolver   resolveArgument() → 42L                    │
+│  18  UserController                  getById(42L)                                │
+│  19  TransactionInterceptor         invoke() → begin TX                         │
+│  20  HikariDataSource               getConnection()                              │
+│  21  UserServiceImpl                 findById(42L)                                │
+│  22  SimpleJpaRepository (proxy)     findById(42L)                               │
+│  23  EntityManager                   find(User.class, 42L)                       │
+│  24  Hibernate Session               find(User.class, 42L)                       │
+│  25  PreparedStatement               setLong(1, 42L)                             │
+│  26  PreparedStatement               executeQuery()                              │
+│  27  Hibernate                       hydrate ResultSet → User entity             │
+│  28  UserMapper                      toResponse(user) → UserResponse             │
+│  29  TransactionInterceptor         invoke() → commit TX                        │
+│  30  HikariPool                     releaseConnection(conn)                      │
+│  31  LoggingInterceptor              postHandle(req, res, handler, mv)           │
+│  32  MappingJackson2HttpMsgConverter write(userResponse, outputStream)           │
+│  33  Jackson ObjectMapper            writeValue(stream, userResponse)            │
+│  34  LoggingInterceptor              afterCompletion(req, res, handler, null)    │
+│  35  Tomcat NIO Connector            flush response bytes → TCP socket           │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### How IoC Container Wires Everything Before the First Request
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Startup Phase — IoC Container Wiring (happens ONCE before any request):         │
+│                                                                                  │
+│  SpringApplication.run(MyApplication.class)                                      │
+│      │                                                                           │
+│      ▼                                                                           │
+│  ApplicationContext created                                                      │
+│      │                                                                           │
+│      ▼                                                                           │
+│  @ComponentScan scans com.example.** and finds:                                  │
+│    → UserController        (@RestController → @Component)                       │
+│    → UserServiceImpl       (@Service → @Component)                              │
+│    → UserRepository        (JpaRepository → Spring Data creates proxy)          │
+│    → UserMapper            (@Component)                                          │
+│    → SecurityConfig        (@Configuration)                                      │
+│    → GlobalExceptionHandler(@RestControllerAdvice → @Component)                 │
+│      │                                                                           │
+│      ▼                                                                           │
+│  IoC Container resolves dependency graph and instantiates in order:              │
+│                                                                                  │
+│    1. DataSource bean (HikariCP — auto-configured from application.properties)  │
+│    2. EntityManagerFactory (Hibernate — auto-configured)                         │
+│    3. PlatformTransactionManager (JpaTransactionManager — auto-configured)      │
+│    4. UserRepository proxy (SimpleJpaRepository — Spring Data creates it)       │
+│    5. UserMapper (new UserMapper() — no dependencies)                           │
+│    6. UserServiceImpl (new UserServiceImpl(userRepository, userMapper))          │
+│       → Wrapped in CGLIB proxy for @Transactional                               │
+│    7. UserController (new UserController(userServiceProxy))                      │
+│    8. DispatcherServlet (auto-configured)                                        │
+│       → initStrategies() loads:                                                 │
+│         → RequestMappingHandlerMapping (scans @Controller beans for @GetMapping) │
+│         → RequestMappingHandlerAdapter                                           │
+│         → MappingJackson2HttpMessageConverter                                    │
+│    9. Embedded Tomcat started                                                    │
+│       → DispatcherServlet registered at "/"                                     │
+│       → Listening on port 8080                                                  │
+│      │                                                                           │
+│      ▼                                                                           │
+│  Application is ready to serve requests                                          │
+│  ──────────────────────────────────────                                          │
+│                                                                                  │
+│  Bean Dependency Graph (what IoC wired):                                         │
+│                                                                                  │
+│  DataSource ──→ EntityManagerFactory ──→ TransactionManager                     │
+│                       │                        │                                 │
+│                       ▼                        │                                 │
+│               UserRepository (proxy)           │                                 │
+│                       │                        │                                 │
+│                       ▼                        ▼                                 │
+│  UserMapper ──→ UserServiceImpl ──→ CGLIB Proxy (@Transactional)                │
+│                       │                                                          │
+│                       ▼                                                          │
+│               UserController                                                     │
+│                       │                                                          │
+│                       ▼                                                          │
+│  RequestMappingHandlerMapping (registers URL → controller method mappings)      │
+│                       │                                                          │
+│                       ▼                                                          │
+│               DispatcherServlet (uses HandlerMapping to route requests)          │
+│                       │                                                          │
+│                       ▼                                                          │
+│               Embedded Tomcat (DispatcherServlet registered at "/")              │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+
+Add all the theories for the following question in detail and wherever possible add diagram and add code
+
+1. How controller maps the method with api, http method, and the model and registers with handlermapping
+2. How rest controller maps the method with api , method, response body and registers with handlermapping
