@@ -954,6 +954,66 @@ public class GlobalBindingCustomizer {
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
+##### `@Controller` vs `@RestController` vs `@ControllerAdvice` — Detailed Comparison
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  @Controller vs @RestController vs @ControllerAdvice                                                                     │
+├──────────────────┬──────────────────────────────────┬──────────────────────────────────┬──────────────────────────────────┤
+│ Aspect           │ @Controller                      │ @RestController                  │ @ControllerAdvice                │
+├──────────────────┼──────────────────────────────────┼──────────────────────────────────┼──────────────────────────────────┤
+│ Meta-annotations │ @Component                       │ @Controller + @ResponseBody      │ @Component                       │
+├──────────────────┼──────────────────────────────────┼──────────────────────────────────┼──────────────────────────────────┤
+│ Purpose          │ Handle HTTP requests and          │ Handle HTTP requests and          │ Centralise cross-cutting          │
+│                  │ return VIEW NAMES (HTML)          │ return DATA (JSON/XML) directly  │ concerns for all controllers     │
+├──────────────────┼──────────────────────────────────┼──────────────────────────────────┼──────────────────────────────────┤
+│ Return value     │ String → resolved to a view      │ Object → serialised to           │ N/A (provides @ExceptionHandler, │
+│ handling         │ by ViewResolver (e.g. Thymeleaf) │ JSON/XML via HttpMessageConverter│ @ModelAttribute, @InitBinder)    │
+├──────────────────┼──────────────────────────────────┼──────────────────────────────────┼──────────────────────────────────┤
+│ @ResponseBody    │ NOT included — must add per      │ INCLUDED on every method         │ NOT included (use                │
+│                  │ method if you want JSON           │ automatically                    │ @RestControllerAdvice for JSON)  │
+├──────────────────┼──────────────────────────────────┼──────────────────────────────────┼──────────────────────────────────┤
+│ Typical use      │ Server-side rendered apps         │ REST APIs, microservices         │ Global exception handling,       │
+│                  │ (Thymeleaf, JSP, Freemarker)     │                                  │ global model attributes,         │
+│                  │                                  │                                  │ global data binding              │
+├──────────────────┼──────────────────────────────────┼──────────────────────────────────┼──────────────────────────────────┤
+│ Can define       │ ✗ No (handles individual         │ ✗ No (handles individual         │ ✓ Yes — applies to all          │
+│ global handlers? │ endpoints only)                  │ endpoints only)                  │ controllers (or scoped subset)   │
+├──────────────────┼──────────────────────────────────┼──────────────────────────────────┼──────────────────────────────────┤
+│ Scoping          │ N/A                              │ N/A                              │ basePackages, assignableTypes,   │
+│                  │                                  │                                  │ annotations attributes           │
+├──────────────────┼──────────────────────────────────┼──────────────────────────────────┼──────────────────────────────────┤
+│ Example          │ @Controller                      │ @RestController                  │ @RestControllerAdvice            │
+│                  │ class PageController {            │ class UserApiController {        │ class GlobalExceptionHandler {   │
+│                  │   @GetMapping("/home")           │   @GetMapping("/users")          │   @ExceptionHandler(Ex.class)    │
+│                  │   String home() {                │   List<User> list() {            │   ErrorResponse handle(Ex ex) {  │
+│                  │     return "home"; // view name  │     return userService.list();   │     return new ErrorResponse(..);│
+│                  │   }                              │   } // → JSON automatically     │   }                              │
+│                  │ }                                │ }                                │ }                                │
+├──────────────────┼──────────────────────────────────┼──────────────────────────────────┼──────────────────────────────────┤
+│ When to use      │ Building HTML pages with          │ Building REST APIs consumed by   │ When you want ONE place for      │
+│                  │ template engines                  │ frontends, mobile apps, or       │ exception handling, shared model │
+│                  │                                  │ other services                   │ attributes, or data binding      │
+└──────────────────┴──────────────────────────────────┴──────────────────────────────────┴──────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Decision Flow:                                                                  │
+│                                                                                  │
+│  Do you need to return HTML views?                                               │
+│    YES → @Controller                                                            │
+│    NO  → Do you need to return JSON/XML data?                                   │
+│           YES → @RestController                                                 │
+│                                                                                  │
+│  Do you need global exception handling across ALL controllers?                   │
+│    YES → @ControllerAdvice (HTML) or @RestControllerAdvice (JSON)               │
+│                                                                                  │
+│  Can you mix them?                                                               │
+│    YES — @Controller methods can add @ResponseBody per-method for JSON          │
+│    YES — @ControllerAdvice works alongside both @Controller and @RestController │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -1214,6 +1274,72 @@ public class OrderController {
 │  │ @DeleteMapping │ DELETE               │ Yes          │ Remove resource      ││
 │  └────────────────┴──────────────────────┴──────────────┴──────────────────────┘│
 │  * PATCH can be idempotent depending on implementation                          │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### `@RequestMapping` vs `@GetMapping` vs `@PostMapping` vs `@PutMapping` vs `@DeleteMapping` — Detailed Comparison
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  @RequestMapping vs @GetMapping vs @PostMapping vs @PutMapping vs @DeleteMapping                                               │
+├──────────────────┬───────────────────────────────────────┬─────────────────────────────────────────────────────────────────────┤
+│ Aspect           │ @RequestMapping                       │ @GetMapping / @PostMapping / @PutMapping / @DeleteMapping          │
+├──────────────────┼───────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Target           │ TYPE (class) + METHOD                 │ METHOD only                                                        │
+├──────────────────┼───────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ HTTP method      │ Must specify: method = RequestMethod  │ Pre-set: GET / POST / PUT / DELETE / PATCH                        │
+│                  │ .GET  (or omit to match ALL methods)  │ Cannot be changed                                                  │
+├──────────────────┼───────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Relationship     │ PARENT annotation                     │ CHILD — each is @RequestMapping with method pre-filled            │
+│                  │                                       │ @GetMapping ≡ @RequestMapping(method=GET)                         │
+│                  │                                       │ @PostMapping ≡ @RequestMapping(method=POST)                       │
+├──────────────────┼───────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Attributes       │ value, path, method, params, headers, │ value, path, params, headers, consumes, produces                  │
+│                  │ consumes, produces, name              │ (NO method attribute — already fixed)                             │
+├──────────────────┼───────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Multiple HTTP    │ ✓ method={GET, POST} matches both    │ ✗ Each only matches its own HTTP method                           │
+│ methods          │                                       │ Use separate annotations for each                                  │
+├──────────────────┼───────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Readability      │ Verbose: @RequestMapping(value="/x", │ Concise: @GetMapping("/x")                                        │
+│                  │ method=RequestMethod.GET)              │                                                                    │
+├──────────────────┼───────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ Best practice    │ Use at CLASS level for base path:     │ Use at METHOD level for endpoints:                                │
+│                  │ @RequestMapping("/api/v1/users")      │ @GetMapping("/{id}"), @PostMapping, @DeleteMapping("/{id}")       │
+├──────────────────┼───────────────────────────────────────┼─────────────────────────────────────────────────────────────────────┤
+│ When omitting    │ Matches ALL HTTP methods (GET, POST,  │ N/A — method is always fixed                                      │
+│ method           │ PUT, DELETE, PATCH, etc.)             │                                                                    │
+└──────────────────┴───────────────────────────────────────┴─────────────────────────────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Equivalence Table:                                                              │
+│                                                                                  │
+│  Shortcut Annotation                     Equivalent @RequestMapping             │
+│  ──────────────────────────────────────── ────────────────────────────────────── │
+│  @GetMapping("/users")                   @RequestMapping("/users", method=GET)  │
+│  @PostMapping("/users")                  @RequestMapping("/users", method=POST) │
+│  @PutMapping("/users/{id}")              @RequestMapping("/users/{id}", m=PUT)  │
+│  @DeleteMapping("/users/{id}")           @RequestMapping("/users/{id}", m=DEL)  │
+│  @PatchMapping("/users/{id}")            @RequestMapping("/users/{id}", m=PATCH)│
+│                                                                                  │
+│  Convention:                                                                     │
+│  ┌─────────────────────────────────────────────────────────────────────────┐    │
+│  │ @RestController                                                        │    │
+│  │ @RequestMapping("/api/v1/users")   ← CLASS level: base path           │    │
+│  │ public class UserController {                                          │    │
+│  │                                                                        │    │
+│  │     @GetMapping              ← GET    /api/v1/users                   │    │
+│  │     @GetMapping("/{id}")     ← GET    /api/v1/users/{id}             │    │
+│  │     @PostMapping             ← POST   /api/v1/users                   │    │
+│  │     @PutMapping("/{id}")     ← PUT    /api/v1/users/{id}             │    │
+│  │     @DeleteMapping("/{id}")  ← DELETE /api/v1/users/{id}             │    │
+│  │     @PatchMapping("/{id}")   ← PATCH  /api/v1/users/{id}             │    │
+│  │ }                                                                      │    │
+│  └─────────────────────────────────────────────────────────────────────────┘    │
+│                                                                                  │
+│  Rule: NEVER use @RequestMapping at method level — always use the shortcut.    │
+│  @RequestMapping at method level is legacy (Spring MVC before Spring 4.3).     │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -2664,6 +2790,70 @@ public class ProductJdbcRepository {
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
+##### `@Component` vs `@Service` vs `@Repository` vs `@Configuration` — Detailed Comparison
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  @Component vs @Service vs @Repository vs @Configuration                                                                             │
+├──────────────────┬──────────────────────────┬──────────────────────────┬──────────────────────────────┬──────────────────────────────┤
+│ Aspect           │ @Component               │ @Service                 │ @Repository                  │ @Configuration               │
+├──────────────────┼──────────────────────────┼──────────────────────────┼──────────────────────────────┼──────────────────────────────┤
+│ Meta-annotation  │ None (root stereotype)   │ @Component               │ @Component                   │ @Component                   │
+├──────────────────┼──────────────────────────┼──────────────────────────┼──────────────────────────────┼──────────────────────────────┤
+│ Layer / Role     │ Generic / any            │ Business logic /         │ Data access / persistence    │ Bean definition /            │
+│                  │                          │ service layer            │ layer                        │ configuration class          │
+├──────────────────┼──────────────────────────┼──────────────────────────┼──────────────────────────────┼──────────────────────────────┤
+│ Extra behaviour  │ NONE — just registers    │ NONE — purely semantic   │ YES — exception translation  │ YES — CGLIB proxy ensures    │
+│ beyond           │ the class as a bean      │ (communicates intent)    │ (converts JDBC/JPA/Hibernate │ inter-@Bean method calls     │
+│ @Component       │                          │                          │ exceptions → Spring          │ return the SAME singleton    │
+│                  │                          │                          │ DataAccessException)         │ instance                     │
+├──────────────────┼──────────────────────────┼──────────────────────────┼──────────────────────────────┼──────────────────────────────┤
+│ AOP targeting    │ Can write pointcuts      │ Can write pointcuts for  │ Can write pointcuts for      │ Rarely targeted by AOP       │
+│                  │ for @Component beans     │ @Service beans only      │ @Repository beans only       │                              │
+├──────────────────┼──────────────────────────┼──────────────────────────┼──────────────────────────────┼──────────────────────────────┤
+│ Contains @Bean   │ Can hold @Bean methods   │ Should NOT hold @Bean    │ Should NOT hold @Bean        │ PRIMARY place for @Bean      │
+│ methods?         │ (but no CGLIB proxy —    │ methods                  │ methods                      │ methods (CGLIB proxy active) │
+│                  │ inter-bean calls unsafe) │                          │                              │                              │
+├──────────────────┼──────────────────────────┼──────────────────────────┼──────────────────────────────┼──────────────────────────────┤
+│ Proxy type       │ JDK dynamic proxy or     │ JDK dynamic proxy or     │ JDK dynamic proxy or         │ CGLIB subclass proxy         │
+│                  │ CGLIB (if AOP applied)   │ CGLIB (if AOP applied)   │ CGLIB + PersistenceException │ (always, for @Bean methods)  │
+│                  │                          │                          │ TranslationPostProcessor     │                              │
+├──────────────────┼──────────────────────────┼──────────────────────────┼──────────────────────────────┼──────────────────────────────┤
+│ Typical classes  │ Utility classes,         │ OrderService,            │ UserDao, ProductJdbcRepo,    │ AppConfig, SecurityConfig,   │
+│                  │ helpers, adapters,       │ PaymentService,          │ Custom EntityManager-based   │ PersistenceConfig,           │
+│                  │ event listeners,         │ UserService,             │ repositories (NOT Spring     │ WebMvcConfig                 │
+│                  │ schedulers               │ NotificationService      │ Data interfaces — auto)      │                              │
+├──────────────────┼──────────────────────────┼──────────────────────────┼──────────────────────────────┼──────────────────────────────┤
+│ Interchangeable? │ YES — you CAN use        │ YES — functionally same  │ NO — lose exception          │ NO — lose CGLIB proxy,       │
+│ with @Component? │ @Component for all,      │ as @Component, but       │ translation if you replace   │ inter-@Bean calls create     │
+│                  │ but lose semantic clarity │ convention matters       │ with @Component              │ multiple instances            │
+└──────────────────┴──────────────────────────┴──────────────────────────┴──────────────────────────────┴──────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Decision Flow — Which Stereotype to Use:                                        │
+│                                                                                  │
+│  Does it contain @Bean method definitions?                                      │
+│    YES → @Configuration                                                         │
+│                                                                                  │
+│  Does it access a database (EntityManager, JdbcTemplate, custom queries)?       │
+│    YES → @Repository (you get exception translation for free)                   │
+│                                                                                  │
+│  Does it contain business logic, orchestration, or transaction management?      │
+│    YES → @Service                                                               │
+│                                                                                  │
+│  Does it handle HTTP requests?                                                   │
+│    YES → @Controller (views) or @RestController (JSON)                          │
+│                                                                                  │
+│  None of the above? (utility, helper, infrastructure)                           │
+│    → @Component                                                                 │
+│                                                                                  │
+│  Remember: ALL of these are @Component at their core.                           │
+│  The choice is about SEMANTICS and LAYER-SPECIFIC BEHAVIOUR.                    │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
 ---
 
 #### 17. `@Autowired`
@@ -3102,6 +3292,76 @@ public CacheManager cacheManager() {
 │  → Complex creation logic (builder pattern, factory, conditional)               │
 │  → Multiple beans of the same type (e.g., two DataSources)                     │
 │  → Need to call init/destroy methods on a class you don't control              │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### `@Component` vs `@Bean` — Detailed Comparison
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│  @Component vs @Bean                                                                                            │
+├──────────────────────────┬─────────────────────────────────────────┬─────────────────────────────────────────────┤
+│ Aspect                   │ @Component                              │ @Bean                                       │
+├──────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ Annotates                │ A CLASS                                 │ A METHOD (inside @Configuration)            │
+├──────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ Detection                │ Auto-detected by @ComponentScan         │ Explicitly declared by developer             │
+├──────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ When to use              │ For YOUR OWN classes that you control   │ For THIRD-PARTY classes you can't modify    │
+│                          │ the source code of                      │ (e.g., ObjectMapper, RestTemplate,          │
+│                          │                                         │ DataSource, PasswordEncoder)                │
+├──────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ Creation logic           │ Simple — Spring calls the constructor   │ Complex — you write the factory logic:      │
+│                          │ and injects dependencies automatically  │ builder pattern, conditional creation,      │
+│                          │                                         │ property-driven configuration               │
+├──────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ Multiple beans of        │ ✗ One bean per annotated class          │ ✓ Multiple beans of same type:             │
+│ same type                │ (unless using @Qualifier on interface   │ @Bean("primary") DataSource primary()      │
+│                          │ implementations)                        │ @Bean("replica") DataSource replica()      │
+├──────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ Bean name                │ Class name with lowercase first letter: │ Method name by default:                     │
+│                          │ UserService → "userService"             │ public DataSource dataSource() →           │
+│                          │ Override: @Component("customName")      │ bean name = "dataSource"                   │
+│                          │                                         │ Override: @Bean("customName")              │
+├──────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ Lifecycle hooks          │ @PostConstruct / @PreDestroy            │ @PostConstruct / @PreDestroy OR             │
+│                          │ on the class itself                     │ initMethod / destroyMethod attribute         │
+├──────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ Dependency injection     │ Constructor / field / setter injection  │ Method parameters (Spring injects them)     │
+│                          │ via @Autowired                          │ or call other @Bean methods                 │
+├──────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ Conditional              │ @Profile, @ConditionalOnProperty on     │ @Profile, @ConditionalOnProperty on the     │
+│ registration             │ the class                               │ method — fine-grained control               │
+├──────────────────────────┼─────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ Example                  │ @Component                              │ @Configuration                              │
+│                          │ public class JwtTokenProvider {         │ public class AppConfig {                    │
+│                          │     // Spring creates this bean         │     @Bean                                   │
+│                          │ }                                       │     public ObjectMapper objectMapper() {    │
+│                          │                                         │         return new ObjectMapper()            │
+│                          │                                         │             .registerModule(new JavaTime()); │
+│                          │                                         │     }                                       │
+│                          │                                         │ }                                           │
+└──────────────────────────┴─────────────────────────────────────────┴─────────────────────────────────────────────┘
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Decision Flow — @Component or @Bean?                                            │
+│                                                                                  │
+│  Can you add an annotation to the class source code?                            │
+│    YES → Is creation simple (constructor injection)?                            │
+│           YES → @Component (or @Service/@Repository/@Configuration)             │
+│           NO  → @Bean (if you need builder/factory logic)                       │
+│    NO  → @Bean (third-party class, you can't modify it)                         │
+│                                                                                  │
+│  Do you need multiple beans of the same type?                                   │
+│    YES → @Bean (define multiple methods returning same type)                    │
+│    NO  → Either works, but prefer @Component for simplicity                     │
+│                                                                                  │
+│  Common @Bean candidates (classes you can't annotate):                          │
+│  ObjectMapper, RestTemplate, WebClient, PasswordEncoder, DataSource,            │
+│  JavaMailSender, ModelMapper, ThreadPoolTaskExecutor, CacheManager,              │
+│  SecurityFilterChain, CorsConfigurationSource                                   │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -3693,6 +3953,624 @@ public MeterRegistry datadogMeterRegistry() {
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
+##### Why Use `@Autowired(required = false)` with `@ConditionalOnProperty`
+
+When a bean is conditionally created via `@ConditionalOnProperty`, **the bean may not exist** in the application context. If another class depends on that bean with a regular `@Autowired` (which defaults to `required = true`), Spring will throw a `NoSuchBeanDefinitionException` at startup when the condition is not met. Using `@Autowired(required = false)` tells Spring: "inject this bean if it exists, otherwise leave it `null`."
+
+```java
+// ── The Problem: conditional bean + required dependency ──────────────────────────
+
+// This bean is CONDITIONALLY created — it may or may not exist:
+@Configuration
+public class CacheConfig {
+
+    @Bean
+    @ConditionalOnProperty(name = "feature.caching.enabled", havingValue = "true")
+    public CacheManager cacheManager() {
+        return new ConcurrentMapCacheManager("users", "products");
+    }
+}
+
+// ── WRONG: @Autowired without required=false ─────────────────────────────────────
+@Service
+public class ProductService {
+
+    @Autowired    // required = true by default
+    private CacheManager cacheManager;
+    // ✗ If feature.caching.enabled=false → CacheManager bean doesn't exist
+    // ✗ Spring throws: NoSuchBeanDefinitionException
+    // ✗ APPLICATION FAILS TO START
+}
+
+// ── CORRECT: @Autowired(required = false) ────────────────────────────────────────
+@Service
+public class ProductService {
+
+    @Autowired(required = false)    // ← null if bean doesn't exist
+    private CacheManager cacheManager;
+
+    public Product getProduct(Long id) {
+        // ⚠ cacheManager can be NULL — you MUST check before using it
+        if (cacheManager != null) {
+            Cache cache = cacheManager.getCache("products");
+            if (cache != null) {
+                Product cached = cache.get(id, Product.class);
+                if (cached != null) return cached;
+            }
+        }
+
+        // Fallback: load from database
+        Product product = productRepository.findById(id).orElseThrow();
+
+        // Cache it if caching is enabled
+        if (cacheManager != null) {
+            Cache cache = cacheManager.getCache("products");
+            if (cache != null) cache.put(id, product);
+        }
+
+        return product;
+    }
+}
+```
+
+```java
+// ── Better Approach: Constructor injection with Optional<T> ──────────────────────
+@Service
+public class ProductService {
+
+    private final Optional<CacheManager> cacheManager;
+    private final ProductRepository productRepository;
+
+    public ProductService(Optional<CacheManager> cacheManager,
+                          ProductRepository productRepository) {
+        this.cacheManager = cacheManager;
+        this.productRepository = productRepository;
+        // ✓ If CacheManager bean exists → Optional.of(cacheManager)
+        // ✓ If CacheManager bean doesn't exist → Optional.empty()
+        // ✓ No need for required=false, no NPE risk
+    }
+
+    public Product getProduct(Long id) {
+        // Clean check using Optional:
+        Product cached = cacheManager
+            .map(cm -> cm.getCache("products"))
+            .map(cache -> cache.get(id, Product.class))
+            .orElse(null);
+
+        if (cached != null) return cached;
+
+        Product product = productRepository.findById(id).orElseThrow();
+
+        cacheManager.ifPresent(cm -> {
+            Cache cache = cm.getCache("products");
+            if (cache != null) cache.put(id, product);
+        });
+
+        return product;
+    }
+}
+```
+
+```java
+// ── Alternative: Wrapper service that encapsulates the conditional logic ─────────
+
+// Create a wrapper that always exists:
+@Service
+public class CacheWrapper {
+
+    private final CacheManager cacheManager;
+    private final boolean cachingEnabled;
+
+    public CacheWrapper(@Autowired(required = false) CacheManager cacheManager) {
+        this.cacheManager = cacheManager;
+        this.cachingEnabled = (cacheManager != null);
+    }
+
+    public boolean isCachingEnabled() { return cachingEnabled; }
+
+    public <T> T get(String cacheName, Object key, Class<T> type) {
+        if (!cachingEnabled) return null;
+        Cache cache = cacheManager.getCache(cacheName);
+        return cache != null ? cache.get(key, type) : null;
+    }
+
+    public void put(String cacheName, Object key, Object value) {
+        if (!cachingEnabled) return;
+        Cache cache = cacheManager.getCache(cacheName);
+        if (cache != null) cache.put(key, value);
+    }
+
+    public void evict(String cacheName, Object key) {
+        if (!cachingEnabled) return;
+        Cache cache = cacheManager.getCache(cacheName);
+        if (cache != null) cache.evict(key);
+    }
+}
+
+// Now ProductService doesn't need to check for null:
+@Service
+public class ProductService {
+
+    private final CacheWrapper cache;
+    private final ProductRepository productRepository;
+
+    public ProductService(CacheWrapper cache, ProductRepository productRepository) {
+        this.cache = cache;
+        this.productRepository = productRepository;
+    }
+
+    public Product getProduct(Long id) {
+        Product cached = cache.get("products", id, Product.class);
+        if (cached != null) return cached;
+
+        Product product = productRepository.findById(id).orElseThrow();
+        cache.put("products", id, product);    // no-op if caching disabled
+        return product;
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Handling Conditional Beans — Approaches Summary:                                │
+│                                                                                  │
+│  ┌────────────────────────────────┬──────────────────────────────────────────┐  │
+│  │ Approach                       │ When to Use                             │  │
+│  ├────────────────────────────────┼──────────────────────────────────────────┤  │
+│  │ @Autowired(required = false)   │ Simple cases, 1-2 conditional deps     │  │
+│  │ + null checks                  │ Quick but verbose null-checking         │  │
+│  ├────────────────────────────────┼──────────────────────────────────────────┤  │
+│  │ Optional<T> in constructor     │ Cleaner API, works with constructor     │  │
+│  │                                │ injection, functional-style handling    │  │
+│  ├────────────────────────────────┼──────────────────────────────────────────┤  │
+│  │ Wrapper/adapter service        │ Multiple classes use the same           │  │
+│  │                                │ conditional bean — centralizes the      │  │
+│  │                                │ null-check logic in one place           │  │
+│  ├────────────────────────────────┼──────────────────────────────────────────┤  │
+│  │ @ConditionalOnProperty on      │ When the entire consuming SERVICE      │  │
+│  │ the consumer too               │ should not exist without the dep       │  │
+│  └────────────────────────────────┴──────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Advantages of `@ConditionalOnProperty`
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Advantages of @ConditionalOnProperty:                                           │
+│                                                                                  │
+│  1. FEATURE TOGGLING                                                             │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  Enable or disable entire features via a single property change.       │   │
+│  │  No code changes, no redeployment of modified code needed.             │   │
+│  │  Just change application.properties / environment variable and restart.│   │
+│  │                                                                          │   │
+│  │  feature.email-notifications.enabled=true    → EmailService created    │   │
+│  │  feature.email-notifications.enabled=false   → EmailService skipped    │   │
+│  │                                                                          │   │
+│  │  Perfect for:                                                            │   │
+│  │  → Gradual rollouts (enable feature for staging, not prod yet)         │   │
+│  │  → Kill switches (disable a misbehaving feature instantly)             │   │
+│  │  → A/B testing (different features per environment)                    │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  2. CLEANER APPLICATION CONTEXT — No Unnecessary Beans                          │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  Without @ConditionalOnProperty:                                        │   │
+│  │  → ALL beans are created, even unused ones                             │   │
+│  │  → Kafka consumers, Elasticsearch clients, email services — all loaded │   │
+│  │  → ApplicationContext is bloated with beans nobody calls               │   │
+│  │                                                                          │   │
+│  │  With @ConditionalOnProperty:                                           │   │
+│  │  → Only beans you ACTUALLY need are created                            │   │
+│  │  → ApplicationContext is lean and focused                              │   │
+│  │  → Easier to debug (fewer beans to inspect with /actuator/beans)       │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  3. MEMORY SAVINGS                                                               │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  Every bean consumes heap memory:                                       │   │
+│  │  → The bean instance itself                                             │   │
+│  │  → Its dependency graph (transitive dependencies)                      │   │
+│  │  → Connection pools, thread pools, buffers it initializes              │   │
+│  │                                                                          │   │
+│  │  Example: A Kafka consumer bean might allocate:                         │   │
+│  │  → KafkaConsumer object (~1 KB)                                        │   │
+│  │  → Internal buffers (configurable, default 1 MB fetch buffer)          │   │
+│  │  → Consumer thread                                                      │   │
+│  │  → Deserialization infrastructure                                       │   │
+│  │                                                                          │   │
+│  │  If you don't need Kafka in a particular deployment → skip the bean    │   │
+│  │  → save all that memory                                                 │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  4. FASTER APPLICATION STARTUP                                                   │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  Fewer beans = less work at startup:                                    │   │
+│  │  → Fewer constructors to call                                           │   │
+│  │  → Fewer dependency graphs to resolve                                  │   │
+│  │  → Fewer @PostConstruct methods to execute                             │   │
+│  │  → Fewer connection pools to initialize                                │   │
+│  │  → Fewer health checks to register                                     │   │
+│  │                                                                          │   │
+│  │  In microservices with many optional integrations, this can shave      │   │
+│  │  seconds off startup time — critical for:                              │   │
+│  │  → Kubernetes pod scaling (faster readiness)                           │   │
+│  │  → Serverless cold starts                                              │   │
+│  │  → Local development (faster restart cycles)                           │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  5. ENVIRONMENT-SPECIFIC CONFIGURATION                                          │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  Same codebase, different behavior per environment:                     │   │
+│  │  → Dev: in-memory cache, mock email service, local file storage        │   │
+│  │  → Prod: Redis cache, real SMTP, S3 storage                           │   │
+│  │  → Test: no scheduling, no external API calls                          │   │
+│  │  Controlled entirely by property files — no code branches needed.      │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  6. SEPARATION OF CONCERNS                                                      │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  Bean creation logic is decoupled from business logic.                  │   │
+│  │  The @Configuration class decides IF a bean should exist.               │   │
+│  │  The @Service class just uses it (via Optional or required=false).      │   │
+│  │  No if/else feature checks scattered across business code.              │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  7. WORKS WITH SPRING BOOT AUTO-CONFIGURATION                                  │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  Spring Boot's own auto-configuration uses @ConditionalOnProperty      │   │
+│  │  extensively. Your custom beans can follow the same pattern:            │   │
+│  │  → spring.cache.type=none → disables caching auto-config              │   │
+│  │  → spring.mail.host=... → enables mail auto-config                    │   │
+│  │  → management.endpoints.web.exposure.include=* → enables actuator     │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Disadvantages and Limitations of `@ConditionalOnProperty`
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Disadvantages and Limitations of @ConditionalOnProperty:                        │
+│                                                                                  │
+│  1. MISCONFIGURATION RISK                                                        │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  Property names are STRINGS — typos cause silent failures:             │   │
+│  │                                                                          │   │
+│  │  // In @Configuration:                                                  │   │
+│  │  @ConditionalOnProperty(name = "feature.caching.enabled")              │   │
+│  │                                                                          │   │
+│  │  // In application.properties (TYPO):                                   │   │
+│  │  feature.cacheing.enabled=true    ← "cacheing" vs "caching"            │   │
+│  │                                                                          │   │
+│  │  → Bean is NOT created (property doesn't match)                        │   │
+│  │  → No error, no warning — the application starts fine                  │   │
+│  │  → Feature silently doesn't work                                        │   │
+│  │  → Debugging: you need to check /actuator/conditions endpoint          │   │
+│  │    or enable debug logging to see why the bean was skipped              │   │
+│  │                                                                          │   │
+│  │  Mitigations:                                                            │   │
+│  │  → Use constants for property names (avoid string literals)            │   │
+│  │  → Write integration tests that verify beans exist when expected       │   │
+│  │  → Use Spring Boot's @ConfigurationProperties with @Validated          │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  2. INCREASED CODE COMPLEXITY WHEN OVERUSED                                     │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  Every conditional bean introduces a "branch" in your app:             │   │
+│  │                                                                          │   │
+│  │  With 5 conditional features, you have up to 2⁵ = 32 possible         │   │
+│  │  combinations of enabled/disabled beans:                                │   │
+│  │                                                                          │   │
+│  │  feature.caching=true/false                                             │   │
+│  │  feature.notifications=true/false                                       │   │
+│  │  feature.metrics=true/false                                             │   │
+│  │  feature.scheduling=true/false                                          │   │
+│  │  feature.audit=true/false                                               │   │
+│  │                                                                          │   │
+│  │  Problems:                                                               │   │
+│  │  → Hard to test all combinations                                       │   │
+│  │  → Interactions between features may break in untested combos          │   │
+│  │  → Developers must remember which properties control which beans       │   │
+│  │  → application.properties becomes a complex feature-flag config        │   │
+│  │  → Every consumer of a conditional bean needs null checks              │   │
+│  │    (or Optional<T> or @Autowired(required=false))                      │   │
+│  │                                                                          │   │
+│  │  Mitigations:                                                            │   │
+│  │  → Keep conditional beans to a MINIMUM (only truly optional features)  │   │
+│  │  → Document all feature flags in a central place                       │   │
+│  │  → Test critical combinations in integration tests                     │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  3. CONFUSION WITH MULTIPLE BEANS OF SAME TYPE                                  │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  When multiple @Bean methods create the same type with different        │   │
+│  │  conditions, it's hard to know WHICH bean is active:                   │   │
+│  │                                                                          │   │
+│  │  @Bean                                                                   │   │
+│  │  @ConditionalOnProperty(name="storage.type", havingValue="s3")         │   │
+│  │  public StorageService s3Storage() { ... }                              │   │
+│  │                                                                          │   │
+│  │  @Bean                                                                   │   │
+│  │  @ConditionalOnProperty(name="storage.type", havingValue="local")      │   │
+│  │  public StorageService localStorage() { ... }                           │   │
+│  │                                                                          │   │
+│  │  @Bean                                                                   │   │
+│  │  @ConditionalOnProperty(name="storage.type", havingValue="azure")      │   │
+│  │  public StorageService azureStorage() { ... }                           │   │
+│  │                                                                          │   │
+│  │  Questions that arise:                                                   │   │
+│  │  → What if storage.type is not set? No StorageService → runtime error  │   │
+│  │  → What if storage.type=gcs? (not handled) → silent failure            │   │
+│  │  → Which bean is active in THIS environment? Check properties file...  │   │
+│  │                                                                          │   │
+│  │  Mitigations:                                                            │   │
+│  │  → Use matchIfMissing=true on ONE default implementation               │   │
+│  │  → Add a @PostConstruct validation that checks required beans exist    │   │
+│  │  → Consider @Profile for environment-level switching instead           │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  4. HARDER DEBUGGING AND TROUBLESHOOTING                                        │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  When something doesn't work, the cause might be a missing bean:       │   │
+│  │  → NullPointerException in a service → is the dependency conditional? │   │
+│  │  → Feature not working → is the property correctly set?               │   │
+│  │  → Different behavior in staging vs prod → different properties?      │   │
+│  │                                                                          │   │
+│  │  Debugging tools:                                                        │   │
+│  │  → /actuator/conditions — shows which conditions were evaluated        │   │
+│  │  → /actuator/beans — shows all active beans                            │   │
+│  │  → /actuator/env — shows all properties and their sources              │   │
+│  │  → --debug flag or logging.level.org.springframework=DEBUG             │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  5. NOT DYNAMIC — REQUIRES RESTART                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  @ConditionalOnProperty is evaluated ONCE at startup.                   │   │
+│  │  Changing the property at runtime has NO EFFECT.                        │   │
+│  │  You must RESTART the application for the change to take effect.       │   │
+│  │                                                                          │   │
+│  │  For dynamic feature toggles (no restart), consider:                    │   │
+│  │  → Spring Cloud Config + @RefreshScope                                 │   │
+│  │  → Feature flag libraries (Unleash, LaunchDarkly, Flipt)              │   │
+│  │  → Custom solution reading from database/cache                         │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  6. TESTING OVERHEAD                                                             │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  You need SEPARATE test configurations to test both states:            │   │
+│  │                                                                          │   │
+│  │  @SpringBootTest(properties = "feature.caching.enabled=true")          │   │
+│  │  class CachingEnabledTest { ... }                                       │   │
+│  │                                                                          │   │
+│  │  @SpringBootTest(properties = "feature.caching.enabled=false")         │   │
+│  │  class CachingDisabledTest { ... }                                      │   │
+│  │                                                                          │   │
+│  │  More conditional beans = more test classes/configurations needed.     │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Real-Life Use Cases for `@ConditionalOnProperty`
+
+```java
+// ── USE CASE 1: Enable/Disable Scheduled Tasks ──────────────────────────────────
+// In production: scheduling.enabled=true → jobs run on schedule
+// In dev/test:   scheduling.enabled=false → no scheduled jobs interfere with tests
+
+@Configuration
+@ConditionalOnProperty(name = "scheduling.enabled", havingValue = "true", matchIfMissing = false)
+@EnableScheduling
+public class SchedulingConfig {
+    // @EnableScheduling is only active when scheduling.enabled=true
+    // Without this, @Scheduled methods in dev/test would fire unexpectedly
+}
+
+@Service
+public class DataCleanupJob {
+
+    @Scheduled(cron = "0 0 2 * * *")    // runs at 2 AM daily
+    public void cleanExpiredRecords() {
+        // This @Scheduled method ONLY runs if SchedulingConfig is loaded
+        // i.e., only if scheduling.enabled=true
+        System.out.println("Cleaning expired records...");
+    }
+}
+```
+
+```java
+// ── USE CASE 2: Switch Between Real and Mock External Services ───────────────────
+// In dev:  external.payment-gateway.mock=true → use mock (no real charges)
+// In prod: external.payment-gateway.mock=false → use real Stripe API
+
+public interface PaymentGateway {
+    PaymentResult charge(BigDecimal amount, String token);
+}
+
+@Service
+@ConditionalOnProperty(name = "external.payment-gateway.mock", havingValue = "false", matchIfMissing = true)
+public class StripePaymentGateway implements PaymentGateway {
+    private final StripeClient stripeClient;
+
+    public StripePaymentGateway(StripeClient stripeClient) {
+        this.stripeClient = stripeClient;
+    }
+
+    @Override
+    public PaymentResult charge(BigDecimal amount, String token) {
+        // Real Stripe API call
+        return stripeClient.charges().create(amount, token);
+    }
+}
+
+@Service
+@ConditionalOnProperty(name = "external.payment-gateway.mock", havingValue = "true")
+public class MockPaymentGateway implements PaymentGateway {
+    @Override
+    public PaymentResult charge(BigDecimal amount, String token) {
+        System.out.println("[MOCK] Charging $" + amount + " with token " + token);
+        return PaymentResult.success("mock-txn-" + UUID.randomUUID());
+    }
+}
+```
+
+```java
+// ── USE CASE 3: Conditional Swagger/OpenAPI Documentation ────────────────────────
+// In dev/staging: api.docs.enabled=true → Swagger UI available
+// In prod:        api.docs.enabled=false → no API docs exposed (security)
+
+@Configuration
+@ConditionalOnProperty(name = "api.docs.enabled", havingValue = "true", matchIfMissing = false)
+public class SwaggerConfig {
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+            .info(new Info()
+                .title("My Application API")
+                .version("1.0.0")
+                .description("API documentation"));
+    }
+
+    @Bean
+    public GroupedOpenApi publicApi() {
+        return GroupedOpenApi.builder()
+            .group("public")
+            .pathsToMatch("/api/**")
+            .build();
+    }
+}
+```
+
+```java
+// ── USE CASE 4: Enable/Disable Caching Layer ────────────────────────────────────
+// app.caching.enabled=true → Redis cache active
+// app.caching.enabled=false → no caching (useful for debugging stale data issues)
+
+@Configuration
+@ConditionalOnProperty(name = "app.caching.enabled", havingValue = "true")
+@EnableCaching
+public class CacheConfig {
+
+    @Bean
+    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+            .entryTtl(Duration.ofMinutes(30))
+            .serializeValuesWith(
+                RedisSerializationContext.SerializationPair
+                    .fromSerializer(new GenericJackson2JsonRedisSerializer()));
+
+        return RedisCacheManager.builder(connectionFactory)
+            .cacheDefaults(config)
+            .build();
+    }
+}
+
+// @Cacheable annotations in services will only work if CacheConfig is loaded
+@Service
+public class UserService {
+    @Cacheable(value = "users", key = "#id", condition = "#id > 0")
+    public User findById(Long id) {
+        return userRepository.findById(id).orElseThrow();
+        // If caching disabled: always hits database
+        // If caching enabled: first call hits DB, subsequent calls return cached
+    }
+}
+```
+
+```java
+// ── USE CASE 5: Audit Logging — Optional Cross-Cutting Feature ───────────────────
+// audit.logging.enabled=true → all API calls are logged to audit table
+// audit.logging.enabled=false → no audit overhead
+
+@Component
+@Aspect
+@ConditionalOnProperty(name = "audit.logging.enabled", havingValue = "true")
+public class AuditLoggingAspect {
+
+    private final AuditRepository auditRepository;
+
+    public AuditLoggingAspect(AuditRepository auditRepository) {
+        this.auditRepository = auditRepository;
+    }
+
+    @Around("@annotation(org.springframework.web.bind.annotation.RequestMapping) || " +
+            "@annotation(org.springframework.web.bind.annotation.GetMapping) || " +
+            "@annotation(org.springframework.web.bind.annotation.PostMapping)")
+    public Object auditApiCall(ProceedingJoinPoint joinPoint) throws Throwable {
+        long start = System.currentTimeMillis();
+        Object result = joinPoint.proceed();
+        long duration = System.currentTimeMillis() - start;
+
+        auditRepository.save(AuditLog.builder()
+            .method(joinPoint.getSignature().toShortString())
+            .timestamp(Instant.now())
+            .durationMs(duration)
+            .build());
+
+        return result;
+    }
+}
+```
+
+```java
+// ── USE CASE 6: Multi-Tenant Support — Optional Module ──────────────────────────
+// app.multi-tenancy.enabled=true → tenant resolution filter active
+// app.multi-tenancy.enabled=false → single-tenant mode (simpler)
+
+@Configuration
+@ConditionalOnProperty(name = "app.multi-tenancy.enabled", havingValue = "true")
+public class MultiTenancyConfig {
+
+    @Bean
+    public FilterRegistrationBean<TenantResolutionFilter> tenantFilter() {
+        FilterRegistrationBean<TenantResolutionFilter> registration =
+            new FilterRegistrationBean<>();
+        registration.setFilter(new TenantResolutionFilter());
+        registration.addUrlPatterns("/api/*");
+        registration.setOrder(1);    // run early in the filter chain
+        return registration;
+    }
+
+    @Bean
+    public TenantDataSourceRouter tenantDataSourceRouter(
+            Map<String, DataSource> tenantDataSources) {
+        return new TenantDataSourceRouter(tenantDataSources);
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Real-Life Use Cases — Summary:                                                  │
+│                                                                                  │
+│  ┌──────────────────────────────────┬────────────────────────────────────────┐  │
+│  │ Use Case                         │ Property Example                      │  │
+│  ├──────────────────────────────────┼────────────────────────────────────────┤  │
+│  │ Scheduled jobs ON/OFF            │ scheduling.enabled=true/false         │  │
+│  │ Mock vs real external services   │ external.payment.mock=true/false      │  │
+│  │ Swagger/API docs in non-prod    │ api.docs.enabled=true/false           │  │
+│  │ Caching layer ON/OFF            │ app.caching.enabled=true/false        │  │
+│  │ Audit logging                    │ audit.logging.enabled=true/false      │  │
+│  │ Multi-tenancy                    │ app.multi-tenancy.enabled=true/false  │  │
+│  │ Email sending (mock in dev)     │ mail.enabled=true/false               │  │
+│  │ Rate limiting                    │ rate-limiting.enabled=true/false      │  │
+│  │ Metrics exporter (Prometheus)   │ metrics.exporter=prometheus/datadog   │  │
+│  │ Feature flags (new UI, beta)    │ feature.new-checkout.enabled=true     │  │
+│  └──────────────────────────────────┴────────────────────────────────────────┘  │
+│                                                                                  │
+│  Best Practices:                                                                 │
+│  ✓ Use matchIfMissing=true for features that should be ON by default           │
+│  ✓ Use matchIfMissing=false for features that should be OFF by default         │
+│  ✓ Always provide a default/fallback behavior when a bean is absent            │
+│  ✓ Document all conditional properties in README or a central config guide     │
+│  ✓ Use Optional<T> over @Autowired(required=false) for cleaner code            │
+│  ✓ Test BOTH states (enabled and disabled) in integration tests                │
+│  ✓ Keep the number of conditional features manageable (< 10 per service)       │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
 ---
 
 #### 23. `@Profile`
@@ -3863,6 +4741,796 @@ public class S3StorageService implements StorageService {
 │                                                                                  │
 │  Use @Profile for: environment-specific configuration (DB, email, storage)      │
 │  Use @ConditionalOnProperty for: feature flags (caching, metrics, scheduling)   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### What `@Profile` Actually Does
+
+Using `@Profile`, we tell Spring Boot: **"create this bean ONLY when a particular profile is active."** Under the hood, `@Profile` is just a specialization of `@Conditional` — it uses `ProfileCondition.class` to check if the named profile is in the list of active profiles.
+
+```java
+// This is what @Profile does internally:
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Conditional(ProfileCondition.class)     // ← THIS is the condition evaluator
+public @interface Profile {
+    String[] value();
+}
+
+// ProfileCondition simply checks:
+class ProfileCondition implements Condition {
+    @Override
+    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+        // Get the profile names from the annotation
+        MultiValueMap<String, Object> attrs =
+            metadata.getAllAnnotationAttributes(Profile.class.getName());
+        List<Object> profileNames = attrs.get("value");
+
+        // Check if ANY of the profile names are active
+        for (Object profileName : profileNames) {
+            for (String name : (String[]) profileName) {
+                if (context.getEnvironment().acceptsProfiles(Profiles.of(name))) {
+                    return true;   // ← bean IS created
+                }
+            }
+        }
+        return false;   // ← bean is NOT created
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @Profile — Intended Purpose:                                                    │
+│                                                                                  │
+│  @Profile is TECHNICALLY intended for ENVIRONMENT SEPARATION, not for           │
+│  arbitrary application bean creation logic:                                      │
+│                                                                                  │
+│  ✓ INTENDED USE — Environment separation:                                       │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  @Profile("dev")   → development environment (H2 DB, mock services)    │   │
+│  │  @Profile("test")  → testing environment (TestContainers, no email)    │   │
+│  │  @Profile("staging") → staging (real services, test data)              │   │
+│  │  @Profile("prod")  → production (real DB, real services, full config)  │   │
+│  │                                                                          │   │
+│  │  The profile answers: "WHAT ENVIRONMENT am I running in?"              │   │
+│  │  It does NOT answer: "WHICH FEATURE should I enable?"                  │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  ✗ NOT INTENDED — Feature toggling (but people still do it):                    │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  @Profile("caching")         ← abusing profiles as feature flags      │   │
+│  │  @Profile("notifications")   ← should use @ConditionalOnProperty      │   │
+│  │  @Profile("metrics")         ← should use @ConditionalOnProperty      │   │
+│  │                                                                          │   │
+│  │  Why this is problematic:                                                │   │
+│  │  → spring.profiles.active=dev,caching,notifications,metrics            │   │
+│  │  → Profile list becomes bloated and confusing                          │   │
+│  │  → Profiles are environment-wide, features should be toggleable        │   │
+│  │    independently within an environment                                  │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Can `@Profile` Achieve the Same Thing as `@ConditionalOnProperty`?
+
+**Technically yes** — both control whether a bean is created. But they serve fundamentally different purposes and have different trade-offs.
+
+```java
+// ── Same outcome, different approach ─────────────────────────────────────────────
+
+// APPROACH 1: Using @ConditionalOnProperty (RECOMMENDED for feature toggling)
+// application.properties: feature.caching.enabled=true
+@Bean
+@ConditionalOnProperty(name = "feature.caching.enabled", havingValue = "true")
+public CacheManager cacheManager() {
+    return new RedisCacheManager(...);
+}
+// ✓ Toggle ONE feature independently
+// ✓ Can be different per environment without adding/removing profiles
+// ✓ Clear intent: this is a FEATURE FLAG
+
+
+// APPROACH 2: Using @Profile (WORKS but not recommended for features)
+// Activate profile: spring.profiles.active=dev,caching
+@Bean
+@Profile("caching")
+public CacheManager cacheManager() {
+    return new RedisCacheManager(...);
+}
+// ✗ "caching" is not an environment — it's a feature
+// ✗ Must add "caching" to profiles list to enable
+// ✗ spring.profiles.active=dev,caching,notifications,metrics → bloated
+// ✗ Can't easily enable caching in ONE env without enabling it everywhere
+//   that uses that profile list
+
+
+// ── The key difference illustrated ───────────────────────────────────────────────
+
+// @ConditionalOnProperty — individual toggles:
+// application-dev.properties:
+//   feature.caching.enabled=true
+//   feature.notifications.enabled=false
+//   feature.metrics.enabled=true
+
+// @Profile — all-or-nothing per environment:
+// spring.profiles.active=dev
+// All dev beans are created. You can't selectively disable ONE bean within the
+// dev profile without creating yet another profile like "dev-no-cache".
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @Profile vs @ConditionalOnProperty — Detailed Comparison:                       │
+│                                                                                  │
+│  ┌─────────────────────────┬──────────────────────┬──────────────────────────┐  │
+│  │ Aspect                  │ @Profile             │ @ConditionalOnProperty   │  │
+│  ├─────────────────────────┼──────────────────────┼──────────────────────────┤  │
+│  │ Purpose                 │ Environment          │ Feature toggling         │  │
+│  │                         │ separation           │                          │  │
+│  ├─────────────────────────┼──────────────────────┼──────────────────────────┤  │
+│  │ Granularity             │ Coarse-grained       │ Fine-grained            │  │
+│  │                         │ (entire environment) │ (individual features)   │  │
+│  ├─────────────────────────┼──────────────────────┼──────────────────────────┤  │
+│  │ Activation              │ spring.profiles.     │ Any property in any     │  │
+│  │                         │ active=name          │ property source         │  │
+│  ├─────────────────────────┼──────────────────────┼──────────────────────────┤  │
+│  │ Multiple features       │ Must add EACH as a   │ Each feature has its    │  │
+│  │                         │ separate profile     │ OWN property            │  │
+│  ├─────────────────────────┼──────────────────────┼──────────────────────────┤  │
+│  │ Default behavior        │ Not active unless    │ matchIfMissing=true     │  │
+│  │                         │ profile is set       │ enables by default      │  │
+│  ├─────────────────────────┼──────────────────────┼──────────────────────────┤  │
+│  │ Property file support   │ application-{prof}   │ Any property in any     │  │
+│  │                         │ .properties loaded   │ file/env var/CLI arg    │  │
+│  ├─────────────────────────┼──────────────────────┼──────────────────────────┤  │
+│  │ Combining conditions    │ OR logic only:       │ Can combine with other  │  │
+│  │                         │ @Profile({"a","b"})  │ @Conditional annotations│  │
+│  ├─────────────────────────┼──────────────────────┼──────────────────────────┤  │
+│  │ Negation                │ @Profile("!prod")    │ No built-in negation    │  │
+│  │                         │                      │ (use havingValue)       │  │
+│  ├─────────────────────────┼──────────────────────┼──────────────────────────┤  │
+│  │ IDE support             │ Good (recognized by  │ Good (property name     │  │
+│  │                         │ IntelliJ, STS)       │ autocomplete in IDE)    │  │
+│  ├─────────────────────────┼──────────────────────┼──────────────────────────┤  │
+│  │ Typical count per app   │ 2-5 profiles         │ 5-20 properties         │  │
+│  ├─────────────────────────┼──────────────────────┼──────────────────────────┤  │
+│  │ Testing                 │ @ActiveProfiles      │ @TestPropertySource or  │  │
+│  │                         │                      │ @SpringBootTest(props)  │  │
+│  └─────────────────────────┴──────────────────────┴──────────────────────────┘  │
+│                                                                                  │
+│  VERDICT:                                                                        │
+│  → Use @Profile for: "Which ENVIRONMENT is this?" (dev/test/staging/prod)       │
+│  → Use @ConditionalOnProperty for: "Which FEATURES are enabled?"                │
+│  → They COMPLEMENT each other — use both together in real projects              │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+```java
+// ── Best practice: @Profile + @ConditionalOnProperty TOGETHER ────────────────────
+
+// @Profile controls WHICH environment (and which property file is loaded)
+// @ConditionalOnProperty controls WHICH features are enabled in that environment
+
+// application-dev.properties:
+//   feature.caching.enabled=false       ← no caching in dev (fast restarts)
+//   feature.notifications.enabled=false  ← no emails in dev
+//   feature.metrics.enabled=true         ← still want metrics in dev
+
+// application-prod.properties:
+//   feature.caching.enabled=true        ← caching in prod
+//   feature.notifications.enabled=true   ← real emails in prod
+//   feature.metrics.enabled=true         ← metrics in prod
+
+// Profile-specific DB config:
+@Configuration
+@Profile("dev")
+public class DevDatabaseConfig {
+    @Bean
+    public DataSource dataSource() {
+        return new EmbeddedDatabaseBuilder().setType(EmbeddedDatabaseType.H2).build();
+    }
+}
+
+@Configuration
+@Profile("prod")
+public class ProdDatabaseConfig {
+    @Bean
+    public DataSource dataSource(@Value("${spring.datasource.url}") String url) {
+        HikariDataSource ds = new HikariDataSource();
+        ds.setJdbcUrl(url);
+        ds.setMaximumPoolSize(30);
+        return ds;
+    }
+}
+
+// Feature toggle — SAME code for ALL environments, controlled by property:
+@Configuration
+@ConditionalOnProperty(name = "feature.caching.enabled", havingValue = "true")
+@EnableCaching
+public class CacheConfig {
+    @Bean
+    public CacheManager cacheManager(RedisConnectionFactory factory) {
+        return RedisCacheManager.builder(factory).build();
+    }
+}
+// In dev: feature.caching.enabled=false → CacheConfig NOT loaded (even in dev env)
+// In prod: feature.caching.enabled=true → CacheConfig IS loaded
+```
+
+##### Advantages of `@Profile`
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Advantages of @Profile:                                                         │
+│                                                                                  │
+│  1. CLEAN ENVIRONMENT SEPARATION                                                │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  One annotation clearly says: "this bean is for THIS environment."     │   │
+│  │  No ambiguity, no complex expressions, no property names to remember.  │   │
+│  │                                                                          │   │
+│  │  @Profile("dev")  → obvious. This is for development.                  │   │
+│  │  @Profile("prod") → obvious. This is for production.                   │   │
+│  │                                                                          │   │
+│  │  Compare to:                                                             │   │
+│  │  @ConditionalOnProperty(name="app.environment", havingValue="dev")     │   │
+│  │  → Less readable, more verbose, same outcome                           │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  2. AUTOMATIC PROPERTY FILE LOADING                                             │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  When a profile is active, Spring Boot AUTOMATICALLY loads:            │   │
+│  │  application-{profile}.properties / application-{profile}.yml          │   │
+│  │                                                                          │   │
+│  │  spring.profiles.active=prod                                            │   │
+│  │  → application.properties loaded (always)                              │   │
+│  │  → application-prod.properties loaded (because "prod" is active)       │   │
+│  │  → Properties in application-prod.properties OVERRIDE application.yml  │   │
+│  │                                                                          │   │
+│  │  This gives you entire SETS of properties per environment — not just   │   │
+│  │  one property toggle. DB URL, pool size, cache TTL, API keys — all    │   │
+│  │  in one profile-specific file.                                          │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  3. SIMPLICITY FOR ENVIRONMENT-LEVEL DECISIONS                                  │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  When the decision is binary — "this bean is for dev" vs "this bean    │   │
+│  │  is for prod" — @Profile is simpler than @ConditionalOnProperty.       │   │
+│  │                                                                          │   │
+│  │  No need to:                                                             │   │
+│  │  → Invent a property name                                              │   │
+│  │  → Remember to set it in each environment's properties                 │   │
+│  │  → Handle matchIfMissing defaults                                      │   │
+│  │                                                                          │   │
+│  │  Just: @Profile("dev") — done.                                         │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  4. NEGATION SUPPORT ("!")                                                       │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  @Profile("!prod")                                                      │   │
+│  │  → Bean active in EVERY environment EXCEPT production                  │   │
+│  │                                                                          │   │
+│  │  @Profile("!test")                                                      │   │
+│  │  → Bean active everywhere except in tests                              │   │
+│  │                                                                          │   │
+│  │  @ConditionalOnProperty has no built-in negation — you'd have to use  │   │
+│  │  havingValue="false" or matchIfMissing logic which is less intuitive.  │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  5. FIRST-CLASS TESTING SUPPORT                                                 │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  @ActiveProfiles("test")                                                │   │
+│  │  @SpringBootTest                                                         │   │
+│  │  class MyServiceTest { ... }                                             │   │
+│  │                                                                          │   │
+│  │  Spring testing framework has built-in @ActiveProfiles annotation.     │   │
+│  │  Easy to activate test-specific beans (mocks, in-memory DBs, etc.)    │   │
+│  │  without creating complex property overrides.                           │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  6. WORKS WITH SPRING CLOUD CONFIG                                              │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  Spring Cloud Config Server serves different configs based on profile: │   │
+│  │  → GET /myapp/dev → returns dev configuration                          │   │
+│  │  → GET /myapp/prod → returns prod configuration                        │   │
+│  │                                                                          │   │
+│  │  Profiles integrate naturally with centralized config management.      │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  7. MULTIPLE PROFILES CAN BE ACTIVE SIMULTANEOUSLY                              │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  spring.profiles.active=dev,metrics,swagger                            │   │
+│  │                                                                          │   │
+│  │  All beans with @Profile("dev"), @Profile("metrics"), or               │   │
+│  │  @Profile("swagger") are created. Allows layered configuration.       │   │
+│  │                                                                          │   │
+│  │  Example: base "dev" profile + optional "swagger" overlay              │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Disadvantages and Limitations of `@Profile`
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Disadvantages and Limitations of @Profile:                                      │
+│                                                                                  │
+│  1. COARSE-GRAINED — ALL-OR-NOTHING PER PROFILE                                │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  If you have 5 beans with @Profile("dev"), ALL 5 are created when     │   │
+│  │  "dev" is active. You can't selectively disable just ONE of them      │   │
+│  │  without creating a sub-profile like "dev-no-cache".                   │   │
+│  │                                                                          │   │
+│  │  @Profile("dev")                                                        │   │
+│  │  public class DevEmailService { ... }     ← always created in dev     │   │
+│  │                                                                          │   │
+│  │  @Profile("dev")                                                        │   │
+│  │  public class DevCacheConfig { ... }      ← always created in dev     │   │
+│  │                                                                          │   │
+│  │  What if you want email mock but NO cache in dev?                      │   │
+│  │  → You need a NEW profile: "dev-no-cache"                             │   │
+│  │  → Profile explosion: dev, dev-no-cache, dev-no-email, dev-minimal... │   │
+│  │                                                                          │   │
+│  │  @ConditionalOnProperty avoids this — each feature is independent:    │   │
+│  │  feature.email.mock=true                                                │   │
+│  │  feature.caching.enabled=false   ← disable just caching               │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  2. PROFILE EXPLOSION — TOO MANY PROFILES                                       │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  When developers misuse @Profile for feature toggling:                 │   │
+│  │                                                                          │   │
+│  │  spring.profiles.active=dev,caching,notifications,metrics,swagger,    │   │
+│  │                          audit,scheduling,multi-tenant                  │   │
+│  │                                                                          │   │
+│  │  Problems:                                                               │   │
+│  │  → Hard to remember which profiles to activate                         │   │
+│  │  → Easy to forget one → feature silently disabled                     │   │
+│  │  → Different profile lists per environment → configuration drift      │   │
+│  │  → Profiles should be 2-5 (dev, test, staging, prod)                  │   │
+│  │    Not 10-15 (dev,caching,email,metrics,swagger,...)                  │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  3. NO DEFAULT BEHAVIOR (unlike matchIfMissing)                                 │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  @Profile has NO equivalent of matchIfMissing=true.                    │   │
+│  │                                                                          │   │
+│  │  If no profile is active, @Profile("dev") beans are NOT created.      │   │
+│  │  There's no "create this bean by default unless a profile excludes it"│   │
+│  │  (except using @Profile("!prod") which is a workaround, not a default)│   │
+│  │                                                                          │   │
+│  │  @ConditionalOnProperty(matchIfMissing=true):                          │   │
+│  │  → Bean IS created by default if the property doesn't exist            │   │
+│  │  → Opt-OUT by explicitly setting property=false                        │   │
+│  │                                                                          │   │
+│  │  @Profile("dev"):                                                       │   │
+│  │  → Bean is NOT created unless you explicitly activate "dev"            │   │
+│  │  → No opt-out/opt-in default mechanism                                 │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  4. CAN'T MATCH ON VALUES — ONLY ON PROFILE NAME                               │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  @Profile only checks if a PROFILE NAME is active.                     │   │
+│  │  It can't check property VALUES, expressions, or conditions.           │   │
+│  │                                                                          │   │
+│  │  @ConditionalOnProperty(name="cache.type", havingValue="redis")       │   │
+│  │  → Can match specific VALUES                                           │   │
+│  │                                                                          │   │
+│  │  @Profile("???")                                                        │   │
+│  │  → Can only check if the profile NAME is active, not WHY               │   │
+│  │  → You'd need: @Profile("redis-cache") — creating a profile per value │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  5. NOT SUITABLE FOR RUNTIME/DYNAMIC DECISIONS                                  │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  Like @ConditionalOnProperty, profiles are set at STARTUP.             │   │
+│  │  You cannot activate/deactivate a profile at runtime.                  │   │
+│  │  (Spring Cloud does support profile-based refresh, but it's complex.) │   │
+│  │                                                                          │   │
+│  │  For dynamic toggling → use feature flag libraries (LaunchDarkly, etc.)│   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  6. TIGHTLY COUPLES BEAN TO ENVIRONMENT NAME                                    │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  @Profile("dev") hard-codes the environment name into your code.       │   │
+│  │  If you rename "dev" to "local" or "development":                      │   │
+│  │  → Must update ALL @Profile("dev") annotations across the codebase    │   │
+│  │                                                                          │   │
+│  │  @ConditionalOnProperty(name="app.env.local", havingValue="true")     │   │
+│  │  → The property name is more descriptive and refactoring-friendly     │   │
+│  │  → Can be renamed in ONE place (properties file)                       │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  7. NO COMPILE-TIME OR STARTUP VALIDATION                                       │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  @Profile("prod") — if you typo as @Profile("prd"):                   │   │
+│  │  → No error at compile time or startup                                 │   │
+│  │  → Bean is simply never created (when "prod" is active)               │   │
+│  │  → Silent failure — hard to diagnose                                   │   │
+│  │                                                                          │   │
+│  │  Same issue as @ConditionalOnProperty typos — string-based conditions │   │
+│  │  are inherently error-prone.                                            │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+##### Real-Life Use Cases for `@Profile`
+
+```java
+// ── USE CASE 1: Database Configuration Per Environment ───────────────────────────
+// The #1 most common use of @Profile in the industry.
+
+@Configuration
+@Profile("dev")
+public class DevDatabaseConfig {
+
+    @Bean
+    public DataSource dataSource() {
+        // H2 in-memory database — fast restarts, no setup required
+        return new EmbeddedDatabaseBuilder()
+            .setType(EmbeddedDatabaseType.H2)
+            .addScript("classpath:schema.sql")
+            .addScript("classpath:test-data.sql")   // pre-loaded test data
+            .build();
+    }
+}
+
+@Configuration
+@Profile("test")
+public class TestDatabaseConfig {
+
+    @Bean
+    public DataSource dataSource() {
+        // TestContainers PostgreSQL — real DB behavior in tests
+        PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15")
+            .withDatabaseName("testdb");
+        postgres.start();
+
+        HikariDataSource ds = new HikariDataSource();
+        ds.setJdbcUrl(postgres.getJdbcUrl());
+        ds.setUsername(postgres.getUsername());
+        ds.setPassword(postgres.getPassword());
+        return ds;
+    }
+}
+
+@Configuration
+@Profile("prod")
+public class ProdDatabaseConfig {
+
+    @Bean
+    public DataSource dataSource(
+            @Value("${spring.datasource.url}") String url,
+            @Value("${spring.datasource.username}") String username,
+            @Value("${spring.datasource.password}") String password) {
+        HikariDataSource ds = new HikariDataSource();
+        ds.setJdbcUrl(url);
+        ds.setUsername(username);
+        ds.setPassword(password);
+        ds.setMaximumPoolSize(30);
+        ds.setMinimumIdle(5);
+        ds.setConnectionTimeout(30000);
+        ds.setIdleTimeout(600000);
+        return ds;
+    }
+}
+```
+
+```java
+// ── USE CASE 2: Mock vs Real External Services ──────────────────────────────────
+// In dev/test: don't call real external APIs (cost, rate limits, side effects)
+
+public interface PaymentGateway {
+    PaymentResult charge(String customerId, BigDecimal amount);
+    PaymentResult refund(String transactionId);
+}
+
+@Service
+@Profile({"dev", "test"})
+public class MockPaymentGateway implements PaymentGateway {
+
+    private static final Logger log = LoggerFactory.getLogger(MockPaymentGateway.class);
+
+    @Override
+    public PaymentResult charge(String customerId, BigDecimal amount) {
+        log.info("[MOCK] Charging customer {} amount ${}", customerId, amount);
+        return PaymentResult.success("mock-txn-" + UUID.randomUUID());
+    }
+
+    @Override
+    public PaymentResult refund(String transactionId) {
+        log.info("[MOCK] Refunding transaction {}", transactionId);
+        return PaymentResult.success("mock-refund-" + UUID.randomUUID());
+    }
+}
+
+@Service
+@Profile("prod")
+public class StripePaymentGateway implements PaymentGateway {
+
+    private final StripeClient stripeClient;
+
+    public StripePaymentGateway(StripeClient stripeClient) {
+        this.stripeClient = stripeClient;
+    }
+
+    @Override
+    public PaymentResult charge(String customerId, BigDecimal amount) {
+        // Real Stripe API call — charges real money
+        return stripeClient.charges().create(customerId, amount);
+    }
+
+    @Override
+    public PaymentResult refund(String transactionId) {
+        return stripeClient.refunds().create(transactionId);
+    }
+}
+```
+
+```java
+// ── USE CASE 3: Security Configuration Per Environment ───────────────────────────
+// Dev: relaxed security (easy testing), Prod: full security
+
+@Configuration
+@Profile("dev")
+public class DevSecurityConfig {
+
+    @Bean
+    public SecurityFilterChain devSecurityFilterChain(HttpSecurity http) throws Exception {
+        return http
+            .csrf(csrf -> csrf.disable())                    // disable CSRF in dev
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/h2-console/**").permitAll() // allow H2 console
+                .requestMatchers("/swagger-ui/**").permitAll() // allow Swagger
+                .requestMatchers("/actuator/**").permitAll()   // allow Actuator
+                .anyRequest().permitAll()                      // allow everything in dev
+            )
+            .headers(headers -> headers.frameOptions(f -> f.disable())) // H2 console needs frames
+            .build();
+    }
+}
+
+@Configuration
+@Profile("prod")
+public class ProdSecurityConfig {
+
+    @Bean
+    public SecurityFilterChain prodSecurityFilterChain(HttpSecurity http) throws Exception {
+        return http
+            .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated()
+            )
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .build();
+    }
+}
+```
+
+```java
+// ── USE CASE 4: Logging and Monitoring Configuration ─────────────────────────────
+// Dev: verbose console logging, Prod: structured JSON logging + metrics export
+
+@Configuration
+@Profile("dev")
+public class DevLoggingConfig {
+
+    @Bean
+    public CommonsRequestLoggingFilter requestLoggingFilter() {
+        CommonsRequestLoggingFilter filter = new CommonsRequestLoggingFilter();
+        filter.setIncludeQueryString(true);
+        filter.setIncludePayload(true);
+        filter.setMaxPayloadLength(10000);
+        filter.setIncludeHeaders(true);
+        return filter;
+        // Logs FULL request details to console — helpful for debugging
+        // Too verbose for production
+    }
+}
+
+@Configuration
+@Profile("prod")
+public class ProdMonitoringConfig {
+
+    @Bean
+    public MeterRegistryCustomizer<MeterRegistry> commonTags() {
+        return registry -> registry.config()
+            .commonTags("application", "my-app")
+            .commonTags("environment", "production")
+            .commonTags("region", System.getenv("AWS_REGION"));
+    }
+
+    @Bean
+    public TimedAspect timedAspect(MeterRegistry registry) {
+        return new TimedAspect(registry);
+        // Enables @Timed annotation on methods for production metrics
+    }
+}
+```
+
+```java
+// ── USE CASE 5: File/Object Storage ─────────────────────────────────────────────
+// Dev: local filesystem, Prod: AWS S3 (or Azure Blob, GCS)
+
+public interface StorageService {
+    String upload(String key, byte[] data);
+    byte[] download(String key);
+    void delete(String key);
+}
+
+@Service
+@Profile("dev")
+public class LocalStorageService implements StorageService {
+
+    private final Path storagePath = Path.of(System.getProperty("java.io.tmpdir"), "dev-storage");
+
+    @PostConstruct
+    public void init() throws IOException {
+        Files.createDirectories(storagePath);
+    }
+
+    @Override
+    public String upload(String key, byte[] data) {
+        Path filePath = storagePath.resolve(key);
+        Files.write(filePath, data);
+        return filePath.toUri().toString();
+    }
+
+    @Override
+    public byte[] download(String key) {
+        return Files.readAllBytes(storagePath.resolve(key));
+    }
+
+    @Override
+    public void delete(String key) {
+        Files.deleteIfExists(storagePath.resolve(key));
+    }
+}
+
+@Service
+@Profile("prod")
+public class S3StorageService implements StorageService {
+
+    private final S3Client s3Client;
+    private final String bucketName;
+
+    public S3StorageService(
+            S3Client s3Client,
+            @Value("${aws.s3.bucket}") String bucketName) {
+        this.s3Client = s3Client;
+        this.bucketName = bucketName;
+    }
+
+    @Override
+    public String upload(String key, byte[] data) {
+        s3Client.putObject(
+            PutObjectRequest.builder().bucket(bucketName).key(key).build(),
+            RequestBody.fromBytes(data)
+        );
+        return "s3://" + bucketName + "/" + key;
+    }
+
+    @Override
+    public byte[] download(String key) {
+        return s3Client.getObjectAsBytes(
+            GetObjectRequest.builder().bucket(bucketName).key(key).build()
+        ).asByteArray();
+    }
+
+    @Override
+    public void delete(String key) {
+        s3Client.deleteObject(
+            DeleteObjectRequest.builder().bucket(bucketName).key(key).build()
+        );
+    }
+}
+```
+
+```java
+// ── USE CASE 6: Email Service ────────────────────────────────────────────────────
+// Dev: log emails to console (don't send real emails during development)
+// Staging: send to a test mailbox (catch-all)
+// Prod: send real emails via SMTP/SES
+
+public interface EmailService {
+    void send(String to, String subject, String body);
+}
+
+@Service
+@Profile("dev")
+public class ConsoleEmailService implements EmailService {
+
+    private static final Logger log = LoggerFactory.getLogger(ConsoleEmailService.class);
+
+    @Override
+    public void send(String to, String subject, String body) {
+        log.info("═══════════════════════════════════════════════════");
+        log.info("  [DEV EMAIL] To: {}", to);
+        log.info("  [DEV EMAIL] Subject: {}", subject);
+        log.info("  [DEV EMAIL] Body: {}", body.substring(0, Math.min(200, body.length())));
+        log.info("═══════════════════════════════════════════════════");
+        // No email actually sent — just logged
+    }
+}
+
+@Service
+@Profile("staging")
+public class CatchAllEmailService implements EmailService {
+
+    private final JavaMailSender mailSender;
+
+    @Value("${mail.catchall.address}")    // all emails go here in staging
+    private String catchAllAddress;
+
+    public CatchAllEmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
+
+    @Override
+    public void send(String to, String subject, String body) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(catchAllAddress);   // redirect ALL emails to catch-all
+        message.setSubject("[STAGING → " + to + "] " + subject);
+        message.setText(body);
+        mailSender.send(message);
+    }
+}
+
+@Service
+@Profile("prod")
+public class SesEmailService implements EmailService {
+
+    private final SesClient sesClient;
+
+    public SesEmailService(SesClient sesClient) {
+        this.sesClient = sesClient;
+    }
+
+    @Override
+    public void send(String to, String subject, String body) {
+        sesClient.sendEmail(SendEmailRequest.builder()
+            .destination(Destination.builder().toAddresses(to).build())
+            .message(Message.builder()
+                .subject(Content.builder().data(subject).build())
+                .body(Body.builder().text(Content.builder().data(body).build()).build())
+                .build())
+            .source("noreply@myapp.com")
+            .build());
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @Profile Real-Life Use Cases — Summary:                                         │
+│                                                                                  │
+│  ┌─────────────────────────────────┬──────────────────────────────────────────┐ │
+│  │ Use Case                        │ dev Profile              → prod Profile │ │
+│  ├─────────────────────────────────┼──────────────────────────────────────────┤ │
+│  │ Database                        │ H2 in-memory             → PostgreSQL   │ │
+│  │ Payment gateway                 │ Mock (no real charges)   → Stripe API   │ │
+│  │ Security                        │ Everything permitted     → OAuth2 + JWT │ │
+│  │ Logging                         │ Verbose console output   → Structured   │ │
+│  │ File storage                    │ Local filesystem         → AWS S3       │ │
+│  │ Email                           │ Console logger           → Real SMTP    │ │
+│  │ Message broker                  │ Embedded Kafka           → Real Kafka   │ │
+│  │ Cache                           │ ConcurrentHashMap        → Redis        │ │
+│  │ SSL/TLS                         │ Disabled                 → Enforced     │ │
+│  │ Swagger/API docs               │ Enabled                  → Disabled     │ │
+│  │ Seed data                       │ Auto-loaded test data    → No seed data │ │
+│  │ External API clients            │ WireMock stubs           → Real APIs    │ │
+│  └─────────────────────────────────┴──────────────────────────────────────────┘ │
+│                                                                                  │
+│  Rule of Thumb:                                                                  │
+│  → If the question is "WHAT ENVIRONMENT am I in?" → use @Profile               │
+│  → If the question is "IS THIS FEATURE ON?" → use @ConditionalOnProperty       │
+│  → For environment-wide infrastructure swaps → @Profile                         │
+│  → For per-feature toggles within an environment → @ConditionalOnProperty       │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -4610,6 +6278,777 @@ public class MailConfig {
 
 ---
 
+### Conditional Annotations Family — Used Heavily in Industry
+
+Spring Boot provides a rich set of `@Conditional` annotations beyond `@ConditionalOnProperty`. These are the backbone of Spring Boot's **auto-configuration** system — they decide which beans and configurations are loaded based on what's available in the classpath, what beans already exist, what environment you're in, and more.
+
+---
+
+#### 30.1 `@ConditionalOnBean`
+
+Creates a bean **only if a specific bean already exists** in the application context. Used to build on top of existing beans — "if this foundation exists, add this extension."
+
+```java
+// Source:
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Conditional(OnBeanCondition.class)
+public @interface ConditionalOnBean {
+    Class<?>[] value()      default {};   // bean type(s) to check for
+    String[]   type()       default {};   // fully qualified class name(s)
+    String[]   name()       default {};   // bean name(s) to check for
+    Class<? extends Annotation>[] annotation() default {};  // annotation on the bean
+    SearchStrategy search() default SearchStrategy.ALL;     // where to search
+}
+```
+
+```java
+// ── Only create health indicator if DataSource exists ────────────────────────────
+@Configuration
+public class CustomHealthConfig {
+
+    @Bean
+    @ConditionalOnBean(DataSource.class)
+    public HealthIndicator databaseHealthIndicator(DataSource dataSource) {
+        return new DataSourceHealthIndicator(dataSource);
+        // Only created if a DataSource bean exists
+        // If the app doesn't use a database → this bean is skipped
+    }
+}
+
+
+// ── Only create cache metrics if CacheManager exists ─────────────────────────────
+@Configuration
+public class MetricsConfig {
+
+    @Bean
+    @ConditionalOnBean(CacheManager.class)
+    public CacheMetricsCollector cacheMetrics(CacheManager cacheManager) {
+        return new CacheMetricsCollector(cacheManager);
+        // Metrics for caching are only registered if caching is enabled
+    }
+
+    @Bean
+    @ConditionalOnBean(name = "redisTemplate")
+    public RedisMetricsCollector redisMetrics(RedisTemplate<?, ?> redisTemplate) {
+        return new RedisMetricsCollector(redisTemplate);
+        // Only if Redis is configured — checked by bean NAME
+    }
+}
+
+
+// ── Only add transaction logging if TransactionManager exists ────────────────────
+@Component
+@Aspect
+@ConditionalOnBean(PlatformTransactionManager.class)
+public class TransactionLoggingAspect {
+
+    @Around("@annotation(org.springframework.transaction.annotation.Transactional)")
+    public Object logTransaction(ProceedingJoinPoint joinPoint) throws Throwable {
+        log.info("Transaction started: {}", joinPoint.getSignature());
+        Object result = joinPoint.proceed();
+        log.info("Transaction completed: {}", joinPoint.getSignature());
+        return result;
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @ConditionalOnBean — Real-Life Use Cases:                                       │
+│                                                                                  │
+│  ┌────────────────────────────────────┬──────────────────────────────────────┐  │
+│  │ Scenario                           │ Condition                           │  │
+│  ├────────────────────────────────────┼──────────────────────────────────────┤  │
+│  │ DB health indicator                │ @ConditionalOnBean(DataSource)      │  │
+│  │ Cache metrics exporter             │ @ConditionalOnBean(CacheManager)    │  │
+│  │ Security audit logger              │ @ConditionalOnBean(SecurityFilter)  │  │
+│  │ JPA auditing config                │ @ConditionalOnBean(EntityManager)   │  │
+│  │ Custom error handler for WebClient │ @ConditionalOnBean(WebClient)       │  │
+│  │ Kafka dead-letter topic handler    │ @ConditionalOnBean(KafkaTemplate)   │  │
+│  └────────────────────────────────────┴──────────────────────────────────────┘  │
+│                                                                                  │
+│  TL;DR: "Only create MY bean if THIS other bean already exists."                │
+│  Used to build optional extensions/enhancements on top of existing beans.       │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 30.2 `@ConditionalOnMissingBean`
+
+Creates a bean **only if NO bean of the specified type already exists**. This is the key annotation behind Spring Boot's **"opinionated defaults"** — auto-configuration provides a default bean, but if you define your own, the auto-configured one backs off.
+
+```java
+// Source:
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Conditional(OnBeanCondition.class)
+public @interface ConditionalOnMissingBean {
+    Class<?>[] value()      default {};   // bean type(s) that must NOT exist
+    String[]   type()       default {};   // fully qualified class name(s)
+    String[]   name()       default {};   // bean name(s) that must NOT exist
+    Class<? extends Annotation>[] annotation() default {};
+    SearchStrategy search() default SearchStrategy.ALL;
+    Class<?>[] ignored()    default {};   // types to ignore during search
+}
+```
+
+```java
+// ── Provide a DEFAULT ObjectMapper — user can override ───────────────────────────
+@Configuration
+public class JacksonAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean(ObjectMapper.class)
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        // This bean is created ONLY if the user hasn't defined their own ObjectMapper
+        // If user defines @Bean ObjectMapper → this auto-config bean backs off
+    }
+}
+
+// User's custom config — OVERRIDES the auto-configured one:
+@Configuration
+public class CustomJacksonConfig {
+
+    @Bean    // No @ConditionalOnMissingBean — this is the user's explicit bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .registerModule(new Jdk8Module())
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        // This takes priority → auto-configured ObjectMapper is NOT created
+    }
+}
+
+
+// ── Default RestTemplate — user can customize ────────────────────────────────────
+@Configuration
+public class RestTemplateAutoConfig {
+
+    @Bean
+    @ConditionalOnMissingBean(RestTemplate.class)
+    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+        return builder
+            .setConnectTimeout(Duration.ofSeconds(5))
+            .setReadTimeout(Duration.ofSeconds(10))
+            .build();
+        // Default with sensible timeouts
+        // If user provides their own RestTemplate @Bean → this is skipped
+    }
+}
+
+
+// ── Default PasswordEncoder — BCrypt unless user specifies otherwise ──────────────
+@Configuration
+public class SecurityDefaultsConfig {
+
+    @Bean
+    @ConditionalOnMissingBean(PasswordEncoder.class)
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);
+        // Default: BCrypt with strength 12
+        // User can override with Argon2, SCrypt, etc.
+    }
+}
+
+
+// ── Default error handler — user can customize ──────────────────────────────────
+@Configuration
+public class ErrorHandlerAutoConfig {
+
+    @Bean
+    @ConditionalOnMissingBean(ErrorController.class)
+    public ErrorController defaultErrorController() {
+        return new DefaultErrorController();
+        // Spring Boot's famous "Whitelabel Error Page"
+        // If user defines their own ErrorController → Whitelabel is not shown
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @ConditionalOnMissingBean — The "Override Pattern":                             │
+│                                                                                  │
+│  This is how Spring Boot's auto-configuration works:                            │
+│                                                                                  │
+│  ┌──────────────────────────────────────────────────────────────────────────┐   │
+│  │  Spring Boot Auto-Config:                                                │   │
+│  │  @Bean                                                                   │   │
+│  │  @ConditionalOnMissingBean(ObjectMapper.class)                          │   │
+│  │  public ObjectMapper objectMapper() { ... }     ← DEFAULT               │   │
+│  │                                                                          │   │
+│  │  Your Custom Config:                                                     │   │
+│  │  @Bean                                                                   │   │
+│  │  public ObjectMapper objectMapper() { ... }     ← YOUR OVERRIDE         │   │
+│  │                                                                          │   │
+│  │  Result: Your bean wins. Auto-config backs off.                         │   │
+│  └──────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                  │
+│  This pattern is used EVERYWHERE in spring-boot-autoconfigure:                  │
+│  → ObjectMapper, RestTemplate, WebClient, DataSource, JdbcTemplate             │
+│  → PasswordEncoder, CacheManager, TaskExecutor, ErrorController                │
+│  → HealthIndicator, MeterRegistry, and hundreds more                           │
+│                                                                                  │
+│  TL;DR: "Provide a sensible default, but let the user override it."            │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 30.3 `@ConditionalOnClass` and `@ConditionalOnMissingClass`
+
+`@ConditionalOnClass` creates a bean **only if a specific class is on the classpath**. `@ConditionalOnMissingClass` is the inverse. These are used heavily to detect which libraries/drivers are available.
+
+```java
+// Source:
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Conditional(OnClassCondition.class)
+public @interface ConditionalOnClass {
+    Class<?>[] value() default {};   // classes that must be on the classpath
+    String[]   name()  default {};   // fully qualified class names (safer for optional deps)
+}
+
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Conditional(OnClassCondition.class)
+public @interface ConditionalOnMissingClass {
+    String[] value() default {};     // class names that must NOT be on the classpath
+}
+```
+
+```java
+// ── Auto-configure Redis ONLY if Jedis/Lettuce is on classpath ───────────────────
+@Configuration
+@ConditionalOnClass(RedisConnectionFactory.class)
+public class RedisAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean(RedisTemplate.class)
+    public RedisTemplate<String, Object> redisTemplate(
+            RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        return template;
+    }
+    // This entire config is SKIPPED if spring-data-redis is not a dependency
+    // No ClassNotFoundException — Spring checks BEFORE loading the class
+}
+
+
+// ── Auto-configure Kafka ONLY if KafkaTemplate is available ──────────────────────
+@Configuration
+@ConditionalOnClass(name = "org.springframework.kafka.core.KafkaTemplate")
+public class KafkaAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean(KafkaTemplate.class)
+    public KafkaTemplate<String, String> kafkaTemplate(ProducerFactory<String, String> pf) {
+        return new KafkaTemplate<>(pf);
+    }
+    // Only if spring-kafka is in your pom.xml/build.gradle
+}
+
+
+// ── Choose HTTP client based on what's on the classpath ──────────────────────────
+@Configuration
+public class HttpClientAutoConfig {
+
+    @Bean
+    @ConditionalOnClass(name = "okhttp3.OkHttpClient")
+    @ConditionalOnMissingBean(HttpClient.class)
+    public HttpClient okHttpClient() {
+        return new OkHttpClientAdapter(new OkHttpClient());
+        // If OkHttp is on classpath → use it
+    }
+
+    @Bean
+    @ConditionalOnMissingClass("okhttp3.OkHttpClient")
+    @ConditionalOnMissingBean(HttpClient.class)
+    public HttpClient jdkHttpClient() {
+        return new JdkHttpClientAdapter(java.net.http.HttpClient.newHttpClient());
+        // If OkHttp is NOT on classpath → fall back to JDK HttpClient
+    }
+}
+
+
+// ── Auto-configure Flyway ONLY if Flyway library is present ──────────────────────
+@Configuration
+@ConditionalOnClass(Flyway.class)
+@ConditionalOnBean(DataSource.class)
+public class FlywayAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean(Flyway.class)
+    public Flyway flyway(DataSource dataSource) {
+        return Flyway.configure()
+            .dataSource(dataSource)
+            .locations("classpath:db/migration")
+            .load();
+    }
+    // Only if: Flyway JAR is present AND a DataSource bean exists
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @ConditionalOnClass — Real-Life Use Cases:                                      │
+│                                                                                  │
+│  ┌──────────────────────────────────────┬────────────────────────────────────┐  │
+│  │ Scenario                             │ Class Checked                     │  │
+│  ├──────────────────────────────────────┼────────────────────────────────────┤  │
+│  │ Redis auto-config                    │ RedisConnectionFactory.class      │  │
+│  │ Kafka auto-config                    │ KafkaTemplate.class               │  │
+│  │ MongoDB auto-config                  │ MongoClient.class                 │  │
+│  │ Elasticsearch auto-config            │ RestHighLevelClient.class         │  │
+│  │ Jackson JSON support                 │ ObjectMapper.class                │  │
+│  │ Flyway DB migration                  │ Flyway.class                      │  │
+│  │ Liquibase DB migration               │ SpringLiquibase.class             │  │
+│  │ Thymeleaf template engine            │ SpringTemplateEngine.class        │  │
+│  │ Embedded Tomcat                      │ Tomcat.class                      │  │
+│  │ Embedded Jetty                       │ Server.class (Jetty)              │  │
+│  │ Embedded Undertow                    │ Undertow.class                    │  │
+│  └──────────────────────────────────────┴────────────────────────────────────┘  │
+│                                                                                  │
+│  TL;DR: "Only configure this feature if the library is in the classpath."       │
+│  This is WHY adding a dependency to pom.xml is often enough to enable a feature.│
+│  Spring Boot detects the class and auto-configures everything.                  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 30.4 `@ConditionalOnExpression`
+
+Creates a bean **only if a SpEL (Spring Expression Language) expression evaluates to `true`**. Used for complex, multi-property conditions that can't be expressed with `@ConditionalOnProperty` alone.
+
+```java
+// Source:
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Conditional(OnExpressionCondition.class)
+public @interface ConditionalOnExpression {
+    String value() default "true";   // SpEL expression
+}
+```
+
+```java
+// ── Combine multiple properties with AND/OR logic ────────────────────────────────
+// application.properties:
+// feature.notifications.enabled=true
+// feature.notifications.type=email
+// app.environment=production
+
+@Bean
+@ConditionalOnExpression(
+    "${feature.notifications.enabled:false} and '${feature.notifications.type}'.equals('email')"
+)
+public EmailNotificationService emailNotificationService() {
+    return new EmailNotificationService();
+    // Created ONLY if notifications are enabled AND type is "email"
+    // @ConditionalOnProperty can't express this AND combination easily
+}
+
+
+// ── Check multiple properties together ───────────────────────────────────────────
+@Configuration
+@ConditionalOnExpression(
+    "${app.security.enabled:true} and not '${app.environment:dev}'.equals('dev')"
+)
+public class ProductionSecurityConfig {
+    // Security config loaded ONLY if:
+    // 1. app.security.enabled is true (or not set — defaults to true)
+    // 2. app.environment is NOT "dev"
+    // Useful for features that should ONLY be active in staging/prod
+
+    @Bean
+    public SecurityFilter csrfProtectionFilter() {
+        return new CsrfProtectionFilter();
+    }
+
+    @Bean
+    public SecurityFilter rateLimitFilter() {
+        return new RateLimitFilter();
+    }
+}
+
+
+// ── Numeric comparison ───────────────────────────────────────────────────────────
+@Bean
+@ConditionalOnExpression("${server.port:8080} >= 8080 and ${server.port:8080} <= 9090")
+public PortRangeValidator portValidator() {
+    return new PortRangeValidator();
+    // Only if server port is within the expected range
+}
+
+
+// ── Check system property or environment variable ────────────────────────────────
+@Bean
+@ConditionalOnExpression("#{systemProperties['os.name'].toLowerCase().contains('linux')}")
+public LinuxSpecificService linuxService() {
+    return new LinuxSpecificService();
+    // Only on Linux systems
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @ConditionalOnExpression — When to Use:                                         │
+│                                                                                  │
+│  ✓ Complex conditions involving multiple properties with AND/OR/NOT             │
+│  ✓ Numeric comparisons (>, <, >=, <=)                                          │
+│  ✓ String operations (contains, startsWith, equals)                             │
+│  ✓ System property/environment variable checks                                  │
+│                                                                                  │
+│  ✗ Simple property presence/value → use @ConditionalOnProperty instead         │
+│  ✗ Hard to read/debug (SpEL in strings — no IDE support for errors)            │
+│  ✗ Typos in SpEL → runtime error, not compile error                           │
+│                                                                                  │
+│  TL;DR: Use sparingly. Prefer @ConditionalOnProperty for simple cases.          │
+│  Use @ConditionalOnExpression only when you need complex logic.                 │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 30.5 `@ConditionalOnWebApplication` and `@ConditionalOnNotWebApplication`
+
+Creates a bean **only if the application is (or is not) a web application**. Spring Boot detects the application type based on the classpath and context.
+
+```java
+// Source:
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Conditional(OnWebApplicationCondition.class)
+public @interface ConditionalOnWebApplication {
+    Type type() default Type.ANY;   // ANY, SERVLET, or REACTIVE
+}
+
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Conditional(OnWebApplicationCondition.class)
+public @interface ConditionalOnNotWebApplication { }
+```
+
+```java
+// ── Register web-specific beans ONLY in web apps ─────────────────────────────────
+@Configuration
+@ConditionalOnWebApplication
+public class WebSpecificConfig {
+
+    @Bean
+    public CorsFilter corsFilter() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:3000"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", config);
+        return new CorsFilter(source);
+    }
+
+    @Bean
+    public FilterRegistrationBean<RequestLoggingFilter> loggingFilter() {
+        FilterRegistrationBean<RequestLoggingFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(new RequestLoggingFilter());
+        registration.addUrlPatterns("/api/*");
+        return registration;
+    }
+}
+
+
+// ── Only for SERVLET-based web apps (not reactive) ───────────────────────────────
+@Configuration
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+public class ServletSpecificConfig {
+
+    @Bean
+    public HttpSessionListener sessionListener() {
+        return new CustomSessionListener();
+        // Only in traditional Spring MVC (servlet) apps
+        // NOT in WebFlux (reactive) apps
+    }
+}
+
+
+// ── Only for REACTIVE web apps (WebFlux) ─────────────────────────────────────────
+@Configuration
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
+public class ReactiveSpecificConfig {
+
+    @Bean
+    public WebFilter reactiveLoggingFilter() {
+        return new ReactiveRequestLoggingFilter();
+        // Only in Spring WebFlux apps
+    }
+}
+
+
+// ── CLI/batch apps — NOT a web application ───────────────────────────────────────
+@Configuration
+@ConditionalOnNotWebApplication
+public class BatchOnlyConfig {
+
+    @Bean
+    public CommandLineRunner batchRunner(BatchService batchService) {
+        return args -> batchService.runBatch(args);
+        // Only when running as a CLI/batch app (no web server)
+        // Skipped in web applications
+    }
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @ConditionalOnWebApplication — Real-Life Use Cases:                             │
+│                                                                                  │
+│  ┌─────────────────────────────────────────┬─────────────────────────────────┐  │
+│  │ Scenario                                │ Annotation                      │  │
+│  ├─────────────────────────────────────────┼─────────────────────────────────┤  │
+│  │ CORS filter for REST APIs              │ @ConditionalOnWebApplication    │  │
+│  │ Session management                      │ @ConditionalOnWebApp(SERVLET)   │  │
+│  │ Reactive WebFilter                      │ @ConditionalOnWebApp(REACTIVE)  │  │
+│  │ CLI batch runner                        │ @ConditionalOnNotWebApplication │  │
+│  │ Request-scoped beans                    │ @ConditionalOnWebApplication    │  │
+│  │ Actuator endpoints                      │ @ConditionalOnWebApplication    │  │
+│  └─────────────────────────────────────────┴─────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 30.6 `@ConditionalOnJava`
+
+Creates a bean **only if the application is running on a specific Java version**. Useful for features that require newer Java APIs.
+
+```java
+// Source:
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Conditional(OnJavaCondition.class)
+public @interface ConditionalOnJava {
+    Range range()       default Range.EQUAL_OR_NEWER;   // EQUAL_OR_NEWER or OLDER_THAN
+    JavaVersion value();                                 // target Java version
+}
+```
+
+```java
+// ── Use virtual threads only on Java 21+ ─────────────────────────────────────────
+@Configuration
+@ConditionalOnJava(JavaVersion.TWENTY_ONE)    // Java 21 or newer
+public class VirtualThreadConfig {
+
+    @Bean
+    public TaskExecutor virtualThreadExecutor() {
+        // Virtual threads (Project Loom) — available since Java 21
+        return new VirtualThreadTaskExecutor("virtual-");
+        // Skipped on Java 17 — falls back to platform threads
+    }
+}
+
+@Configuration
+@ConditionalOnJava(range = Range.OLDER_THAN, value = JavaVersion.TWENTY_ONE)
+public class PlatformThreadConfig {
+
+    @Bean
+    public TaskExecutor platformThreadExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(10);
+        executor.setMaxPoolSize(50);
+        executor.initialize();
+        return executor;
+        // Traditional thread pool for Java < 21
+    }
+}
+
+
+// ── Use newer API features conditionally ─────────────────────────────────────────
+@Bean
+@ConditionalOnJava(JavaVersion.SEVENTEEN)
+public HttpClient modernHttpClient() {
+    return HttpClient.newBuilder()
+        .version(HttpClient.Version.HTTP_2)
+        .connectTimeout(Duration.ofSeconds(10))
+        .build();
+    // JDK HttpClient available since Java 11, but some features improved in 17
+}
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @ConditionalOnJava — Real-Life Use Cases:                                       │
+│                                                                                  │
+│  ┌──────────────────────────────────────┬────────────────────────────────────┐  │
+│  │ Scenario                             │ Java Version                      │  │
+│  ├──────────────────────────────────────┼────────────────────────────────────┤  │
+│  │ Virtual threads (Project Loom)       │ Java 21+                          │  │
+│  │ Record-based DTOs                    │ Java 16+                          │  │
+│  │ Sealed classes in pattern matching   │ Java 17+                          │  │
+│  │ JDK HttpClient                       │ Java 11+                          │  │
+│  │ Text blocks in templates             │ Java 15+                          │  │
+│  └──────────────────────────────────────┴────────────────────────────────────┘  │
+│                                                                                  │
+│  TL;DR: Use when your library/app needs to support multiple Java versions       │
+│  and you want to leverage newer APIs when available.                            │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 30.7 `@Conditional` — The Base Annotation (Custom Conditions)
+
+All `@ConditionalOn*` annotations are built on top of `@Conditional`, which takes a `Condition` class. You can write your own custom conditions.
+
+```java
+// Source:
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Conditional {
+    Class<? extends Condition>[] value();   // condition class(es) to evaluate
+}
+
+// The Condition interface:
+@FunctionalInterface
+public interface Condition {
+    boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata);
+}
+```
+
+```java
+// ── Custom condition: only on weekdays ───────────────────────────────────────────
+public class WeekdayCondition implements Condition {
+
+    @Override
+    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+        DayOfWeek day = LocalDate.now().getDayOfWeek();
+        return day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY;
+    }
+}
+
+@Bean
+@Conditional(WeekdayCondition.class)
+public ScheduledReportService weekdayReportService() {
+    return new ScheduledReportService();
+    // Only created if the app starts on a weekday
+}
+
+
+// ── Custom condition: check if a file exists ─────────────────────────────────────
+public class ConfigFileExistsCondition implements Condition {
+
+    @Override
+    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+        String configPath = context.getEnvironment()
+            .getProperty("app.config.path", "/etc/myapp/config.json");
+        return Files.exists(Path.of(configPath));
+    }
+}
+
+@Configuration
+@Conditional(ConfigFileExistsCondition.class)
+public class ExternalConfigLoader {
+
+    @Bean
+    public ExternalConfig externalConfig(
+            @Value("${app.config.path:/etc/myapp/config.json}") String path)
+            throws IOException {
+        String json = Files.readString(Path.of(path));
+        return new ObjectMapper().readValue(json, ExternalConfig.class);
+    }
+}
+
+
+// ── Custom condition: check database connectivity ────────────────────────────────
+public class DatabaseReachableCondition implements Condition {
+
+    @Override
+    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+        String url = context.getEnvironment().getProperty("spring.datasource.url");
+        if (url == null) return false;
+        try (Connection conn = DriverManager.getConnection(url)) {
+            return conn.isValid(2);    // 2 second timeout
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+}
+
+@Bean
+@Conditional(DatabaseReachableCondition.class)
+public DatabaseMigrationRunner migrationRunner(DataSource ds) {
+    return new DatabaseMigrationRunner(ds);
+    // Only run migrations if the database is actually reachable at startup
+}
+```
+
+---
+
+#### 30.8 Conditional Annotations — Complete Summary
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  @Conditional Family — Complete Reference:                                       │
+│                                                                                  │
+│  ┌─────────────────────────────────────┬─────────────────────────────────────┐  │
+│  │ Annotation                          │ Bean Created When...               │  │
+│  ├─────────────────────────────────────┼─────────────────────────────────────┤  │
+│  │ @ConditionalOnProperty              │ Property has the expected value    │  │
+│  │ @ConditionalOnBean                  │ Specified bean EXISTS              │  │
+│  │ @ConditionalOnMissingBean           │ Specified bean does NOT exist      │  │
+│  │ @ConditionalOnClass                 │ Class IS on the classpath          │  │
+│  │ @ConditionalOnMissingClass          │ Class is NOT on the classpath      │  │
+│  │ @ConditionalOnExpression            │ SpEL expression = true            │  │
+│  │ @ConditionalOnJava                  │ Running on target Java version    │  │
+│  │ @ConditionalOnWebApplication        │ App IS a web application          │  │
+│  │ @ConditionalOnNotWebApplication     │ App is NOT a web application      │  │
+│  │ @ConditionalOnResource              │ Resource exists on classpath      │  │
+│  │ @ConditionalOnSingleCandidate       │ Exactly ONE bean of the type      │  │
+│  │ @ConditionalOnCloudPlatform         │ Running on specific cloud (K8s,   │  │
+│  │                                     │ Cloud Foundry, Heroku, etc.)      │  │
+│  │ @Conditional(CustomCondition.class) │ Custom Condition.matches() = true │  │
+│  └─────────────────────────────────────┴─────────────────────────────────────┘  │
+│                                                                                  │
+│  Most Commonly Used in Industry (by frequency):                                 │
+│                                                                                  │
+│  ┌────┬──────────────────────────────────┬───────────────────────────────────┐  │
+│  │ #  │ Annotation                        │ Typical Use                      │  │
+│  ├────┼──────────────────────────────────┼───────────────────────────────────┤  │
+│  │ 1  │ @ConditionalOnMissingBean        │ Auto-config defaults (override)  │  │
+│  │ 2  │ @ConditionalOnClass              │ Library detection (classpath)    │  │
+│  │ 3  │ @ConditionalOnProperty           │ Feature flags (toggle features)  │  │
+│  │ 4  │ @ConditionalOnBean               │ Build on existing beans          │  │
+│  │ 5  │ @ConditionalOnWebApplication     │ Web-only beans (filters, etc.)  │  │
+│  │ 6  │ @ConditionalOnExpression         │ Complex multi-property logic    │  │
+│  │ 7  │ @ConditionalOnJava               │ Java version-specific features  │  │
+│  └────┴──────────────────────────────────┴───────────────────────────────────┘  │
+│                                                                                  │
+│  Combining Multiple Conditions:                                                  │
+│  → Multiple @Conditional annotations on the same bean = AND logic              │
+│  → ALL conditions must be true for the bean to be created                      │
+│                                                                                  │
+│  @Bean                                                                           │
+│  @ConditionalOnClass(RedisConnectionFactory.class)   // Redis jar present       │
+│  @ConditionalOnProperty(name = "cache.type", havingValue = "redis")             │
+│  @ConditionalOnMissingBean(CacheManager.class)       // user hasn't defined own │
+│  public RedisCacheManager cacheManager(...) { ... }                             │
+│  // Created ONLY if ALL THREE conditions are true                               │
+│                                                                                  │
+│  Debugging Tips:                                                                 │
+│  → /actuator/conditions — shows ALL evaluated conditions and results           │
+│  → --debug flag — prints condition evaluation report at startup                │
+│  → ConditionEvaluationReport — programmatic access to condition results        │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 #### 31. `@Scheduled` and `@EnableScheduling`
 
 Marks a method to run on a **fixed schedule** — cron expressions, fixed delay, or fixed rate.
@@ -5036,12 +7475,4 @@ public UserResponse update(@RequestBody @Validated(OnUpdate.class) UserRequest r
 │  └────────────────────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
-
-
-
-
-- @Controller vs @RestController vs @ControllerAdvice
-- @Component vs @Bean
-- @Component vs @Service vs @COnfiguration vs Repository
-- @@RequestMapping vs @GetMapping vs @PostMapping vs @PutMapping vs@@DeleteMapping
 

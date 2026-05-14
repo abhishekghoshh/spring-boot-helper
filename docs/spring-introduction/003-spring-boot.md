@@ -3179,9 +3179,3 @@ This is the end-to-end flow showing the **Servlet Container**, **DispatcherServl
 │               Embedded Tomcat (DispatcherServlet registered at "/")              │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
-
-
-Add all the theories for the following question in detail and wherever possible add diagram and add code
-
-1. How controller maps the method with api, http method, and the model and registers with handlermapping
-2. How rest controller maps the method with api , method, response body and registers with handlermapping
