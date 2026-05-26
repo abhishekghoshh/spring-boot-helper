@@ -3,7 +3,7 @@
 Before diving into Spring Transactions, you need to understand two foundational concepts:
 
 1. **Concurrency Control** — How multiple threads/users accessing the same data simultaneously is managed
-2. **Spring AOP** — How Spring wraps your beans with proxies to add cross-cutting behavior (see [Spring AOP](spring-aop.md))
+2. **Spring AOP** — How Spring wraps your beans with proxies to add cross-cutting behavior (see [Spring AOP](../spring-aop/001-what-is-aop.md))
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────┐

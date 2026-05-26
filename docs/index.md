@@ -11,7 +11,6 @@
 - [Spring JPA](spring-jpa.md) — JPA repositories, entity mapping, relationships, and query methods
 - [Spring Transaction](spring-transaction.md) — @Transactional, propagation levels, isolation, and rollback rules
 - [Spring Security](spring-security.md) — Authentication, authorization, JWT, OAuth2, and filter chains
-- [Spring Async](spring-async.md) — @Async, CompletableFuture, thread pools, and non-blocking execution
 - [Spring Testing](spring-testing.md) — Unit testing, integration testing, MockMvc, and test slices
 - [Spring Batch](spring-batch.md) — Batch processing, chunk-based steps, readers, writers, and job scheduling
 - [Spring Kafka](spring-kafka.md) — Kafka producers, consumers, topics, and event-driven messaging

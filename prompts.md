@@ -196,7 +196,27 @@ About Custom Annotation for Java
 
 - Explain in detail, What is handled by `ResponseStatusExceptionResolver`, 
   - It handles uncaught exception annotated with `@ResponseStatus` Annotation
-  - Let's say my CustomException is annotated with `@ResponseStatus` Annotation, and if this is thrown then `ResponseStatusExceptionResolver` will catch it and set the status and the exception message or the reason added in the annotation in the response
+  - Let's say my `CustomException` is annotated with `@ResponseStatus` Annotation, and if this is thrown then `ResponseStatusExceptionResolver` will catch it and set the status and the exception message or the reason (Reason has more priority than Exception Message) added in the annotation in the response
+  - What if I set both `@ResponseStatus` and `@ExceptionHandler`, with a method returning `ResponseEntity(body,status)` then what will be taken, `@ResponseStatus` or `ResponseEntity(body,status)`, Ideally first it goes to the `ExceptionHandlerExceptionResolver` and resolve the exception there, it do not need to go to the `ResponseStatusExceptionResolver`. In actual it sets the response entity from the `ExceptionHandlerExceptionResolver`, however there is an code which is handled by Spring framework itself, which actually does this `ServeletInvokableHandlerMethod.setResponseStatus(webRequest)`, so the status and message inside `@ResponseStatus` takes the prioriy, though it is not set by the `ResponseStatusExceptionResolver`, Spring Framework handles it. Explain it with internal code
+  - What if in a controller I set both `@ResponseStatus(BAD_REQUEST, "Invalid request sent")` and `@ExceptionHandler(CustomExpcption(msg))`, with a method does this `response.sendError(forbidden,"you're not authorized")`, then what will be the final response body? In this case first when we manually invokes `sendError` then internally it set the status, error message and commits it but again in the ExceptionResolver class it tries to invoke the `sendError`, that's when it throws an exception internally, so ultimately 500 exception thrown as response.  Explain it with internal code
+  - So if we want to use both `@ResponseStatus(BAD_REQUEST, "Invalid request sent")` and `@ExceptionHandler(CustomExpcption(msg))` then don't add anything in the method body, let the spring framework handles everything
+
+
+- Explain in detail, What is handled by `DefaultHandlerExceptionResolver`,
+  - It is the default exception resolver invoked at the last, when no other exception resolver is able to resolve the exception
+
+---
+
+- What is Spring Actuator
+  - Provides production ready endpoins to monitor and manage the spring boot application
+- What is usage of it? 
+- How to use it with real life use case and code example
+- Why should we use it?
+- What is the advatage and disadvantage?
+
+
+
+
 
 
 
