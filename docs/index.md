@@ -174,3 +174,4 @@
 - [Java Spring Boot Microservices eCommerce Project | Docker, PostgreSQL, DevOps Full Course](https://www.youtube.com/watch?v=i_9z3tNrphE)
 - [Spring Boot 4 - Microservices portfolio project with Java - Full Course (2026)](https://www.youtube.com/watch?v=vE3u4zgMai8)
 - [Build a Multi-Tenant SaaS with Spring Boot](https://www.youtube.com/watch?v=utSW4EeoguY)
+- [Complete Java Full Stack: AWS, Spring Boot, Microservices](https://www.youtube.com/watch?v=fmX84zu-5gs)

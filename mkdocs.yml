@@ -15,6 +15,10 @@ nav:
       - 007 - Spring Boot Config Management: spring-introduction/007-config.md
       - 008 - Async with Spring Boot: spring-introduction/008-async.md
       - 009 - Spring with Virtual Thread: spring-introduction/009-spring-with-virtual-thread.md
+      - 010 - Interceptor and Filter: spring-introduction/010-intercepter-and-filter.md
+      - 011 - Spring HATEOS: spring-introduction/011-spring-hateos.md
+      - 012 - Exception Handling: spring-introduction/012-exception-handling.md
+      - 013 - Spring Boot Actuator: spring-introduction/013-spring-actuator.md
   - Spring Config: spring-config.md
   - Spring AOP:
       - Overview: spring-aop.md
