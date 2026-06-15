@@ -14,28 +14,14 @@ About Custom Annotation for Java
 
 
 
----
-
-## Exception Handling
-
-### Response Codes
-
-
-
-
-### Exception handling framework
-
-
-
-
-
-
-
-
 
 
 
 ---
+
+
+### Spring Actuator
+
 
 - What is Spring Actuator
   - Provides production ready endpoins to monitor and manage the spring boot application

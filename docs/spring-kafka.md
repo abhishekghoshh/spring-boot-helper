@@ -13,13 +13,16 @@
 
 ### Kafka with Spring boot
 
+- [Event Driven Architecture (with Kafka) from Basics to Advanced](https://www.youtube.com/playlist?list=PL6W8uoQQ2c62YCR2kkE-0tg3-y1QwaIWk)
 - [Apache-Kafka | Java Techie](https://www.youtube.com/playlist?list=PLVz2XdJiJQxwoGuQb8lR-sTV26dz1SoXo)
 - [Spring Boot + Apache Kafka Tutorial | Java Guides](https://www.youtube.com/playlist?list=PLGRDMO4rOGcNLwoack4ZiTyewUcF6y6BU)
 - [Master Apache Kafka in One Shot: LLD + HLD Setup + Partitioning + Pub/Sub](https://www.youtube.com/watch?v=jdjp9elUEqA)
 - [Apache KAFKA Tutorial | KAFKA Crash Course | Spring Boot](https://www.youtube.com/watch?v=tU_37niRh4U)
 - [Master Kafka in Single Video | Apache Kafka Crash Course | Kafka in Hindi](https://www.youtube.com/watch?v=ei6fK9StzMM)
 - [Spring Boot + Kafka Course | Learn Apache Kafka in One Shot!](https://www.youtube.com/watch?v=gpx7smdUkgU)
-
+- [Spring Modulith](https://www.youtube.com/playlist?list=PLZV0a2jwt22sHeLRA0PRFbsTXDW8dE3s_)
 
 - [Kafka Streams Full Course | Build Real-Time Systems with Spring Boot @Javatechie](https://www.youtube.com/watch?v=ZJldB9GQTak)
 - [Apache Kafka Course For Beginners with Spring Boot Project, Spring Cloud Streams | Asynchronous Comm](https://www.youtube.com/watch?v=NWLwGtkBrkQ)
+
+

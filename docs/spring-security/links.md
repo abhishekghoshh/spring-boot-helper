@@ -22,6 +22,7 @@
 
 - [Spring Security Made EASY - From Zero to Hero in 10 Minutes!](https://www.youtube.com/watch?v=nhsdPVXhbHo)
 - [Spring Security: Authentication Architecture Explained in Depth](https://www.youtube.com/watch?v=ElY3rjtukig)
+- [Spring Security 7 Crash Course [2026] – Everything You Need to Know](https://www.youtube.com/watch?v=IqW6NVxPaTc)
 
 - [Concept && Coding - by Shrayansh](https://www.youtube.com/@ConceptAndCodingByShrayansh)
   - [Spring boot: Security (Part-1) | Architecture and SetUp](https://www.youtube.com/watch?v=HdnST4ObRIg)
