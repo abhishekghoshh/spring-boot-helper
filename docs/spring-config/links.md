@@ -24,7 +24,7 @@
 - [Spring Cloud Config Server & Client: Centralized Configuration Management for Microservices 3.0](https://www.youtube.com/watch?v=gZSqmmdmIf4)
 - [Spring Cloud Config Explained | Centralized Config for Microservices (with Git + Refresh Demo)](https://www.youtube.com/watch?v=FNM6JwycIXI)
 - [Complete Configurations Management 🔥 Externalising Configurations like Pro | Spring Boot | Hindi](https://www.youtube.com/watch?v=oP_iXYW79fc)
-- [Master Spring Boot Configuration Management: Profiles, Cloud Config & Secure Secrets | Microservices](https://www.youtube.com/watch?v=OIXtqbNJ01I)
+- [Spring Boot: ConfigurationProperties in-depth](https://www.youtube.com/watch?v=8IoR4AGf8xc&list=PL6W8uoQQ2c60g6_fcjDCLHSx1LBeVYqyZ&index=44)
 
 
 - [Microservices Tutorial in Hindi 2023](https://www.youtube.com/playlist?list=PL0zysOflRCelb2Y4WOVckFC6B050BzV0D)
@@ -32,6 +32,10 @@
     - [Config Server in Microservices | Microservices Tutorial Series in Hindi](https://www.youtube.com/watch?v=VNYWCl7Z-_c&list=PL0zysOflRCelb2Y4WOVckFC6B050BzV0D&index=22)
     - [Implementing Config Server in Microservices | Microservices Tutorial Series in Hindi](https://www.youtube.com/watch?v=kaNHT6_MV-Q&list=PL0zysOflRCelb2Y4WOVckFC6B050BzV0D&index=23)
     - [Reading config from github | Implementing config client microservices | Microservices Tutorial](https://www.youtube.com/watch?v=q1D1TNfsdhA&list=PL0zysOflRCelb2Y4WOVckFC6B050BzV0D&index=24)
+
+
+- [Master Spring Boot Configuration Management: Profiles, Cloud Config & Secure Secrets | Microservices](https://www.youtube.com/watch?v=OIXtqbNJ01I)
+
 - [Spring Boot Microservices Level 3: Microservice configuration](https://www.youtube.com/playlist?list=PLqq-6Pq4lTTaoaVoQVfRJPqvNTCjcTvJB)
 
 

@@ -4,8 +4,6 @@ Add all the theories for the following question in detail and wherever possible 
 
 Explain all the annotations in detail, its properties used in spring boot with different code example and diagram if needed
 
-Explain in detail, its properties used in spring boot with different code example and diagram if needed
-
 
 
 About Custom Annotation for Java 
@@ -13,22 +11,25 @@ About Custom Annotation for Java
 - [Spring boot: Custom Interceptors | How to Intercept Incoming HTTP Request and Custom Annotations](https://www.youtube.com/watch?v=hkuq4fv43eU)
 
 
+Spring Basics
+Spring Config
+Spring Cloud
+Spring Unit and WebMVC Testing
+Spring Redis
+Spring AOP
+Spring Transaction
+Spring JPA
+Spring Security
+Spring MongoDB
+Spring Kafka
 
 
 
 
----
 
 
-### Spring Actuator
 
 
-- What is Spring Actuator
-  - Provides production ready endpoins to monitor and manage the spring boot application
-- What is usage of it? 
-- How to use it with real life use case and code example
-- Why should we use it?
-- What is the advatage and disadvantage?
 
 
 
@@ -51,8 +52,6 @@ About Custom Annotation for Java
 - Can we use multiple profiles in comma separated way in `spring.profiles.active`? which values will be picked ultimately then?
 
 
-
-## Spring Boot config cloud
 
 
 

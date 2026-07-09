@@ -1,0 +1,3 @@
+
+
+Add all the theories for the following question in detail and wherever possible add diagram and add code
