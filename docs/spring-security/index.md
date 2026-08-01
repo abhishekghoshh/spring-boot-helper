@@ -1,8 +1,46 @@
-# Spring Security Links
+# Spring Security
+
+
+## Table of Contents
+
+- [001 - Different Types of Attacks: CSRF, SQL Injection, XSS, CORS](./001-different-types-of-attacks.md)
+- [002 - Authentication and Authorization](./002-authorization-and-authentication.md)
+- [003 - Request/Response Architecture in Spring Boot](./003-request-response-architecture.md)
+- [004 - Spring Security Architecture — Complete Deep Dive](./004-spring-security-architecture.md)
+- [005 - Default User Creation in Spring Security](./005-default-user-creation.md)
+- [006 - Multiple Users, Password Encoding & DelegatingPasswordEncoder](./006-password-encoding-delegating-password-encoder.md)
+- [007 - Database-Based Authentication — Full Production Implementation](./007-database-based-authentication.md)
+- [008 - Form Login — Stateful Authentication Deep Dive](./008-form-login-stateful-authentication.md)
+- [009 - Form Login — Complete User Flow, Session Lifecycle & Internal Mechanics](./009-form-login-user-flow-session-lifecycle.md)
+- [010 - Customizing Form Login — URLs, Timeout, UI & Session Persistence](./010-customizing-form-login.md)
+- [011 - Session Persistence — Storing HttpSession & JSESSIONID in Database](./011-session-persistence-spring-session-jdbc.md)
+- [012 - Distributed Sessions with Redis](./012-distributed-sessions-with-redis.md)
+- [013 - Deep Dive — DaoAuthenticationProvider, Session Creation & Post-Authentication Flow](./013-dao-authentication-provider.md)
+- [014 - Authenticated Request Flow — SecurityContextHolderFilter & AuthorizationFilter](./014-authenticated-request-flow.md)
+- [015 - Form Login Defaults, SessionManagement & SessionCreationPolicy](./015-session-management-and-creation-policy.md)
+- [016 - HTTP Basic Authentication — Deep Dive, Internals & Best Practices](./016-http-basic-authentication.md)
+- [017 - JWT (JSON Web Token) — Deep Dive, Structure, Internals & Verification](./017-jwt-json-web-token.md)
+- [018 - Access Token, ID Token, Refresh Token, JWKS & Token Blacklisting](./018-access-token-refresh-token-jwks.md)
+- [019 - JWT Authentication with Custom Security Filters](./019-jwt-authentication-custom-security-filters.md)
+- [020 - OAuth 2.0 & OpenID Connect (OIDC) — Complete Guide](./020-oauth2-and-openid-connect.md)
+- [021 - Role-Based Authorization (RBAC) in Spring Security](./021-role-based-authorization-rbac.md)
+
+
+
+
 
 ## Official docucmentation
 
 - [Spring Boot and OAuth2](https://spring.io/guides/tutorials/spring-boot-oauth2/)
+
+
+
+
+## Medium
+
+- [Spring Security Interview Q &A](https://neesri.medium.com/spring-security-interview-q-a-ffa3a329e9f5)
+- [Common Java Spring Boot Security Interview Questions and Answers](https://medium.com/@AlexanderObregon/common-java-spring-boot-security-interview-questions-and-answers-0513efb6fb12)
+
 
 
 ## Udemy

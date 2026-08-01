@@ -1,6 +1,11 @@
 # Spring Interceptor and Filter
 
 
+## Youtube
+
+- [Spring boot: Custom Interceptors | How to Intercept Incoming HTTP Request and Custom Annotations](https://www.youtube.com/watch?v=hkuq4fv43eU)
+
+
 ## 1. What is a Spring Interceptor?
 
 A **Spring MVC Interceptor** is a component that intercepts HTTP requests **before they reach a controller** and/or **after the controller returns a response**, but before it is written to the client. It operates at the **Spring MVC layer** — inside the `DispatcherServlet` — giving it access to Spring context, handler metadata, and the `ModelAndView`.

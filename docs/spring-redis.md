@@ -1,6 +1,0 @@
-# Spring Boot Redis
-
-
-
-
-## Theory

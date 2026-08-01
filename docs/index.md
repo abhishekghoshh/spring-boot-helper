@@ -4,31 +4,17 @@
 ## Table of Contents
 
 - [Index](index.md) — Index of the all topics
-- [Interview Helper](interview-helper.md) — Common Spring Boot interview questions and answers
-- [Spring Introduction](spring-introduction.md) — Spring Boot fundamentals, auto-configuration, and project setup
-- [Spring Config](spring-config.md) — Spring Boot config Management
-- [Spring AOP](spring-aop.md) — Aspect-Oriented Programming, pointcuts, advice types, and proxy internals
-- [Spring JPA](spring-jpa.md) — JPA repositories, entity mapping, relationships, and query methods
-- [Spring Transaction](spring-transaction.md) — @Transactional, propagation levels, isolation, and rollback rules
-- [Spring Security](spring-security.md) — Authentication, authorization, JWT, OAuth2, and filter chains
-- [Spring Testing](spring-testing.md) — Unit testing, integration testing, MockMvc, and test slices
-- [Spring Batch](spring-batch.md) — Batch processing, chunk-based steps, readers, writers, and job scheduling
-- [Spring Kafka](spring-kafka.md) — Kafka producers, consumers, topics, and event-driven messaging
-- [Spring Redis](spring-redis.md) — Redis caching, RedisTemplate, pub/sub, and session management
-- [Spring MongoDB](spring-mongodb.md) — MongoTemplate, MongoRepository, document mapping, and aggregations
-- [Spring Cassandra](spring-cassandra.md) — Cassandra data modeling, CassandraTemplate, and distributed storage
-- [Spring Cloud](spring-cloud.md) — Service discovery, config server, circuit breakers, and API gateway
-- [Spring Microservices Patterns](spring-microservices-pattern.md) — SAGA, CQRS, event sourcing, and distributed system patterns
-- [Spring GraphQL](spring-graphql.md) — GraphQL schemas, queries, mutations, and Spring GraphQL integration
-- [Spring Reactive Programming](spring-reactive-programming.md) — WebFlux, Mono, Flux, and reactive streams
-- [Spring Cloud Functions](spring-cloud-functions.md) — Serverless functions, Function-as-a-Service with Spring Cloud
-- [Spring AWS](spring-aws.md) — AWS integration with S3, SQS, SNS, DynamoDB, and Spring Cloud AWS
-- [Spring Kubernetes](spring-k8s.md) — Kubernetes deployment, ConfigMaps, health probes, and Spring Cloud K8s
-- [Spring CI/CD](spring-cicd.md) — Continuous integration and deployment pipelines for Spring Boot apps
-- [Spring Observability](spring-observabilty.md) — Micrometer, distributed tracing, metrics, and monitoring
-- [Spring Splunk](spring-splunk.md) — Log aggregation, Splunk integration, and centralized logging
-- [Spring Docs](spring-docs.md) — OpenAPI, Swagger, and API documentation with Spring REST Docs
-
+- [Spring Introduction](spring-introduction/index.md) — Spring Boot fundamentals, auto-configuration, and project setup
+- [Spring AOP](spring-aop/index.md) — Aspect-Oriented Programming, pointcuts, advice types, and proxy internals
+- [Spring Transaction](spring-transactions/index.md) — @Transactional, propagation levels, isolation, and rollback rules
+- [Spring JPA](spring-jpa/index.md) — JPA repositories, entity mapping, relationships, and query methods
+- [Spring Security](spring-security/index.md) — Authentication, authorization, JWT, OAuth2, and filter chains
+- [Spring Testing](spring-testing/index.md) — Unit testing, integration testing, MockMvc, and test slices
+- [Spring Kafka](spring-kafka/index.md) — Kafka producers, consumers, topics, and event-driven messaging
+- [Spring Redis](spring-redis/index.md) — Redis caching, RedisTemplate, pub/sub, and session management
+- [Spring MongoDB](spring-mongo/index.md) — MongoTemplate, MongoRepository, document mapping, and aggregations
+- [Spring Cloud](spring-cloud/index.md) — Service discovery, config server, circuit breakers, and API gateway
+- [Others](others/index.md) - Some of the other important Topics in Spring
 
 
 

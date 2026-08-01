@@ -3,9 +3,9 @@ site_url: https://abhishekghoshh.github.io/spring-boot-helper/
 
 nav:
   - Home: index.md
-  - Interview Helper: interview-helper.md
   - Introduction: 
-      - Overview: spring-introduction.md
+      - Overview: spring-introduction/index.md
+      - Interview Helper: spring-introduction/interview-helper.md
       - 001 - History: spring-introduction/001-history.md
       - 002 - Spring MVC: spring-introduction/002-spring-mvc.md
       - 003 - Spring Boot: spring-introduction/003-spring-boot.md
@@ -19,10 +19,8 @@ nav:
       - 011 - Spring HATEOS: spring-introduction/011-spring-hateos.md
       - 012 - Exception Handling: spring-introduction/012-exception-handling.md
       - 013 - Spring Boot Actuator: spring-introduction/013-spring-actuator.md
-  - Spring Config: spring-config.md
   - Spring AOP:
-      - Overview: spring-aop.md
-      - Links: spring-aop/links.md
+      - Overview: spring-aop/index.md
       - 001 - What is AOP? Why and How We Use It?: spring-aop/001-what-is-aop.md
       - 002 - Advantages and Disadvantages of AOP: spring-aop/002-advantages-and-disadvantages.md
       - 003 - Real-Life Examples and Industry Usages: spring-aop/003-real-life-examples.md
@@ -44,8 +42,7 @@ nav:
       - 019 - How Matching, Linking, and Interception Work Together: spring-aop/019-matching-linking-interception.md
       - 020 - What If We Have 100s of Pointcuts? — Performance & Caching: spring-aop/020-performance-and-caching.md
   - Spring Transaction:
-      - Overview: spring-transaction.md
-      - Links: spring-transactions/links.md
+      - Overview: spring-transactions/index.md
       - 001 - Prerequisites: spring-transactions/001-prerequisites.md
       - 002 - What is a Critical Section?: spring-transactions/002-critical-section.md
       - 003 - What is @Transactional? Why and How to Use It?: spring-transactions/003-transactional-annotation.md
@@ -61,8 +58,7 @@ nav:
       - 013 - What is Transaction Propagation?: spring-transactions/013-transaction-propagation.md
       - 014 - What is Isolation Level?: spring-transactions/014-isolation-level.md
   - Spring JPA:
-      - Overview: spring-jpa.md
-      - Links: spring-jpa/links.md
+      - Overview: spring-jpa/index.md
       - JDBC: spring-jpa/000-jdbc.md
       - 001 - Architecture: spring-jpa/001-architecture.md
       - 002 - Entity Lifecycle: spring-jpa/002-entity-lifecycle.md
@@ -101,8 +97,7 @@ nav:
       - 035 - Criteria API: spring-jpa/035-criteria-api.md
       - 036 - JPA Specification API: spring-jpa/036-jpa-specification-api.md
   - Spring Security:
-    - Overview: spring-security.md
-    - Links: spring-security/links.md
+    - Overview: spring-security/index.md
     - 001 - Different Types of Attacks: spring-security/001-different-types-of-attacks.md
     - 002 - Authentication and Authorization: spring-security/002-authorization-and-authentication.md
     - 003 - Request/Response Architecture: spring-security/003-request-response-architecture.md
@@ -124,15 +119,16 @@ nav:
     - 019 - JWT Authentication with Custom Filters: spring-security/019-jwt-authentication-custom-security-filters.md
     - 020 - OAuth 2.0 & OpenID Connect: spring-security/020-oauth2-and-openid-connect.md
     - 021 - Role-Based Authorization (RBAC): spring-security/021-role-based-authorization-rbac.md
-  - Spring Testing: spring-testing.md
-  - Spring Batch: spring-batch.md
-  - Spring Kafka: spring-kafka.md
-  - Spring Redis: spring-redis.md
-  - Spring MongoDB: spring-mongodb.md
-  - Spring Cassandra: spring-cassandra.md
+  - Spring Testing: 
+    - Overview: spring-testing/index.md
+  - Spring Kafka: 
+    - Overview: spring-kafka/index.md
+  - Spring Redis: 
+    - Overview: spring-redis/index.md
+  - Spring Mongo:
+      - Overview: spring-mongo/index.md
   - Spring Cloud:
-      - Overview: spring-cloud.md
-      - Links: spring-cloud/links.md
+      - Overview: spring-cloud/index.md
       - 001 - Circuit Breakers and Resilience4j: spring-cloud/001-circuit-breakers-and-resilience4j.md
       - 002 - Service Discovery: spring-cloud/002-service-discovery.md
       - 003 - API Gateway: spring-cloud/003-api-gateway.md
@@ -140,16 +136,19 @@ nav:
       - 006 - Distributed Tracing: spring-cloud/006-distributed-tracing.md
       - 007 - Messaging: spring-cloud/007-messaging.md
       - 008 - Testing: spring-cloud/008-testing.md
-  - Spring Microservices Patterns: spring-microservices-pattern.md
-  - Spring GraphQL: spring-graphql.md
-  - Spring Reactive Programming: spring-reactive-programming.md
-  - Spring Cloud Functions: spring-cloud-functions.md
-  - Spring AWS: spring-aws.md
-  - Spring Kubernetes: spring-k8s.md
-  - Spring CI/CD: spring-cicd.md
-  - Spring Observability: spring-observabilty.md
-  - Spring Splunk: spring-splunk.md
-  - Spring Docs: spring-docs.md
+  - Others:
+      - Overview: others/index.md
+      - Spring Batch: others/spring-batch.md
+      - Spring Cassandra: others/spring-cassandra.md
+      - Spring GraphQL: others/spring-graphql.md
+      - Spring Reactive Programming: others/spring-reactive-programming.md
+      - Spring Cloud Functions: others/spring-cloud-functions.md
+      - Spring AWS: others/spring-aws.md
+      - Spring Kubernetes: others/spring-k8s.md
+      - Spring CI/CD: others/spring-cicd.md
+      - Spring Observability: others/spring-observability.md
+      - Spring Splunk: others/spring-splunk.md
+      - Spring Docs: others/spring-docs.md
 
 
 

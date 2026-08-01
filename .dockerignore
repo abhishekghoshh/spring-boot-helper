@@ -132,3 +132,5 @@ dmypy.json
 
 docker-compose.yaml
 Dockerfile.*
+projects/**
+projects-v2/**
