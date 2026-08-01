@@ -9,6 +9,7 @@
 - Database Users and Roles
 - Database Instances vs Databases
 - Data Models (Relational Model)
+- OLTP vs OLAP
 
 ## Relational Database Concepts
 
@@ -82,6 +83,7 @@
 - Unique Constraints
 - Not Null Constraints
 - Default Constraints
+- Referential Actions (On Delete/On Update Cascade)
 
 ## Transactions
 
@@ -110,6 +112,7 @@
 - Deadlocks
 - Deadlock Prevention
 - Deadlock Detection
+- Multiversion Concurrency Control (MVCC)
 
 ## Indexing
 
@@ -123,6 +126,7 @@
 - Hash Index
 - Index Selectivity
 - Advantages and Trade-offs of Indexes
+- Full-Text Index
 
 ## Database Storage
 
@@ -133,6 +137,17 @@
 - Clustered Storage
 - Row-Oriented Storage
 - Column-Oriented Storage (Overview)
+
+## SQL and Query Languages
+
+- Query Languages Overview (DDL, DML, DCL, TCL)
+- Joins Overview (Inner, Outer, Cross, Self)
+- Set Operations (Union, Intersect, Except)
+- Subqueries
+- Views
+- Stored Procedures
+- Triggers
+- Cursors
 
 ## Query Processing (Conceptual)
 
@@ -169,6 +184,7 @@
 - Encryption at Rest
 - Encryption in Transit
 - Auditing
+- SQL Injection (Overview)
 
 ## Backup and Recovery
 
@@ -177,6 +193,7 @@
 - Differential Backup
 - Point-in-Time Recovery
 - Crash Recovery
+- Write-Ahead Logging (WAL)
 - Recovery Models
 
 ## Database Scalability
@@ -196,6 +213,7 @@
 - Eventual Consistency
 - Two-Phase Commit (2PC)
 - Distributed Transactions (Overview)
+- Consensus Algorithms (Overview)
 
 ## Object Relational Mapping (Pre-JPA Concepts)
 

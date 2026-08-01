@@ -10,6 +10,7 @@
 - Redis vs Traditional Databases
 - Redis vs Memcached
 - Redis Persistence Overview
+- RESP Protocol (Redis Serialization Protocol)
 
 ## Redis Installation and Configuration
 
@@ -19,6 +20,8 @@
 - Basic Configuration Options
 - Memory Configuration
 - Security Configuration
+- Running Redis with Docker
+- Client Connection Configuration
 
 ## Redis Data Types
 
@@ -32,6 +35,14 @@
 - Streams
 - Geospatial Data
 
+## Redis Modules and Extensions
+
+- RedisJSON
+- RediSearch (Full-Text and Vector Search)
+- RedisBloom (Probabilistic Data Structures)
+- RedisTimeSeries
+- Redis Stack Overview
+
 ## Key Management
 
 - Keys
@@ -42,6 +53,7 @@
 - Key Eviction
 - Key Scanning
 - Key Deletion
+- Key Renaming
 
 ## Redis Persistence
 
@@ -50,6 +62,7 @@
 - Hybrid Persistence
 - Persistence Trade-offs
 - Backup and Restore
+- AOF Rewrite (BGREWRITEAOF)
 
 ## Memory Management
 
@@ -86,6 +99,7 @@
 - Pattern Subscriptions
 - Pub/Sub Limitations
 - Common Use Cases
+- Keyspace Notifications
 
 ## Redis Streams
 
@@ -110,6 +124,7 @@
 - Cache Penetration
 - Cache Avalanche
 - Hot Keys
+- Client-Side Caching
 
 ## Expiration and Eviction
 
@@ -126,6 +141,7 @@
 - Replication Process
 - Read Replicas
 - Failover Concepts
+- Partial Resynchronization (PSYNC)
 
 ## Redis Sentinel
 
@@ -150,6 +166,7 @@
 - Atomic Execution
 - Script Caching
 - Common Use Cases
+- Redis Functions (Server-Side Functions)
 
 ## Redis Security
 
@@ -169,6 +186,7 @@
 - Performance Tuning
 - Benchmarking
 - Connection Management
+- Metrics Export (Prometheus/Grafana Integration)
 
 ## Data Modeling
 
@@ -192,6 +210,7 @@
 - Job Queue
 - Real-Time Analytics
 - Notification System
+- Counters and Atomic Counters
 
 ## Reliability and Recovery
 
@@ -225,3 +244,5 @@
 - Optimistic Locking Concepts
 - Transactions with Redis
 - Reactive Redis Concepts
+- Lettuce vs Jedis (Client Libraries)
+- Cache Abstraction with @Cacheable

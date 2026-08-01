@@ -18,6 +18,8 @@
 - MongoDB Compass
 - MongoDB Atlas (Overview)
 - Configuration Basics
+- MongoDB Drivers
+- MongoDB Atlas Search (Overview)
 
 ## Database Structure
 
@@ -43,6 +45,8 @@
 - Timestamp
 - Decimal128
 - UUID
+- MinKey and MaxKey
+- Regular Expression
 
 ## ObjectId
 
@@ -79,6 +83,8 @@
 - Time Series Collections
 - Collection Validation
 - Collection Options
+- Views
+- Clustered Collections
 
 ## Indexing
 
@@ -96,6 +102,7 @@
 - Covered Queries
 - Index Selection
 - Index Best Practices
+- Wildcard Index
 
 ## Query Processing
 
@@ -107,6 +114,7 @@
 - Projection
 - Pagination
 - Sorting
+- Cursors
 
 ## Aggregation Framework
 
@@ -124,6 +132,8 @@
 - Bucket
 - Merge
 - Out
+- Aggregation Pipeline Optimization
+- Window Functions
 
 ## Transactions
 
@@ -151,6 +161,8 @@
 - Read Preference
 - Write Concern
 - Read Concern
+- Oplog
+- Arbiter Nodes
 
 ## Sharding
 
@@ -161,6 +173,7 @@
 - Chunk Migration
 - Balancer
 - Choosing a Shard Key
+- Zone Sharding
 
 ## Consistency and Availability
 
@@ -169,6 +182,7 @@
 - Read Preference
 - Read Concern
 - Write Concern
+- Causal Consistency
 
 ## Storage Engine
 
@@ -194,6 +208,7 @@
 - TLS/SSL
 - Encryption at Rest
 - Auditing (Overview)
+- Client-Side Field Level Encryption
 
 ## Backup and Recovery
 
@@ -222,6 +237,7 @@
 - Collection Statistics
 - Index Statistics
 - Performance Metrics
+- Mongostat and Mongotop
 
 ## GridFS
 
@@ -245,6 +261,7 @@
 - Extended Reference Pattern
 - Computed Pattern
 - Outlier Pattern
+- Schema Versioning Pattern
 
 ## High Availability
 
@@ -279,3 +296,4 @@
 - MongoTemplate (Concept)
 - Aggregation Pipeline Concepts
 - Transactions with Spring Data MongoDB
+- Reactive MongoDB Support

@@ -36,6 +36,7 @@
 - Controller
 - KRaft Architecture
 - ZooKeeper (Legacy)
+- KRaft Controller Quorum
 
 ## Topic Management
 
@@ -46,6 +47,8 @@
 - Topic Retention
 - Topic Compaction
 - Internal Topics
+- Topic Deletion
+- Minimum In-Sync Replicas (min.insync.replicas)
 
 ## Partitions and Ordering
 
@@ -69,6 +72,7 @@
 - Message Keys
 - Message Headers
 - Serialization
+- Producer Interceptors
 
 ## Consumers
 
@@ -82,6 +86,7 @@
 - Manual Commit
 - Consumer Rebalancing
 - Deserialization
+- Consumer Interceptors
 
 ## Message Delivery Semantics
 
@@ -118,6 +123,7 @@
 - Replica Synchronization
 - High Availability
 - Broker Failure Recovery
+- Unclean Leader Election
 
 ## Storage and Retention
 
@@ -128,6 +134,7 @@
 - Log Compaction
 - Tombstone Records
 - Disk Storage Model
+- Tiered Storage
 
 ## Consumer Group Rebalancing
 
@@ -165,6 +172,7 @@
 - Producer Buffer Memory
 - Consumer Fetch Settings
 - Broker Performance Tuning
+- Zero-Copy Transfer
 
 ## Security
 
@@ -177,6 +185,12 @@
 - OAuth Authentication (Overview)
 - Encryption in Transit
 
+## Quotas and Multi-Tenancy
+
+- Client Quotas
+- Request Rate Quotas
+- Multi-Tenancy
+
 ## Monitoring and Operations
 
 - Kafka Metrics
@@ -187,6 +201,7 @@
 - Health Checks
 - Log Monitoring
 - Alerting
+- Broker Configuration (server.properties)
 
 ## Kafka Streams (Concepts)
 
@@ -198,6 +213,9 @@
 - Joins
 - Aggregations
 - Interactive Queries (Overview)
+- KStream and KTable Abstractions
+- State Stores
+- Exactly-Once Semantics in Kafka Streams
 
 ## Kafka Connect (Concepts)
 
@@ -208,6 +226,7 @@
 - Connector Configuration
 - Offset Storage
 - Single Message Transforms (SMTs)
+- Kafka Connect REST API
 
 ## Event-Driven Architecture
 
@@ -277,3 +296,4 @@
 - JSON Message Conversion
 - Avro Integration (Concept)
 - Embedded Kafka for Testing (Concept)
+- Concurrency Configuration (@KafkaListener)

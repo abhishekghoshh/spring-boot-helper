@@ -59,6 +59,8 @@ nav:
       - 014 - What is Isolation Level?: spring-transactions/014-isolation-level.md
   - Spring JPA:
       - Overview: spring-jpa/index.md
+      - Database Management Systems (DBMS): spring-jpa/dbms.md
+      - Structured Query Language (SQL): spring-jpa/sql.md
       - JDBC: spring-jpa/000-jdbc.md
       - 001 - Architecture: spring-jpa/001-architecture.md
       - 002 - Entity Lifecycle: spring-jpa/002-entity-lifecycle.md
@@ -123,10 +125,13 @@ nav:
     - Overview: spring-testing/index.md
   - Spring Kafka: 
     - Overview: spring-kafka/index.md
+    - Kafka Introduction: spring-kafka/kafka.md
   - Spring Redis: 
     - Overview: spring-redis/index.md
+    - Redis Introduction: spring-redis/redis.md
   - Spring Mongo:
       - Overview: spring-mongo/index.md
+      - MongoDB Introduction: spring-mongo/mongodb.md
   - Spring Cloud:
       - Overview: spring-cloud/index.md
       - Spring Cloud Config: spring-cloud/001-spring-cloud-config.md
