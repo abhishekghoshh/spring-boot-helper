@@ -1,4 +1,23 @@
-## Distributed Tracing
+# Distributed Tracing
+
+
+## Topics
+
+- Need For Distributed Tracing
+- Distributed Tracing with Spring Sleuth
+- Introduction To Zipkin
+- Setting Up Zipkin
+- Exploring Zipkin Traces
+- What is Micrometer Tracing
+- Introduction to Distributed Tracing with Micrometer and Zipkin
+- Add Micrometer and Zipkin dependencies
+- Set up Micrometer Tracing
+- Micrometer Tracing Sampling Probability
+- Logging TraceId and SpanId
+- Configure Micrometer to work with Feign
+- View traces in Zipkin Dashboard
+
+
 
 ### Youtube
 

@@ -1,4 +1,17 @@
-## Messaging
+# Spring Cloud Messaging
+
+
+## Topics
+
+- Introduction to Spring Cloud Stream
+- Spring Cloud Stream Binders (Kafka and RabbitMQ)
+- Functional Programming Model with Supplier, Function and Consumer
+- Configuring Bindings and Destinations
+- Event-Driven Microservices with Spring Cloud Stream and Kafka
+- Event-Driven Microservices with Spring Cloud Stream and RabbitMQ
+- Consumer Groups and Partitioning
+- Error Handling and Dead Letter Queues in Spring Cloud Stream
+
 
 ### Youtube
 

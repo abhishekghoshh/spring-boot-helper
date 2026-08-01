@@ -1,0 +1,41 @@
+# Spring Cloud Config
+
+## Topics
+
+- Centralized Configuration
+- Get configuration from application props
+- Setting up Spring Cloud Config Server
+- Git and Creating Local Git Repository
+- Connect Spring Cloud Config Server to Local Git Repository
+- Create Private GitHub Repository and Configure Config Server to Access Private GitHub Repository
+- Managing Profiles With Config Server
+- Naming Property Files Served by Config Server
+- Explain spring.cloud.config.uri, spring.cloud.config.profile, search-paths
+- Explain spring.profile.include spring.profile.active spring.cloud.config.profile
+- Connect Service to Spring Cloud Config Server
+- @RefreshScope Annotation and Refreshing Beans at Runtime
+- Configure API Gateway to be a Client of Config Server
+- Introduction to Spring Cloud Config(File System as a backend)
+- Setting up File System Backend
+- Composite Configuration Backends (Git + Vault + JDBC)
+- Previewing Values Returned by Spring Cloud Config Server
+- Trying how Microservices work
+- Introduction to Spring Cloud Config configuration for multiple Microservices
+- Shared and Microservice-specific configuration properties
+- Config Server High Availability and Multiple Instances
+- Enable Basic Authentication for Spring Cloud Config Server
+- Configure CSRF exceptions - /actuator/busrefresh
+- Configure Client Microservice to use Basic Auth credentials
+- Restricting /actuator/busrefresh to ADMIN Role
+- Restricting Configuration Properties to CLIENT Role
+- Configure Client Microservice to use new access credentials
+- Config Server Health Indicator and /actuator/health Details
+- Other API endpoints like: /encrypt and /decrypt
+- Basic Auth Is Not Encryption
+- Introduction to Encryption and Decryption of Configuration Properties
+- note about Java Cryptography Extension(JCE)
+- Add Java Cryptography Extension
+- Configure access to /encrypt and /decrypt API endpoints
+- Spring Cloud Config - Symmetric Encryption of configuration properties
+- Creating a Keystore for Asymmetric Encryption
+- Spring Cloud Config - Asymmetric Encryption of configuration properties

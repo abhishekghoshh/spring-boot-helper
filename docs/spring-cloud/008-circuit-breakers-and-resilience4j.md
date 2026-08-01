@@ -1,4 +1,25 @@
-## Circuit Breakers and Resilience4j
+# Circuit Breakers and Resilience4j
+
+
+## Topics
+
+- Getting started with Circuit Breaker - Resilience4j
+- Adding Resilience4j to Spring Boot Microservice
+- Circuit Breaker Features of Resilience4j
+- Resilience4j - Retry and Fallback Methods
+- Rate Limiting and BulkHead Features of Resilience4j
+- Bulkhead Pattern - Thread Pool vs Semaphore Isolation
+- Time Limiter in Resilience4j
+- Circuit Breaker configuration properties
+- Actuator /health Endpoint
+- Configure Access to Actuator endpoints
+- Monitoring Circuit Breaker events in Actuator
+- @Retry annotation in Resilience4j
+- Aspect Order in Resilience4j
+- Resilience4j Retry configuration properties
+- Trying how it works Resilience4j Retry works
+
+
 
 ### Medium
 

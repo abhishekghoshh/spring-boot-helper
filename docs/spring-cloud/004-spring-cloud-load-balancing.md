@@ -1,4 +1,18 @@
-## Load Balancing
+# Spring cloud Load Balancing
+
+
+
+
+## Topics
+
+- What is Spring Cloud LoadBalancer
+- Why should we use Spring Cloud LoadBalancer instead of Netflix Ribbon
+- Custom Load Balancer Strategies (Round Robin, Random, Weighted Response Time)
+- Zone Affinity and Zone Avoidance
+- Caching Load Balancer Instances with Spring Cloud LoadBalancer
+- how Spring Cloud API Gateway Load Balancing works
+
+
 
 ### Youtube
 
