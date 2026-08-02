@@ -3,6 +3,7 @@
 
 ## Table of Contents
 
+- [Kafka Basics](./kafka.md)
 
 
 

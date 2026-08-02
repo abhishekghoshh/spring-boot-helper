@@ -3,7 +3,7 @@
 
 ## table of Contents
 
-
+- [Redis Basics](./redis.md)
 
 
 ## Blogs

@@ -2,6 +2,8 @@
 
 ## Table of Contents
 
+- [Database Management System](./dbms.md)
+- [Structured Query Language](./sql.md)
 - [JDBC](./000-jdbc.md)
 - [001 - Architecture](./001-architecture.md)
 - [002 - Entity Lifecycle](./002-entity-lifecycle.md)
