@@ -1,45 +1,5 @@
 # Spring Cloud Config
 
-## Topics
-
-- Centralized Configuration
-- Get configuration from application props
-- Setting up Spring Cloud Config Server
-- Git and Creating Local Git Repository
-- Connect Spring Cloud Config Server to Local Git Repository
-- Create Private GitHub Repository and Configure Config Server to Access Private GitHub Repository
-- Managing Profiles With Config Server
-- Naming Property Files Served by Config Server
-- Explain spring.cloud.config.uri, spring.cloud.config.profile, search-paths
-- Explain spring.profile.include spring.profile.active spring.cloud.config.profile
-- Connect Service to Spring Cloud Config Server
-- @RefreshScope Annotation and Refreshing Beans at Runtime
-- Configure API Gateway to be a Client of Config Server
-- Introduction to Spring Cloud Config(File System as a backend)
-- Setting up File System Backend
-- Composite Configuration Backends (Git + Vault + JDBC)
-- Previewing Values Returned by Spring Cloud Config Server
-- Trying how Microservices work
-- Introduction to Spring Cloud Config configuration for multiple Microservices
-- Shared and Microservice-specific configuration properties
-- Config Server High Availability and Multiple Instances
-- Enable Basic Authentication for Spring Cloud Config Server
-- Configure CSRF exceptions - /actuator/busrefresh
-- Configure Client Microservice to use Basic Auth credentials
-- Restricting /actuator/busrefresh to ADMIN Role
-- Restricting Configuration Properties to CLIENT Role
-- Configure Client Microservice to use new access credentials
-- Config Server Health Indicator and /actuator/health Details
-- Other API endpoints like: /encrypt and /decrypt
-- Basic Auth Is Not Encryption
-- Introduction to Encryption and Decryption of Configuration Properties
-- note about Java Cryptography Extension(JCE)
-- Add Java Cryptography Extension
-- Configure access to /encrypt and /decrypt API endpoints
-- Spring Cloud Config - Symmetric Encryption of configuration properties
-- Creating a Keystore for Asymmetric Encryption
-- Spring Cloud Config - Asymmetric Encryption of configuration properties
-
 ## Detailed Guide
 
 ### Centralized Configuration
@@ -60,6 +20,37 @@ flowchart TD
 ```
 
 **Real-life scenario:** An e-commerce platform runs 40 microservices across `dev`, `staging`, and `prod`. Marketing needs to flip a "flash sale" feature flag off in production at 2 AM without redeploying anything. Because all 40 services read `feature.flash-sale.enabled` from the same Config Server-backed Git repo, an on-call engineer merges a one-line change and triggers `/actuator/busrefresh`, and every affected service picks up the new value within seconds.
+
+```yaml
+# config-repo/order-service-prod.yml (centralized, versioned, reviewed via PR)
+feature:
+  flash-sale:
+    enabled: true
+payment:
+  gateway-timeout-ms: 3000
+```
+
+```java
+@RestController
+class FeatureFlagController {
+
+    @Value("${feature.flash-sale.enabled}")
+    private boolean flashSaleEnabled;
+
+    @GetMapping("/features/flash-sale")
+    boolean isFlashSaleEnabled() {
+        return flashSaleEnabled;
+    }
+}
+```
+
+**Interview Q&A:**
+
+**Q: What's the core architectural shift Spring Cloud Config introduces compared to per-service `application.yml`?**
+It moves the source of truth for configuration outside the deployable artifact into an externally managed, versioned store (typically Git), so the same values can be shared, audited, and changed across many services without rebuilding each one.
+
+**Q: Does adopting centralized configuration require rewriting how beans read properties?**
+No — existing `@Value` and `@ConfigurationProperties` code continues to work unchanged, since the Config Client simply layers a remote `PropertySource` into the same Spring `Environment` used for local files.
 
 ### Get configuration from application props
 
@@ -88,6 +79,26 @@ public class GreetingController {
 ```
 
 **Real-life scenario:** A developer prototyping a new microservice starts with plain `application.yml` values for local development, then later swaps to Spring Cloud Config for staging/production — the `@Value` and `@ConfigurationProperties` code doesn't need to change at all, only the property source changes.
+
+```java
+@ConfigurationProperties(prefix = "greeting")
+public record GreetingProperties(String message, int maxLength) {}
+```
+
+```yaml
+# equivalent, type-safe alternative to @Value for multiple related properties
+greeting:
+  message: Hello from local application.properties
+  max-length: 140
+```
+
+**Interview Q&A:**
+
+**Q: What is the `Environment` abstraction's role in how properties get resolved?**
+It's Spring's ordered collection of `PropertySource`s (system properties, env vars, `application.yml`, command-line args, and later the remote Config Server source); `@Value`/`@ConfigurationProperties` resolve against this merged view regardless of where each property physically originates.
+
+**Q: When would you prefer `@ConfigurationProperties` over `@Value` for reading local props?**
+When binding several related, structured properties (e.g. a prefix with multiple fields) — it gives type-safe, validated, refactor-friendly binding instead of scattering individual `@Value` fields throughout the codebase.
 
 ### Setting up Spring Cloud Config Server
 
@@ -145,6 +156,23 @@ sequenceDiagram
 
 **Real-life scenario:** A platform team stands up a single Config Server instance in a shared "platform" Kubernetes namespace. Every new microservice onboarded to the platform only needs to know one URL (`http://config-server:8888`) and its own `spring.application.name` to immediately inherit organization-wide defaults (logging patterns, actuator exposure, common timeouts).
 
+```bash
+# Quickly scaffold with Spring Initializr (Spring Boot 3.x / Spring Cloud 2023.x)
+curl https://start.spring.io/starter.zip \
+  -d dependencies=cloud-config-server \
+  -d bootVersion=3.3.0 \
+  -d javaVersion=17 \
+  -o config-server.zip
+```
+
+**Interview Q&A:**
+
+**Q: What does `@EnableConfigServer` actually wire up behind the scenes?**
+It triggers auto-configuration that registers an `EnvironmentRepository` (Git/native/JDBC/Vault/composite), REST controllers exposing `/{application}/{profile}[/{label}]` and flattened file endpoints, and optional encryption/decryption support if a key is configured.
+
+**Q: Is the Config Server a regular Spring Boot application otherwise?**
+Yes — it has no special runtime requirements beyond the `spring-cloud-config-server` dependency and the annotation; it can be packaged, containerized, and scaled exactly like any other Spring Boot service.
+
 ### Git and Creating Local Git Repository
 
 Git is the default and most commonly used `EnvironmentRepository` backend for Spring Cloud Config because it gives configuration the same guarantees as source code: full history, diffing, branching (used as "labels" in Config Server terminology), and pull-request-based review. Before wiring the Config Server to a remote GitHub repository, it's common to first practice with a **local** Git repository so you can iterate quickly without network calls or authentication concerns.
@@ -170,6 +198,14 @@ git commit -m "Initial config for order-service"
 
 **Real-life scenario:** A team wants to demo Spring Cloud Config in a workshop without depending on internet access or GitHub credentials — using a local Git repository as the backend lets attendees clone, edit, and commit configuration entirely offline while the Config Server behaves exactly as it would against a real remote.
 
+**Interview Q&A:**
+
+**Q: Why practice with a local `file:` Git repository before pointing at GitHub?**
+It removes network calls and authentication as variables, letting you validate naming conventions, branch/label behavior, and refresh mechanics in isolation before adding remote-repo concerns.
+
+**Q: Does the Config Server treat a local `file://` repo any differently from a real remote?**
+No — it still performs standard `git clone`/`git pull` operations against it, so refresh and labeling behavior mirror a genuine remote repository.
+
 ### Connect Spring Cloud Config Server to Local Git Repository
 
 Once a local Git repository exists, the Config Server is pointed at it via `spring.cloud.config.server.git.uri`, using the `file:` scheme (with three slashes for an absolute path, e.g. `file:///Users/dev/config-repo`). No authentication properties are needed because there's no remote host involved.
@@ -192,6 +228,14 @@ curl http://localhost:8888/order-service/dev
 ```
 
 **Real-life scenario:** During local development, an engineer edits a property in `config-repo`, commits it, and immediately curls the Config Server endpoint to confirm the new value is served — validating the full pull → serve pipeline before ever pushing to a shared remote.
+
+**Interview Q&A:**
+
+**Q: Why does the Config Server clone a local `file:` repo into a temporary directory instead of reading it directly?**
+It treats every backend uniformly as a Git remote, cloning into `spring.cloud.config.server.git.basedir` (default under `/tmp`), so the same pull/cache/refresh logic works identically whether the origin is local or a real remote host.
+
+**Q: If you edit `config-repo` directly but the Config Server response doesn't change, what's the likely cause?**
+The server hasn't re-pulled yet — by default it pulls on each incoming request, but with caching or `force-pull` misconfigured, a stale clone can be served until the next pull is triggered.
 
 ### Create Private GitHub Repository and Configure Config Server to Access Private GitHub Repository
 
@@ -229,6 +273,14 @@ spring:
 
 **Real-life scenario:** A security review mandates that no plaintext credentials appear in any deployed configuration file; the platform team switches the Config Server's GitHub PAT to be injected via a Kubernetes `Secret` mounted as an environment variable (`GITHUB_PERSONAL_ACCESS_TOKEN`), keeping the checked-in `application.yml` free of secrets while still authenticating against the private repo.
 
+**Interview Q&A:**
+
+**Q: Why use a GitHub Personal Access Token instead of a real account password for Config Server authentication?**
+PATs can be scoped to minimal permissions (e.g. read-only repo access), rotated/revoked independently of the account, and don't expose the user's actual login credentials if leaked.
+
+**Q: What's the advantage of SSH key-based auth over HTTPS + PAT for the Config Server's Git connection?**
+SSH keys can be restricted to a single repository via deploy keys, avoid sending credentials over HTTPS Basic Auth headers, and are a common standard for machine-to-machine Git access in CI/CD and platform tooling.
+
 ### Managing Profiles With Config Server
 
 Spring Profiles (`dev`, `test`, `staging`, `prod`, etc.) let the same codebase behave differently per environment, and the Config Server fully supports profile-specific configuration files in the backing Git repository. When a client requests `/{application}/{profile}`, the server resolves and merges (in increasing precedence) `application.yml`, `application-{profile}.yml`, `{application}.yml`, and `{application}-{profile}.yml` — mirroring the same override semantics Spring Boot uses locally, just sourced remotely.
@@ -241,6 +293,14 @@ curl http://localhost:8888/order-service/dev,cloud
 ```
 
 **Real-life scenario:** A service needs both environment-specific settings (`dev` database URL) and deployment-platform-specific settings (`cloud` profile enabling Kubernetes service discovery). Requesting `order-service/dev,cloud` merges both cleanly instead of duplicating cloud-specific properties into every environment file.
+
+**Interview Q&A:**
+
+**Q: How does the Config Server merge `application.yml`, `application-{profile}.yml`, `{application}.yml`, and `{application}-{profile}.yml`?**
+It applies them in increasing precedence in that order, so application-and-profile-specific files override profile-only and application-only files, which in turn override the shared defaults.
+
+**Q: What happens when a client requests two comma-separated profiles that both define the same key?**
+The later profile in the list wins — profiles are merged left-to-right, so `dev,cloud` means `cloud` overrides `dev` for any conflicting property.
 
 ### Naming Property Files Served by Config Server
 
@@ -258,6 +318,14 @@ config-repo/
 ```
 
 **Real-life scenario:** A new team member accidentally names a config file `orderService-dev.yml` (camelCase) instead of `order-service-dev.yml` (matching `spring.application.name: order-service`); the client silently ignores it and boots with defaults, causing confusing "why isn't my override applying?" debugging until the naming mismatch is spotted.
+
+**Interview Q&A:**
+
+**Q: Why is a file literally named `application.yml` in the config repo treated specially?**
+Because `application` is Spring Boot's reserved default application name, so a file matching it (or `application-{profile}.yml`) is served to *every* client regardless of their own `spring.application.name`, acting as global shared configuration.
+
+**Q: What happens if the Config Server can't find a file matching a requested `{application}-{profile}`?**
+It doesn't error — it silently falls back to whatever defaults/shared files do match, which is why naming mismatches are a common and hard-to-spot source of "my override isn't applying" bugs.
 
 ### Explain spring.cloud.config.uri, spring.cloud.config.profile, search-paths
 
@@ -289,6 +357,14 @@ spring:
 
 **Real-life scenario:** A monorepo stores config as `config-repo/order-service/order-service-dev.yml` and `config-repo/shared/application.yml`. Setting `search-paths: ['{application}', shared]` lets the Config Server find each service's folder dynamically based on the requesting `{application}` name, without one search path per service.
 
+**Interview Q&A:**
+
+**Q: Is `spring.cloud.config.uri` client-side or server-side, and does it accept multiple values?**
+It's client-side, pointing the Config Client at the Config Server's base URL; it accepts a comma-separated list of URLs to give basic client-side failover if the first server is unreachable.
+
+**Q: Why is `search-paths` typically needed for monorepo-style config repositories but not simple flat ones?**
+Because by default the server only looks in the repository root for `{application}-{profile}` files; a monorepo organizing config into per-service subfolders needs `search-paths` (often using the `{application}` placeholder) to locate files outside the root.
+
 ### Explain spring.profile.include spring.profile.active vs spring.cloud.config.profile
 
 These three properties are frequently confused because they sound similar but operate at different layers. `spring.profiles.active` is a **core Spring Boot** property that determines which profile(s) are active for the running JVM — it affects `@Profile`-annotated beans, which `application-{profile}.yml` files are loaded locally, and (by default) which profile is requested from the Config Server. `spring.profiles.include` **adds** additional profiles alongside whatever is active, without replacing them — commonly used to always layer in a `common` or `logging` profile regardless of environment. `spring.cloud.config.profile` is Config-Client-specific and only affects which profile is requested *from the remote Config Server*; if unset, it defaults to the value of `spring.profiles.active`.
@@ -300,6 +376,14 @@ These three properties are frequently confused because they sound similar but op
 | `spring.cloud.config.profile` | Config Client only | Overrides which profile is requested from the Config Server, independent of `spring.profiles.active` |
 
 **Real-life scenario:** A service must run locally with `spring.profiles.active=dev` (for local bean wiring and logging) but still needs to pull `staging` configuration from the Config Server to test against staging-like values — setting `spring.cloud.config.profile=staging` decouples the two without changing local bean behavior.
+
+**Interview Q&A:**
+
+**Q: If neither `spring.cloud.config.profile` nor `spring.profiles.active` is set, what profile does the Config Client request?**
+It effectively requests the `default` profile, since `spring.cloud.config.profile` falls back to `spring.profiles.active`, which itself defaults to `default` when nothing is explicitly set.
+
+**Q: Give an example where `spring.profiles.include` is more appropriate than `spring.profiles.active` alone.**
+Always layering a `common-logging` profile on top of whichever environment profile is active (e.g. `dev` or `prod`) — `spring.profiles.include=common-logging` adds it without having to duplicate it into every environment's active-profile value.
 
 ### Connect Service to Spring Cloud Config Server
 
@@ -342,6 +426,14 @@ sequenceDiagram
 ```
 
 **Real-life scenario:** During a Config Server outage, `order-service` instances configured with `fail-fast: true` refuse to start, immediately surfacing the dependency failure in deployment logs/alerts rather than silently running with stale or missing configuration and causing subtle downstream bugs.
+
+**Interview Q&A:**
+
+**Q: Why did `bootstrap.yml` historically matter for Config Clients, and why is it less required in newer versions?**
+`bootstrap.yml` loads in a separate, earlier Spring context phase before `application.yml`, which was necessary so remote config could be fetched before the rest of the context initialized. Spring Cloud 2020+'s `spring.config.import=configserver:` mechanism fetches config during normal context initialization, removing the strict need for a separate bootstrap phase in most cases.
+
+**Q: What's the risk of leaving `spring.cloud.config.fail-fast` at its default (`false`) in production?**
+A service could start successfully with incomplete or default configuration when the Config Server is unreachable, masking a real dependency failure and potentially causing harder-to-diagnose issues later (e.g. wrong database connection) instead of a clear, immediate startup failure.
 
 ### @RefreshScope Annotation and Refreshing Beans at Runtime
 
@@ -386,6 +478,14 @@ sequenceDiagram
 
 **Real-life scenario:** A production incident requires immediately lowering a rate-limit threshold across 12 instances of a payment service. Instead of a rolling restart (risking downtime), the on-call engineer edits the Git-backed config, commits, and hits `/actuator/busrefresh` once — Spring Cloud Bus propagates the refresh to all 12 instances within seconds.
 
+**Interview Q&A:**
+
+**Q: Does `@RefreshScope` refresh every bean in the application automatically?**
+No — only beans explicitly annotated `@RefreshScope` are torn down and lazily recreated on refresh; ordinary singleton beans keep their original field values until the JVM is restarted.
+
+**Q: Why is `@RefreshScope` implemented via a destroy-and-recreate proxy rather than mutating fields in place?**
+Because the bean's fields (via `@Value`/`@ConfigurationProperties`) may be `final` or set only in the constructor, and mutating live fields reflectively would be fragile; discarding the cached instance and lazily re-resolving it through the `BeanFactory` reuses normal Spring construction/injection logic safely.
+
 ### Configure API Gateway to be a Client of Config Server
 
 An API Gateway (e.g. Spring Cloud Gateway) is itself just another Spring Boot application, so it becomes a Config Client the same way any microservice does: adding `spring-cloud-starter-config`, setting `spring.application.name`, and pointing `spring.cloud.config.uri` (or `spring.config.import=configserver:...`) at the Config Server. This is particularly valuable for the gateway because routing rules, rate-limit thresholds, CORS policies, and downstream service URIs are exactly the kind of environment-specific values that benefit from centralization — and being able to `@RefreshScope` route definitions means routing changes can be pushed without redeploying the gateway.
@@ -410,6 +510,14 @@ spring:
 
 **Real-life scenario:** When a downstream service is migrated to a new internal DNS name, updating `ORDER_SERVICE_URI` in the Git-backed config repo and refreshing the gateway avoids a redeploy of the gateway itself, minimizing risk to the single most critical piece of routing infrastructure.
 
+**Interview Q&A:**
+
+**Q: Why does refreshing gateway routes often need `/actuator/gateway/refresh` in addition to `/actuator/refresh`?**
+Because route definitions are bound via `@ConfigurationProperties` and cached separately by the `RouteDefinitionLocator`, which isn't automatically invalidated by the generic `@RefreshScope` refresh event — the gateway-specific endpoint explicitly reloads route definitions.
+
+**Q: Why is centralizing an API Gateway's configuration especially high-value compared to a typical microservice?**
+Because the gateway is a single chokepoint for routing, rate-limiting, and CORS policy for the whole system — being able to push config changes (and refresh) without redeploying reduces risk to the most critical piece of infrastructure in the request path.
+
 ### Introduction to Spring Cloud Config(File System as a backend)
 
 While Git is the most common backend, Spring Cloud Config also supports a plain **native/file system** backend (`spring.profiles.active=native` on the server), which serves configuration files directly from the local classpath or a specified filesystem directory instead of a Git repository. This is useful for simple setups, air-gapped environments without Git infrastructure, or scenarios where configuration is generated/mounted onto disk by another process (e.g. a Kubernetes ConfigMap volume mount).
@@ -417,6 +525,22 @@ While Git is the most common backend, Spring Cloud Config also supports a plain 
 The trade-off is losing Git's built-in versioning, audit trail, and branch-based labeling — with the file system backend, "labels" aren't meaningful in the same way, and rollback/history must be handled by whatever mechanism manages the files on disk (or not at all). It's best suited to simpler deployments or as a local-testing stand-in before wiring up a real Git remote.
 
 **Real-life scenario:** A tightly regulated on-premises deployment has no outbound network access and no internal Git server provisioned for the platform team yet; configuration files are instead placed directly onto the Config Server's disk (or mounted via a ConfigMap) using the native/file-system backend as an interim solution.
+
+```bash
+# Directory laid out exactly like a Git-backed repo, just read straight from disk
+/opt/config-repo/
+├── application.yml
+├── order-service.yml
+└── order-service-prod.yml
+```
+
+**Interview Q&A:**
+
+**Q: What is the main functional trade-off of the native/file-system backend versus Git?**
+You lose version history, diff/PR review, and meaningful branch-based labeling — rollback and audit trail must be handled entirely outside Spring Cloud Config, by whatever process manages the files on disk.
+
+**Q: In what kind of environment is the native backend a reasonable long-term choice rather than just a stopgap?**
+Air-gapped or highly simplified deployments where configuration is already generated and placed on disk by another controlled process (e.g. a Kubernetes ConfigMap volume), and Git-level auditability isn't a hard requirement.
 
 ### Setting up File System Backend
 
@@ -442,6 +566,14 @@ java -jar config-server.jar --spring.profiles.active=native
 ```
 
 **Real-life scenario:** A CI pipeline generates environment-specific YAML files as a build artifact and drops them into `/opt/config-repo` on the Config Server host before the server starts, letting the native backend serve them without any Git dependency in the deployment pipeline.
+
+**Interview Q&A:**
+
+**Q: Can `search-locations` for the native backend point at classpath resources as well as filesystem paths?**
+Yes — it accepts both `file:` URIs for external directories and `classpath:` locations bundled inside the Config Server's own JAR, and multiple locations can be listed with `{application}`-based subdirectories.
+
+**Q: Does the native backend support the `{label}` (branch/tag) concept the same way Git does?**
+Not meaningfully — since there's no underlying version control, labels aren't a real distinguishing mechanism for the native backend; it simply serves whatever files currently exist at the configured search locations.
 
 ### Composite Configuration Backends (Git + Vault + JDBC)
 
@@ -486,6 +618,14 @@ flowchart TD
 
 **Real-life scenario:** A financial services company keeps feature flags and timeouts in Git (reviewable, low-risk) but stores database passwords and third-party API keys in Vault (rotated automatically, audited access), while a legacy billing system still reads some values from an old JDBC-backed properties table — a composite backend unifies all three under one Config Server API for every client.
 
+**Interview Q&A:**
+
+**Q: In a composite backend, what determines which repository "wins" for a conflicting key?**
+Order in the `spring.cloud.config.server.composite` list — repositories listed earlier take precedence over later ones when the same key is defined in more than one backend.
+
+**Q: Why keep secrets in Vault rather than Git even in a composite setup?**
+Git retains full history, so even a later-deleted plaintext secret remains recoverable from old commits; Vault is purpose-built for secrets with access auditing, dynamic rotation, and no permanent plaintext history exposure.
+
 ### Previewing Values Returned by Spring Cloud Config Server
 
 Before wiring a client, it's good practice to directly query the Config Server's REST API to confirm exactly what values it will return — the Config Server exposes plain HTTP GET endpoints following the pattern `/{application}/{profile}[/{label}]`, as well as `/{application}-{profile}.yml` (or `.properties`, `.json`) for a flattened, ready-to-use file format instead of the default nested JSON `PropertySource` structure.
@@ -504,6 +644,14 @@ curl http://localhost:8888/order-service-dev.properties
 ```
 
 **Real-life scenario:** A developer is confused why a property isn't taking the expected value; curling `/order-service/dev` reveals two property sources both define the key, and the *first* one listed in the JSON response (higher precedence) is the "shared" `application-dev.yml`, not the service-specific file, exposing an unintended override.
+
+**Interview Q&A:**
+
+**Q: Why prefer `GET /{application}/{profile}` over `GET /{application}-{profile}.yml` when debugging?**
+The JSON form returns the full ordered list of contributing `PropertySource`s, making merge precedence visible, whereas the flattened `.yml`/`.properties` form only shows final resolved values with no indication of which file each one came from.
+
+**Q: Is it safe to call these preview endpoints against a production Config Server?**
+Only if properly authenticated/authorized — they can expose sensitive resolved configuration values (including decrypted secrets), so access should be restricted the same way as any other sensitive Config Server endpoint.
 
 ### Trying how Microservices work
 
@@ -528,6 +676,36 @@ flowchart LR
 
 **Real-life scenario:** A team learning Spring Cloud for the first time spins up this minimal sandbox locally with `docker-compose` (Config Server + two demo services) to build confidence in the config-fetch flow before introducing production concerns like private repos, encryption, and high availability.
 
+```yaml
+# docker-compose.yml - minimal sandbox
+services:
+  config-server:
+    image: my-org/config-server:latest
+    ports: ["8888:8888"]
+    environment:
+      SPRING_CLOUD_CONFIG_SERVER_GIT_URI: https://github.com/my-org/config-repo.git
+  order-service:
+    image: my-org/order-service:latest
+    ports: ["8081:8081"]
+    environment:
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+    depends_on: [config-server]
+  inventory-service:
+    image: my-org/inventory-service:latest
+    ports: ["8082:8082"]
+    environment:
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+    depends_on: [config-server]
+```
+
+**Interview Q&A:**
+
+**Q: Why is Config Server typically the first piece of Spring Cloud infrastructure a team adopts?**
+Because nearly every other piece (service discovery, gateway routing, resilience settings) benefits from centralized, environment-specific configuration, and it has the fewest architectural prerequisites — it's a standalone HTTP service with no dependency on the rest of the stack.
+
+**Q: What's a good way to validate the config-fetch flow end-to-end without a full production setup?**
+Run a minimal sandbox (e.g. via `docker-compose`) with the Config Server and a couple of trivial demo services, each pointed at it, to observe fetch/merge/refresh behavior before adding real production concerns.
+
 ### Introduction to Spring Cloud Config configuration for multiple Microservices
 
 As the number of services grows, a config repository needs an organizing convention so it doesn't become an unmanageable flat pile of YAML files. The typical pattern is one `{application}.yml` + `{application}-{profile}.yml` pair per microservice (matching each service's `spring.application.name`), plus a shared `application.yml` (and `application-{profile}.yml`) for cross-cutting concerns common to *every* service — logging levels, actuator exposure, common resilience timeouts, and organization-wide defaults.
@@ -547,6 +725,14 @@ config-repo/
 ```
 
 **Real-life scenario:** Onboarding a brand-new "shipping-service" microservice only requires adding `shipping-service.yml`/`shipping-service-prod.yml` to the existing repo — it automatically inherits all organization-wide defaults from `application.yml` without any Config Server redeployment or reconfiguration.
+
+**Interview Q&A:**
+
+**Q: Does adding a new microservice's config files require restarting or redeploying the Config Server?**
+No — the Config Server dynamically resolves files based on the requesting client's `spring.application.name`; adding new files to the repo is picked up on the next Git pull, with no server-side changes needed.
+
+**Q: What naming discipline keeps a growing multi-service config repo manageable?**
+Consistently naming files after each service's exact `spring.application.name` (`{application}.yml` / `{application}-{profile}.yml`), plus a shared `application.yml`/`application-{profile}.yml` pair for cross-cutting, organization-wide defaults.
 
 ### Shared and Microservice-specific configuration properties
 
@@ -575,6 +761,14 @@ spring:
 ```
 
 **Real-life scenario:** All services share the same `management.endpoints.web.exposure.include` list defined once centrally, but the `order-service` team temporarily bumps its own package's log level to `DEBUG` in `order-service.yml` while chasing a bug, without affecting logging verbosity for any other service.
+
+**Interview Q&A:**
+
+**Q: What's a practical rule of thumb for deciding shared vs. service-specific placement?**
+If a value should be identical across all (or most) services and changing it is a platform-wide decision, put it in shared `application.yml`; if it's owned/tunable by a single service team (database URL, feature flag, thread pool size), put it in that service's own file.
+
+**Q: Can a service-specific file override a value defined in the shared `application.yml`?**
+Yes — service-specific files take precedence over the shared file for the same key, so a service can deliberately diverge from an organization-wide default without needing changes to the shared file itself.
 
 ### Config Server High Availability and Multiple Instances
 
@@ -611,6 +805,14 @@ flowchart TD
 
 **Real-life scenario:** During a rolling Kubernetes deployment that briefly takes one Config Server pod offline, the remaining replicas behind the `ClusterIP` Service continue serving requests uninterrupted, and newly starting service pods with `retry` configured simply retry against the load balancer until a healthy instance responds.
 
+**Interview Q&A:**
+
+**Q: Why doesn't the Config Server need sticky sessions or shared storage to scale horizontally?**
+Because each instance is stateless — its only "state" is a disposable cloned Git working directory rebuildable from the same remote repository, so any instance can answer any request as long as they all track the same repo/branch.
+
+**Q: What are the two main client-side strategies for locating a highly available Config Server?**
+Supplying a comma-separated list of static URLs to `spring.cloud.config.uri` for basic failover, or enabling `spring.cloud.config.discovery.enabled=true` so the client resolves the Config Server dynamically through a service registry.
+
 ### Enable Basic Authentication for Spring Cloud Config Server
 
 Because the Config Server can expose sensitive configuration (database credentials, API keys — even if some are encrypted at rest, plenty of legitimately-plaintext operational values remain), its endpoints should never be left unauthenticated in any non-trivial deployment. The simplest protection is HTTP Basic Authentication, enabled by adding `spring-boot-starter-security` to the Config Server and defining a username/password (or a full `SecurityFilterChain` for more control).
@@ -631,6 +833,14 @@ curl -u configuser:secret http://localhost:8888/order-service/dev
 ```
 
 **Real-life scenario:** A penetration test flags an internal Config Server as reachable without authentication from within the cluster network; enabling Basic Auth (as a first, minimal step before a more complete OAuth2/mTLS setup) immediately closes off casual/unauthorized access to production secrets.
+
+**Interview Q&A:**
+
+**Q: What changes the moment `spring-boot-starter-security` is added to the Config Server classpath?**
+Spring Security auto-configures a default security filter chain that secures *all* endpoints (including actuator) by default, meaning previously open endpoints now require authentication unless explicitly permitted.
+
+**Q: Is Basic Auth alone considered sufficient security for a production Config Server?**
+No — it should be combined with TLS in transit and typically OAuth2/mTLS or network-level restrictions for production; Basic Auth over plain HTTP is trivially interceptable and offers no protection for values already stored in Git.
 
 ### Configure CSRF exceptions - /actuator/busrefresh
 
@@ -659,6 +869,14 @@ public class ConfigServerSecurityConfig {
 
 **Real-life scenario:** A CI/CD pipeline step that calls `curl -X POST -u user:pass https://config-server/actuator/busrefresh` after every config-repo merge starts failing with `403` the moment Spring Security is introduced — the fix is adding the CSRF exemption for `/actuator/**`, not disabling security altogether.
 
+**Interview Q&A:**
+
+**Q: Why is disabling CSRF for `/actuator/**` generally considered safe on a Config Server?**
+Because these calls are made by automated tooling with valid Basic Auth (or other) credentials over (ideally) HTTPS, not by a browser session relying on cookies — CSRF specifically protects against cookie-based, browser-driven forged requests, a threat model that doesn't apply to token/credential-authenticated API clients.
+
+**Q: What's a safer alternative to blanket-disabling CSRF everywhere just to fix this one endpoint?**
+Scoping the exemption narrowly with `ignoringRequestMatchers("/actuator/**")` (or an even more specific matcher) rather than calling `.csrf(csrf -> csrf.disable())` globally, which would remove CSRF protection from any browser-facing endpoints too.
+
 ### Configure Client Microservice to use Basic Auth credentials
 
 Once the Config Server requires Basic Authentication, every Config Client must supply matching credentials when fetching configuration, or its own startup will fail with a `401 Unauthorized`. This is configured on the client via `spring.cloud.config.username` and `spring.cloud.config.password` (or embedded directly in the `spring.cloud.config.uri` as `http://user:pass@host:port`, though the separate properties are preferable since they can be injected from environment variables/secrets rather than hardcoded in the URI).
@@ -676,6 +894,14 @@ spring:
 ```
 
 **Real-life scenario:** After the platform team enables Basic Auth on the shared Config Server, every one of the 40 onboarded microservices needs a coordinated deployment adding the new `spring.cloud.config.username`/`password` properties (sourced from a shared Kubernetes secret) — otherwise they fail to start on the next redeploy.
+
+**Interview Q&A:**
+
+**Q: Why prefer separate `spring.cloud.config.username`/`password` properties over embedding credentials in the URI?**
+Separate properties can be sourced independently from environment variables or a secrets manager, whereas embedding `user:pass@host` in the URI string tends to get hardcoded and is easy to accidentally commit in plaintext.
+
+**Q: What happens to a Config Client's startup if its credentials are wrong after the server enables Basic Auth?**
+It receives a `401 Unauthorized` from the Config Server and, combined with `fail-fast=true`, aborts startup immediately rather than proceeding without configuration.
 
 ### Restricting /actuator/busrefresh to ADMIN Role
 
@@ -709,6 +935,14 @@ public UserDetailsService userDetailsService(PasswordEncoder encoder) {
 
 **Real-life scenario:** A junior developer's automated script accidentally has the config-fetch credentials hardcoded in a shared library; because those credentials only carry `CLIENT` authority (not `ADMIN`), an accidental or malicious call to `/actuator/busrefresh` using them is rejected with `403`, limiting the blast radius of leaked non-admin credentials.
 
+**Interview Q&A:**
+
+**Q: Why not just use one set of Basic Auth credentials for everything on the Config Server?**
+Because `/actuator/busrefresh` can force every service to reload config simultaneously — a meaningfully disruptive operational action — so it should require a more privileged role than ordinary config-fetch, following the principle of least privilege.
+
+**Q: How does Spring Security enforce that only `ADMIN` role users can call `/actuator/busrefresh`?**
+Via `authorizeHttpRequests` matcher rules ordered from most-specific to least-specific, e.g. `.requestMatchers("/actuator/busrefresh").hasRole("ADMIN")` evaluated before a broader catch-all rule for other authenticated endpoints.
+
 ### Restricting Configuration Properties to CLIENT Role
 
 Symmetrically, the reverse concern also applies: an `ADMIN` user capable of triggering refreshes shouldn't necessarily be the *only* identity allowed to fetch configuration, and conversely, regular config-fetch endpoints should be reachable by ordinary client-role credentials without needing admin privileges. This is really the same role-based authorization mechanism as above, just emphasizing that the general `/{application}/{profile}` config-fetch endpoints should be authorized for the `CLIENT` (or equivalent) role, and each microservice's credentials should be scoped to exactly that — least-privilege access that can read configuration but cannot perform administrative actions like triggering bus-wide refreshes or viewing full actuator diagnostics.
@@ -724,6 +958,14 @@ Symmetrically, the reverse concern also applies: an `ADMIN` user capable of trig
 
 **Real-life scenario:** Every microservice is provisioned with `CLIENT`-role credentials sufficient only to fetch its own configuration; only the platform team's CI/CD pipeline holds `ADMIN` credentials capable of calling `/actuator/busrefresh` or `/encrypt`, enforcing least-privilege across the whole system.
 
+**Interview Q&A:**
+
+**Q: Why give every regular microservice `CLIENT` role rather than `ADMIN`?**
+Because each service only needs to read its own configuration; granting broader `ADMIN` privileges to every service unnecessarily increases blast radius if any single service's credentials are compromised.
+
+**Q: Should `ADMIN`-role users automatically be able to fetch configuration too?**
+Typically yes — authorization rules are usually written with `hasAnyRole("CLIENT", "ADMIN")` on config-fetch endpoints, so `ADMIN` is a superset of `CLIENT` capability rather than a completely separate, non-overlapping role.
+
 ### Configure Client Microservice to use new access credentials
 
 Whenever the Config Server's authentication scheme changes — new users, new roles, rotated passwords — every client's `spring.cloud.config.username`/`password` (or discovery-based credential source) must be updated in lockstep, otherwise clients will fail to fetch configuration on their next restart or refresh attempt. In practice, this is usually managed by pulling credentials from a shared secret store (Kubernetes `Secret`, HashiCorp Vault, AWS Secrets Manager) referenced by environment variable, rather than hardcoding values per-service, so a credential rotation is a single change propagated to all consumers rather than dozens of individual file edits.
@@ -737,6 +979,14 @@ spring:
 ```
 
 **Real-life scenario:** After a scheduled credential rotation, the platform team updates a single Kubernetes `Secret` referenced by every microservice's deployment manifest as `CONFIG_CLIENT_PASSWORD`; a coordinated rolling restart picks up the new value everywhere without touching individual service YAML files.
+
+**Interview Q&A:**
+
+**Q: Why source Config Client credentials from environment variables/secret stores instead of hardcoding them per-service?**
+A credential rotation then becomes a single change to the shared secret, propagated to all consuming services, rather than dozens of individual file edits and redeployments across the fleet.
+
+**Q: What happens to already-running instances when Config Server credentials are rotated?**
+Running instances that already fetched configuration at startup keep functioning until their next restart or refresh attempt; only instances that need to re-authenticate (new starts, or refresh calls requiring re-auth) are affected immediately, so rotations are usually paired with a rolling restart.
 
 ### Config Server Health Indicator and /actuator/health Details
 
@@ -768,6 +1018,14 @@ curl http://localhost:8888/actuator/health
 
 **Real-life scenario:** A Kubernetes readiness probe hitting `/actuator/health` correctly keeps a Config Server pod out of the load balancer rotation during a transient GitHub outage, since the health indicator's Git connectivity check fails, preventing clients from being routed to an instance that can't actually serve fresh configuration.
 
+**Interview Q&A:**
+
+**Q: What does the Config Server's `HealthIndicator` actually check, beyond "is the JVM running"?**
+By default it attempts to resolve configuration for a default application (named `app`) against the configured backend, verifying actual connectivity and credential validity to the Git remote (or other backend), not just process liveness.
+
+**Q: Why might you disable or tune the default health check via `spring.cloud.config.server.health.enabled`?**
+The extra backend round-trip on every health check adds latency/load; teams sometimes disable it or scope it to specific named applications/profiles to reduce unnecessary Git traffic from frequent probe checks.
+
 ### Other API endpoints like: /encrypt and /decrypt
 
 Beyond the core `/{application}/{profile}/{label}` configuration-fetch endpoints, the Config Server exposes utility endpoints `/encrypt` and `/decrypt` (enabled once a symmetric key or asymmetric keystore is configured) that let you encrypt a plaintext value into a `{cipher}`-prefixed ciphertext suitable for storing directly in a Git-backed properties file, and decrypt it back for verification. These endpoints are typically used by developers/operators preparing configuration values before committing them, not called by client applications at runtime — clients receive already-decrypted values transparently, since the Config Server decrypts `{cipher}`-prefixed properties server-side before returning them.
@@ -791,6 +1049,14 @@ spring:
 
 **Real-life scenario:** Before committing a production database password to the Git-backed config repo, an operator calls `/encrypt` to obtain a `{cipher}`-prefixed ciphertext, commits *that* instead of the plaintext, and the Config Server transparently decrypts it only in-memory when serving the value to the authorized client.
 
+**Interview Q&A:**
+
+**Q: Do client applications ever need to call `/decrypt` themselves at runtime?**
+No — the Config Server decrypts `{cipher}`-prefixed values server-side before returning them; clients simply receive already-decrypted plaintext through the normal config-fetch response.
+
+**Q: Who typically uses the `/encrypt` and `/decrypt` endpoints, and when?**
+Developers or operators preparing configuration values before committing them to the repository, or verifying an existing ciphertext decrypts as expected — not application code, and not at application runtime.
+
 ### Basic Auth Is Not Encryption
 
 A common misunderstanding: enabling HTTP Basic Authentication on the Config Server protects **who can call the API**, but does absolutely nothing to protect **the confidentiality of values stored in the Git repository itself**, nor values in transit if TLS isn't also enabled. Anyone with read access to the Git repository (which may include more people than have Config Server API credentials — e.g. an intern with repo read access, or a compromised CI runner) can see plaintext secrets committed there, entirely bypassing Basic Auth. Similarly, Basic Auth credentials sent over plain HTTP (not HTTPS) are trivially interceptable in transit.
@@ -805,6 +1071,14 @@ Real protection for sensitive values requires **encryption at rest** (via the `/
 | Protects against repo-read-access leaks | No | No | Yes |
 
 **Real-life scenario:** A security audit discovers that plaintext AWS credentials committed to the "private" config-repo are visible to every engineer with read access to the repository (far more people than have Config Server login credentials); the remediation is re-committing those values through `/encrypt` as `{cipher}`-prefixed ciphertext, not merely tightening Basic Auth further.
+
+**Interview Q&A:**
+
+**Q: If a Git repo is already marked "private," is Basic Auth on the Config Server still necessary?**
+Yes — repository privacy and Config Server API authentication protect different attack surfaces; someone might reach the Config Server's network endpoint without having Git repo access at all, so both controls are complementary, not redundant.
+
+**Q: What three controls together provide genuinely strong protection for sensitive config values?**
+Authentication/authorization (who may call the API), TLS in transit (protects data on the wire), and property-level encryption at rest (`{cipher}`-prefixed values, so even repo-read access doesn't reveal plaintext).
 
 ### Introduction to Encryption and Decryption of Configuration Properties
 
@@ -825,6 +1099,14 @@ flowchart LR
 
 **Real-life scenario:** A team storing all configuration in a single shared Git repository (read by many engineers for legitimate reasons) uses property encryption so that even though the repository itself isn't secret, individual sensitive values within it are unreadable without the Config Server's decryption key.
 
+**Interview Q&A:**
+
+**Q: What does the `{cipher}` prefix signal to the Config Server?**
+It marks that value as encrypted ciphertext requiring server-side decryption before being included in the response; values without the prefix are returned as plain literal strings.
+
+**Q: Between symmetric and asymmetric encryption, which requires more setup, and why might you still choose it?**
+Asymmetric requires generating and managing an RSA keystore, which is more setup than a single symmetric key, but it's chosen when you need separation of duties — letting many people encrypt new values without any of them being able to decrypt existing ones.
+
 ### note about Java Cryptography Extension(JCE)
 
 Older JDK distributions shipped with restricted cryptographic policies (the "Java Cryptography Extension (JCE) Unlimited Strength Jurisdiction Policy") that capped the maximum key length usable for certain algorithms (e.g. limiting AES to 128-bit keys unless the unlimited-strength policy files were manually installed). Attempting to use full-strength keys (like 256-bit AES, or certain RSA key sizes for asymmetric encryption) without the unlimited policy installed historically caused a runtime `InvalidKeyException: Illegal key size` error.
@@ -832,6 +1114,23 @@ Older JDK distributions shipped with restricted cryptographic policies (the "Jav
 Since JDK 8u151+ (and by default in JDK 9+), this restriction was relaxed/removed, and the unlimited-strength policy is enabled by default in modern JDKs — but it's still a common gotcha when working with older JDK 8 base images (especially minimal/slim container images that sometimes strip policy files), so it's worth knowing this history when debugging cryptography-related startup failures in a Config Server using strong keys.
 
 **Real-life scenario:** A team encounters a mysterious `InvalidKeyException: Illegal key size` when enabling asymmetric encryption on a Config Server running on an old, unpatched JDK 8 base Docker image; upgrading the base image (or enabling the unlimited-strength policy) resolves it immediately.
+
+```bash
+# Quick diagnostic: check max allowed AES key length on the running JVM
+jshell -q <<'EOF'
+import javax.crypto.Cipher;
+System.out.println(Cipher.getMaxAllowedKeyLength("AES"));
+EOF
+# Returns 2147483647 (unlimited) on modern JDKs; 128 on an unpatched legacy JDK 8
+```
+
+**Interview Q&A:**
+
+**Q: What JDK version made unlimited-strength cryptography the default, removing the need for manual JCE policy installation?**
+JDK 8u151 introduced an opt-in security property, and JDK 9+ made unlimited strength the out-of-the-box default, removing the need to manually replace policy JAR files in most modern deployments.
+
+**Q: Why is this still relevant when working with container images today?**
+Some minimal or very old base images (especially outdated JDK 8 slim variants) may still ship with restricted policies, so it's worth checking `Cipher.getMaxAllowedKeyLength()` if you hit unexplained `InvalidKeyException` errors during encryption setup.
 
 ### Add Java Cryptography Extension
 
@@ -850,6 +1149,14 @@ FROM eclipse-temurin:17-jre-jammy
 
 **Real-life scenario:** Rather than manually patching JCE policy files on an aging JDK 8 image, a team simply migrates the Config Server's Dockerfile to a current JDK 17 base image, which includes unlimited-strength cryptography by default and sidesteps the issue entirely.
 
+**Interview Q&A:**
+
+**Q: What's the simplest fix for `InvalidKeyException: Illegal key size` on a modern deployment pipeline?**
+Upgrade the base JDK image to 8u151+ or (preferably) JDK 11/17+, both of which default to unlimited-strength cryptography, avoiding manual policy file replacement entirely.
+
+**Q: Why is replacing policy JAR files considered a legacy/last-resort approach today?**
+It requires manually downloading and placing vendor-specific policy files inside the JRE's `lib/security` directory, which is brittle across JDK updates and unnecessary once you're on a modern JDK where unlimited strength is the default.
+
 ### Configure access to /encrypt and /decrypt API endpoints
 
 Because `/encrypt` and `/decrypt` can reveal or manipulate sensitive cryptographic material, access to them should be at least as restricted as any other sensitive administrative endpoint — typically gated behind the same `ADMIN` role used for `/actuator/busrefresh`, and definitely never left open to the same broad `CLIENT` role used for ordinary config-fetch requests. In some deployments, these endpoints are disabled entirely on the "runtime" Config Server instances and only enabled on a separate, network-isolated instance used purely for offline encryption/decryption tooling by the platform team.
@@ -864,6 +1171,14 @@ Because `/encrypt` and `/decrypt` can reveal or manipulate sensitive cryptograph
 ```
 
 **Real-life scenario:** A platform team restricts `/encrypt` and `/decrypt` to `ADMIN`-role credentials held only by the small group responsible for onboarding new secrets into the config repo, ensuring rank-and-file service accounts can fetch configuration but can't probe the encryption endpoints.
+
+**Interview Q&A:**
+
+**Q: Why might a team disable `/encrypt` and `/decrypt` entirely on "runtime" Config Server instances?**
+Because those endpoints aren't needed by client applications at request time (decryption happens transparently server-side during config-fetch) — disabling them on public-facing/runtime instances and enabling them only on a network-isolated tooling instance reduces the attack surface.
+
+**Q: What's the risk of leaving `/decrypt` accessible to the same broad role used for config-fetch?**
+Anyone with that role could submit arbitrary ciphertext (potentially previously committed secrets) and retrieve the decrypted plaintext, defeating the purpose of encrypting values in the first place.
 
 ### Spring Cloud Config - Symmetric Encryption of configuration properties
 
@@ -898,6 +1213,14 @@ flowchart TD
 
 **Real-life scenario:** A small startup with a single Config Server and a handful of services uses symmetric encryption for simplicity — a single `ENCRYPT_KEY` environment variable set via their secrets manager is enough to protect all committed secrets, without the added complexity of managing an RSA key pair.
 
+**Interview Q&A:**
+
+**Q: Why is `ENCRYPT_KEY` set as an environment variable rather than `encrypt.key` in a plaintext YAML file?**
+Because the encryption key itself is highly sensitive — committing it to the same Git repo (or even a separate one) in plaintext would undermine the entire point of encrypting other values, so it should come from a secrets manager or environment variable injected at deploy time.
+
+**Q: What operational pain does key rotation cause with symmetric encryption specifically?**
+Every previously-encrypted `{cipher}` value must be decrypted with the old key and re-encrypted with the new one, since there's no way to rotate just the encryption capability while keeping decryption on the old key (unlike asymmetric key pairs, which can be managed more granularly).
+
 ### Creating a Keystore for Asymmetric Encryption
 
 Asymmetric encryption requires an RSA key pair stored in a Java KeyStore (JKS or PKCS12) file, generated with the JDK's `keytool` utility. The keystore contains a private key (used only by the Config Server to decrypt) and its corresponding public key/certificate (which can be freely distributed to anyone who needs to encrypt values, e.g. via the `/encrypt` endpoint or an extracted public key used offline, without granting them decryption capability).
@@ -921,6 +1244,14 @@ keytool -list -v -keystore server.jks -storepass ${KEYSTORE_PASSWORD}
 ```
 
 **Real-life scenario:** The platform security team generates the Config Server's RSA keystore once, stores `server.jks` and its password in a secrets manager (never in Git), and mounts it into the Config Server's container at deploy time, keeping the private key off every developer's laptop.
+
+**Interview Q&A:**
+
+**Q: Why use `keytool -genkeypair` rather than manually crafting key files for asymmetric encryption?**
+`keytool` is the standard JDK utility for generating and managing keystores in the exact format (JKS/PKCS12) Spring Cloud Config expects via `encrypt.key-store.*` properties, handling key generation, certificate metadata, and storage correctly.
+
+**Q: Should the generated keystore file (`server.jks`) ever be committed to the config Git repository?**
+No — the keystore contains the private key needed to decrypt secrets, so it must be kept out of Git entirely and delivered via a secrets manager or secure mount, just like any other decryption credential.
 
 ### Spring Cloud Config - Asymmetric Encryption of configuration properties
 
@@ -964,6 +1295,14 @@ flowchart TD
 | Best for | Small teams, simpler deployments | Larger orgs needing separation of duties |
 
 **Real-life scenario:** A large enterprise wants developers across many teams to be able to encrypt new secrets for their own services' config files without ever being able to decrypt *existing* secrets belonging to other teams; asymmetric encryption (distributing only the public key/encrypt capability broadly, while the private key stays exclusively on the Config Server) achieves exactly that separation.
+
+**Interview Q&A:**
+
+**Q: With asymmetric encryption, can someone who calls `/encrypt` also call `/decrypt` on that same ciphertext?**
+Only if they also have access to the Config Server holding the private key (via `encrypt.key-store.*`) — the public key used for encryption cannot itself decrypt, which is the core separation-of-duties benefit over symmetric encryption.
+
+**Q: What Config Server property namespace switches from symmetric to asymmetric encryption?**
+Replacing the simple `encrypt.key` (symmetric) with `encrypt.key-store.location`, `encrypt.key-store.password`, `encrypt.key-store.alias`, and `encrypt.key-store.secret`, pointing at a JKS/PKCS12 keystore instead of a single shared secret string.
 
 ## Interview Questions & Answers
 

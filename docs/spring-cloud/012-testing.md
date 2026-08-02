@@ -1,15 +1,5 @@
 # Testing
 
-
-## Topics
-
-- Introduction to Spring Cloud Contract
-- Consumer-Driven Contract Testing
-- Writing Contract Definitions (Groovy/YAML)
-- Stub Runner for Consumer-Side Tests
-- Testing Microservices with WireMock and MockMvc
-- Integration Testing Microservices with Testcontainers
-
 ## Detailed Guide
 
 ### Introduction to Spring Cloud Contract
@@ -28,6 +18,14 @@ flowchart LR
     ST -->|published as stub jar| M[(Artifact Repository)]
     M -->|Stub Runner downloads| C[checkout-service tests]
 ```
+
+**Interview Q&A:**
+
+**Q: What two artifacts does Spring Cloud Contract generate from a single contract file?**
+Producer-side JUnit tests that verify the real implementation satisfies the contract, and a consumer-side WireMock stub jar that stands in for the producer during consumer tests.
+
+**Q: In what languages/formats can a Spring Cloud Contract definition be authored?**
+Groovy DSL or plain YAML — both are parsed into the same internal contract model and produce identical generated tests and stubs regardless of which format is used.
 
 ### Consumer-Driven Contract Testing
 
@@ -57,6 +55,14 @@ sequenceDiagram
 | Full end-to-end tests | Slow | Highest | Shared environment, often late |
 
 **Real-life scenario:** When `inventory-service`'s team renames a JSON field from `stockCount` to `availableQuantity`, their own contract test suite fails immediately in CI because the existing contract still expects `stockCount`, forcing a conversation with the consumer team before the breaking change ships.
+
+**Interview Q&A:**
+
+**Q: Where do Spring Cloud Contract contracts conventionally live, and why there?**
+In the producer's codebase under `src/test/resources/contracts`, so the producer's own build is responsible for verifying it satisfies every contract before any code reaches consumers.
+
+**Q: What two failure modes does consumer-driven contract testing specifically avoid?**
+Producers unknowingly breaking consumers with a seemingly safe refactor, and integration issues only surfacing in a shared staging environment (or production) long after the responsible change was merged.
 
 ### Writing Contract Definitions (Groovy/YAML)
 
@@ -100,6 +106,14 @@ response:
 
 **Real-life scenario:** A team writing a contract for a `POST /api/orders` endpoint uses a regex matcher for the generated `orderId` field (since its exact value can't be predicted) while asserting fixed values for fields like `status: "CREATED"`, keeping the contract meaningful without being needlessly brittle.
 
+**Interview Q&A:**
+
+**Q: What does a Spring Cloud Contract definition specify at minimum?**
+A `request` block (method, URL/path, optional body/headers) and a `response` block (status code, body, headers) describing one specific request/response interaction.
+
+**Q: Why choose YAML contracts over Groovy DSL contracts, or vice versa?**
+YAML is simpler and more approachable for teams unfamiliar with Groovy and fits a YAML-heavy Spring project; Groovy DSL is more expressive, supporting programmatic matchers and helper methods for more complex matching logic.
+
 ### Stub Runner for Consumer-Side Tests
 
 Stub Runner is the Spring Cloud Contract component that consumers use to obtain and run the WireMock stubs generated from a producer's contracts, without pulling in or starting the actual producer application. Given a coordinate like `groupId:artifactId:version:stubs`, Stub Runner downloads the stub jar from a Maven/Gradle repository (or resolves it from a local `.m2` during development), starts an embedded WireMock server pre-loaded with the stub mappings, and exposes it on a random or configured port that the consumer's test can point at instead of a real network dependency.
@@ -133,6 +147,14 @@ java -jar stub-runner-boot.jar \
 ```
 
 **Real-life scenario:** `checkout-service`'s CI pipeline runs its full contract test suite against `inventory-service`'s latest published stub jar on every build, catching integration drift within minutes, without needing `inventory-service`, its database, or any shared staging environment to be running.
+
+**Interview Q&A:**
+
+**Q: What does Stub Runner do with a stub coordinate like `groupId:artifactId:version:stubs`?**
+It resolves and downloads the matching stub jar from a Maven/Gradle repository (or local `.m2`), then starts an embedded WireMock server pre-loaded with the stub mappings contained in that jar.
+
+**Q: What is the difference between `StubsMode.LOCAL` and `StubsMode.REMOTE` in `@AutoConfigureStubRunner`?**
+`LOCAL` resolves stubs from the local Maven repository (useful during active development against locally-built producer stubs), while `REMOTE` fetches them from a remote artifact repository, which is typical in CI where the producer's stubs were published by its own build.
 
 ### Testing Microservices with WireMock and MockMvc
 
@@ -172,6 +194,14 @@ class OrderControllerWireMockTest {
 | Testcontainers (real dependency) | Fully — actual service/database | Higher (needs image, slower startup) | Verifying true integration behavior, e.g., SQL dialects |
 
 **Real-life scenario:** A team wants to verify `order-service` correctly returns a `503` and retries when `inventory-service` times out; WireMock can easily simulate a fixed delay or connection reset for that specific test case, which would be awkward to reliably reproduce with a live dependency.
+
+**Interview Q&A:**
+
+**Q: What does `MockMvc` actually exercise that a plain unit test calling a controller method directly would not?**
+The real Spring MVC dispatching pipeline — request mapping, argument resolution/validation, and response serialization — without starting a full HTTP server, giving more realistic coverage than directly invoking a controller method in Java.
+
+**Q: What's the main risk of using hand-written WireMock stubs instead of Spring Cloud Contract-generated ones?**
+Nothing enforces that the hand-written stub matches the real producer's actual behavior, so the stub can silently drift out of sync with the producer over time and give false confidence.
 
 ### Integration Testing Microservices with Testcontainers
 
@@ -222,6 +252,14 @@ sequenceDiagram
 ```
 
 **Real-life scenario:** A subtle bug where a repository query relies on PostgreSQL-specific `ON CONFLICT` upsert syntax passes against an H2 in-memory database in tests but fails in production; switching that test to Testcontainers with a real `postgres` image catches the incompatibility before it ever reaches production.
+
+**Interview Q&A:**
+
+**Q: What does `@ServiceConnection` eliminate the need for in a Testcontainers-based Spring Boot test?**
+Manual `@DynamicPropertySource` boilerplate to wire the container's host/port/credentials into Spring datasource or broker connection properties — `@ServiceConnection` does this automatically for supported container types.
+
+**Q: What infrastructure prerequisite does Testcontainers require that WireMock-based tests don't?**
+A running Docker daemon accessible to the test process (including on CI runners), since Testcontainers actually starts and stops real Docker containers for each test run.
 
 ## Interview Questions & Answers
 

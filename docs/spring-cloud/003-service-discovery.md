@@ -1,30 +1,5 @@
 # Service Discovery
 
-
-## Topics
-
-- Spring cloud Discovery server or Eureka Naming Server
-- Problems with Eureka
-- Resilient Eureka Server with multiple instances and Data Replication Theory
-- Self-Preservation Mode in Eureka
-- Registering Eureka Clients And Sending Request
-- Eureka Client Library
-- Eureka Client Health Check Configuration
-- Load Balancing with Eureka, Feign & Spring Cloud LoadBalancer
-- Reactive Way using Feign Reactive
-- Configure Spring Security to Eureka Server
-- Enable Web Security in Eureka
-- Configure Eureka Clients to use Username and Password
-- Configure Eureka Service URL in Config Server
-- Move Username and Password to Config Server
-- Encrypting Username and Password
-- Eureka Cluster and Peer Awareness Configuration
-- Eureka Cluster: Update Hosts File
-- Staring up Eureka Discovery Server Cluster
-- Eureka Server Dashboard: Checking Registered Peers
-- Eureka Discovery Client with Default Configuration
-- Register Eureka Client with Eureka Cluster
-
 ## Detailed Guide
 
 ### Spring cloud Discovery server or Eureka Naming Server
@@ -83,6 +58,14 @@ flowchart LR
 | Consul | CP by default (Raft) | Active health checks (HTTP/TCP/script) | Multi-datacenter, service mesh integrations |
 | ZooKeeper | CP (Zab consensus) | Ephemeral znodes | Coordination-heavy systems (Kafka, Hadoop) |
 
+**Interview Q&A:**
+
+**Q: Why is Eureka's registry described as a "phone book" rather than a DNS replacement?**
+Unlike static DNS, Eureka's registry updates dynamically as instances register, renew, and deregister in near real-time, and it carries richer per-instance metadata (status, zone, custom attributes) that plain DNS records don't support.
+
+**Q: What port does the Eureka dashboard/REST API run on by default, and why does the server itself set `register-with-eureka: false`?**
+Port 8761 by default. A standalone Eureka server disables `register-with-eureka` and `fetch-registry` because it doesn't need to register with itself as a client — those flags are only meaningful for a peer-aware cluster or actual client applications.
+
 ### Problems with Eureka
 
 While Eureka simplifies discovery, it introduces its own operational challenges. First, a single Eureka instance is a single point of failure — if it goes down, existing clients can still call each other using cached registries, but no new instances can register and stale entries won't be cleaned up. Second, Eureka's default lease expiration and eviction settings can lag reality: an instance that crashes ungracefully may still appear "UP" for up to 90 seconds (3 missed 30-second heartbeats) before being evicted, so a naive client could route traffic to a dead instance.
@@ -97,6 +80,14 @@ Another common problem is network partition handling. During a partition, Eureka
 | Single point of failure | One Eureka node | Run a peer-aware cluster (2+ nodes) |
 | Self-preservation confusion | Renewal threshold drop during partition/deploy storm | Understand it's a safety net, tune thresholds, monitor via dashboard |
 | Registry propagation delay | Client registry cache refresh interval | Reduce `registry-fetch-interval-seconds` for faster convergence (trade-off: more load) |
+
+**Interview Q&A:**
+
+**Q: Why can a dead instance still appear "UP" in Eureka for up to 90 seconds?**
+Because eviction only happens after the lease expiration duration (90 seconds by default, three missed 30-second heartbeats) elapses without a renewal — Eureka doesn't detect crashes instantly, it detects the absence of heartbeats.
+
+**Q: How should client applications compensate for Eureka's slow eviction of dead instances?**
+By layering client-side resilience such as connection timeouts, retries, and circuit breakers (e.g., Resilience4j) so a single stale instance returning errors or timing out doesn't cascade into a broader failure.
 
 ### Resilient Eureka Server with multiple instances and Data Replication Theory
 
@@ -119,6 +110,14 @@ sequenceDiagram
     E1-->>E2: Replicate renewal
     E1-->>E3: Replicate renewal
 ```
+
+**Interview Q&A:**
+
+**Q: Why doesn't a Eureka cluster use a consensus protocol like Raft or Paxos for replication?**
+Because strong consistency via quorum writes would reduce availability precisely when the network is unreliable. Eureka trades strict consistency for availability, accepting brief replication lag in exchange for every node staying independently operational.
+
+**Q: What happens to registry data on a Eureka node that restarts within a cluster?**
+On startup it tries to fetch the current registry from its peers before accepting traffic, so it doesn't briefly serve an empty registry; if peers are unreachable it falls back to waiting for clients to re-register.
 
 ### Self-Preservation Mode in Eureka
 
@@ -149,6 +148,14 @@ eureka:
     renewal-percent-threshold: 0.85
     eviction-interval-timer-in-ms: 60000
 ```
+
+**Interview Q&A:**
+
+**Q: What renewal threshold triggers self-preservation mode by default?**
+When the number of renewals received in the last minute drops below 85% of the expected number (based on registered instance count), the server enters self-preservation and stops evicting instances.
+
+**Q: Should self-preservation be disabled in production?**
+Generally no — it should stay enabled in production since it's a genuine safety net against mass false-eviction during transient network issues; it's typically only disabled in small local/dev setups where the renewal math is unreliable due to low instance counts.
 
 ### Registering Eureka Clients And Sending Request
 
@@ -184,6 +191,14 @@ public class CheckoutServiceApplication {
 }
 ```
 
+**Interview Q&A:**
+
+**Q: What HTTP verbs does a Eureka client use over its registration lifecycle?**
+`POST` to register on startup, `PUT` for periodic heartbeat renewals, and `DELETE` to deregister on graceful shutdown.
+
+**Q: Why set `eureka.instance.prefer-ip-address: true` in containerized environments?**
+Containers often have unstable or non-resolvable hostnames, so advertising the IP address instead of the hostname ensures other services can actually reach the instance rather than failing DNS resolution.
+
 ### Eureka Client Library
 
 The `spring-cloud-starter-netflix-eureka-client` starter bundles the Netflix `eureka-client` library along with Spring Cloud's auto-configuration glue. It provides the `EurekaClient` / `com.netflix.discovery.EurekaClient` API for programmatic registry access, plus Spring abstractions like `DiscoveryClient` (Spring Cloud Commons) that abstract over Eureka, Consul, or Zookeeper so application code isn't tied to a specific discovery implementation.
@@ -208,6 +223,14 @@ public class InstanceInfoController {
 ```
 
 **Real-life scenario:** A platform team builds an internal admin tool that uses the generic `DiscoveryClient` API to list all registered services and their instance counts, and the same code works unchanged whether the backing registry is Eureka in production or Consul in a newer cluster.
+
+**Interview Q&A:**
+
+**Q: What is the difference between Netflix's `EurekaClient` API and Spring Cloud Commons' `DiscoveryClient`?**
+`EurekaClient` is Eureka-specific and exposes Netflix's native API surface, while `DiscoveryClient` is a Spring Cloud abstraction that works uniformly across Eureka, Consul, or Zookeeper, letting application code stay decoupled from a specific discovery implementation.
+
+**Q: Why does the client fetch registry deltas instead of the full registry after the initial download?**
+Delta fetches reduce bandwidth and processing overhead on both the client and server, since only changes since the last fetch need to be transmitted rather than the entire registry on every refresh cycle.
 
 ### Eureka Client Health Check Configuration
 
@@ -234,6 +257,14 @@ management:
 ```
 
 **Real-life scenario:** When `inventory-service`'s database connection pool is exhausted, its Actuator health indicator flips to `DOWN`, Eureka immediately marks the instance `DOWN`, and Feign clients stop routing new requests to it within seconds instead of waiting up to 90 seconds for a lease to expire.
+
+**Interview Q&A:**
+
+**Q: Without `eureka.client.healthcheck.enabled=true`, what does Eureka's "UP" status actually reflect?**
+Only that the client is currently sending heartbeats — it says nothing about whether the application's internal dependencies (database, downstream services) are actually functioning correctly.
+
+**Q: What is a risk of enabling Actuator health propagation to Eureka without care?**
+If a non-critical health indicator (e.g., a rarely-used external dependency) is included in the aggregate health status, it could mark the whole instance `DOWN` and remove it from routing even though its core functionality is fine — health indicators should be scoped deliberately.
 
 ### Load Balancing with Eureka, Feign & Spring Cloud LoadBalancer
 
@@ -280,6 +311,14 @@ flowchart TD
 
 **Real-life scenario:** `checkout-service` calls `inventory-service` through a Feign client; when traffic spikes and the platform scales `inventory-service` from 2 to 6 pods, no code or config changes are needed — new instances are picked up automatically and load spreads across all 6.
 
+**Interview Q&A:**
+
+**Q: Why was Netflix Ribbon replaced by Spring Cloud LoadBalancer?**
+Ribbon entered maintenance mode and lacked first-class reactive support; Spring Cloud LoadBalancer is actively maintained, integrates cleanly with both blocking (`RestTemplate`) and reactive (`WebClient`) clients, and has simpler configuration.
+
+**Q: What load-balancing strategy does Spring Cloud LoadBalancer use by default?**
+A round-robin strategy across the healthy instances returned by the `DiscoveryClient` for a given service name, though custom `ServiceInstanceListSupplier` implementations can plug in weighted, zone-aware, or other strategies.
+
 ### Reactive Way using Feign Reactive
 
 Traditional Feign clients are blocking — each call occupies a thread until the HTTP response returns, which doesn't fit well into a reactive, non-blocking stack built on Spring WebFlux and Project Reactor. Reactive Feign (a community project, `feign-reactor`) and, in newer Spring Cloud versions, native support layered over `WebClient`, allow Feign-style declarative clients to return `Mono<T>` or `Flux<T>` instead of plain objects, so calls integrate into a fully non-blocking pipeline without dedicating a thread per in-flight request.
@@ -305,6 +344,14 @@ public WebClient.Builder loadBalancedWebClientBuilder() {
 
 **Real-life scenario:** An API gateway aggregating responses from `pricing-service`, `inventory-service`, and `review-service` in parallel uses reactive Feign clients so a burst of 10,000 concurrent requests doesn't require 10,000 blocked threads, keeping memory and context-switching overhead low.
 
+**Interview Q&A:**
+
+**Q: Why don't blocking Feign clients scale well inside a WebFlux application?**
+Each blocking call ties up a thread until the response returns, which defeats WebFlux's small, fixed-size event-loop thread model and can exhaust threads under high concurrency, negating the benefits of going reactive in the first place.
+
+**Q: What component resolves a logical service name for a reactive `WebClient` before the non-blocking call is issued?**
+`ReactorLoadBalancerExchangeFilterFunction`, Spring Cloud LoadBalancer's reactive integration, intercepts the request and resolves the service name against the registry before the actual non-blocking HTTP call is dispatched.
+
 ### Configure Spring Security to Eureka Server
 
 By default, a Eureka server exposes its dashboard and REST API with no authentication, which is unacceptable outside of an isolated local/dev network. Adding `spring-boot-starter-security` to the Eureka server project brings Spring Security onto the classpath, which by default locks down *all* endpoints, including Eureka's own registration API, with basic authentication and a randomly generated password unless explicitly configured.
@@ -320,6 +367,14 @@ spring:
 ```
 
 **Real-life scenario:** Without security, any pod on the network segment could register itself as a fake `payment-service` instance and intercept traffic; requiring a shared credential for registration closes off this trivial spoofing vector.
+
+**Interview Q&A:**
+
+**Q: What happens if `spring-boot-starter-security` is added to a Eureka server without any explicit user configuration?**
+Spring Boot auto-generates a random password logged at startup for a default `user` account, which is fine for a quick smoke test but unusable operationally since the password changes every restart — explicit credentials must be configured.
+
+**Q: Is per-client fine-grained authorization typical for a Eureka server?**
+No — Eureka servers are usually protected with a single shared credential for all clients rather than per-service authorization, with finer access control left to network segmentation or a service mesh layer.
 
 ### Enable Web Security in Eureka
 
@@ -343,6 +398,14 @@ public class EurekaServerSecurityConfig {
 
 **Real-life scenario:** Without disabling CSRF on `/eureka/**`, Eureka clients would receive `403 Forbidden` responses when trying to register or renew leases, because they can't supply the CSRF token that Spring Security expects for state-changing POST/PUT requests by default.
 
+**Interview Q&A:**
+
+**Q: Why is CSRF protection disabled specifically for `/eureka/**` rather than globally?**
+Disabling CSRF globally would remove protection for any browser-facing endpoints the application might expose; scoping the exemption to `/eureka/**` keeps CSRF defenses intact everywhere except the machine-to-machine registration API that can't supply CSRF tokens.
+
+**Q: What authentication scheme does the example `SecurityFilterChain` enforce for Eureka server requests?**
+HTTP Basic authentication (`httpBasic(Customizer.withDefaults())`) combined with requiring authentication on every request via `anyRequest().authenticated()`.
+
 ### Configure Eureka Clients to use Username and Password
 
 Once the Eureka server requires authentication, every client must embed credentials in its `defaultZone` service URL, since Eureka's client library authenticates using HTTP Basic auth encoded directly into the registration endpoint URL. The credentials should never be hardcoded in plaintext in version control — they're typically injected via environment variables or pulled from Config Server/Vault.
@@ -355,6 +418,14 @@ eureka:
 ```
 
 **Real-life scenario:** A new microservice fails to register with "401 Unauthorized" in its startup logs until the ops team realizes the `EUREKA_USERNAME`/`EUREKA_PASSWORD` environment variables weren't propagated to its container, illustrating why centralizing these credentials (rather than copy-pasting per service) reduces this class of misconfiguration.
+
+**Interview Q&A:**
+
+**Q: How does a Eureka client pass credentials to a secured server?**
+By embedding them directly in the `defaultZone` URL using standard HTTP Basic Auth URL syntax (`http://user:password@host:port/eureka/`), which the Eureka client library parses and uses for every registration/renewal request.
+
+**Q: Why is hardcoding credentials in `defaultZone` in version control a bad practice?**
+Anyone with read access to the repository would see the plaintext password; credentials should instead come from environment variables, a secrets manager, or an encrypted value resolved via Config Server.
 
 ### Configure Eureka Service URL in Config Server
 
@@ -371,6 +442,14 @@ eureka:
 ```
 
 **Real-life scenario:** When migrating Eureka from a single node to a highly available 3-node cluster, updating one shared file in the config repository automatically propagates the new cluster addresses to dozens of microservices without touching their individual repositories.
+
+**Interview Q&A:**
+
+**Q: What problem does centralizing `eureka.client.service-url.defaultZone` in Config Server solve?**
+It eliminates the need to duplicate (and keep in sync) the same Eureka cluster address across every microservice's local configuration, so infrastructure changes require editing one shared file instead of many repositories.
+
+**Q: How can a centralized Eureka URL change be propagated to already-running services without a restart?**
+By combining Config Server with Spring Cloud Bus, which broadcasts a refresh event over a message broker to all subscribed instances, triggering them to re-fetch configuration without a redeploy.
 
 ### Move Username and Password to Config Server
 
@@ -391,6 +470,14 @@ eureka:
 ```
 
 **Real-life scenario:** During a security audit, rotating the Eureka credentials becomes a single commit to the config repository followed by a Spring Cloud Bus refresh event, instead of a coordinated redeploy of every consuming microservice.
+
+**Interview Q&A:**
+
+**Q: Why move Eureka credentials into the Config Server's backing repository instead of leaving them as per-service environment variables?**
+It consolidates sensitive values into one governed location, making rotation, auditing, and access control far simpler than tracking credentials scattered across dozens of deployment manifests.
+
+**Q: What risk remains if credentials are stored in Config Server's repository as plain values?**
+Anyone with read access to that repository (even a private one) can see the plaintext password, which is why the next step is typically encrypting the value rather than storing it as-is.
 
 ### Encrypting Username and Password
 
@@ -419,6 +506,14 @@ encrypt:
 
 **Real-life scenario:** A compliance requirement mandates that no plaintext secrets exist in any Git repository; encrypting the Eureka password with Config Server's symmetric encryption satisfies the audit while requiring no changes to how client applications consume the configuration.
 
+**Interview Q&A:**
+
+**Q: How does the Config Server know to decrypt a `{cipher}`-prefixed value before serving it?**
+The `{cipher}` prefix signals to the Config Server that the value is encrypted; it uses the configured `encrypt.key` to decrypt it transparently server-side before returning the resolved configuration to the requesting client, so clients never handle ciphertext.
+
+**Q: What's the trade-off between symmetric encryption and an external vault like HashiCorp Vault for Eureka credentials?**
+Symmetric encryption is simple to operate but relies on a single shared key and requires re-encrypting values on key rotation; a vault provides dynamic secrets, leasing, and audit trails at the cost of additional infrastructure to run and maintain.
+
 ### Eureka Cluster and Peer Awareness Configuration
 
 Peer awareness is what turns a set of independent Eureka servers into a resilient cluster. Each Eureka node is configured with its *own* hostname and, critically, with `eureka.client.service-url.defaultZone` pointing at the *other* peer nodes (not itself), which makes each server register with its peers as if it were a client. This is what enables the replication behavior described earlier — every node knows about every other node and pushes/pulls registry changes to/from them.
@@ -445,6 +540,14 @@ eureka:
 
 **Real-life scenario:** A team that copy-pasted the same `defaultZone: http://localhost:8761/eureka/` across all three "cluster" nodes discovers during a failover drill that killing one node causes total registry loss for its clients, because the nodes were never actually peer-aware in the first place.
 
+**Interview Q&A:**
+
+**Q: What is the single most common mistake when configuring a Eureka peer cluster?**
+Pointing every node's `defaultZone` at `localhost` instead of the actual peer hostnames, which silently creates isolated single-node instances that never replicate with each other despite appearing to run correctly.
+
+**Q: Does a Eureka node register itself in its own `defaultZone`?**
+No — each node's `defaultZone` should list only its *peer* nodes, not itself; a node registering with itself doesn't achieve peer awareness or replication.
+
 ### Eureka Cluster: Update Hosts File
 
 Since each Eureka node's peer configuration references peer hostnames (like `peer1`, `peer2`, `peer3`) rather than IP addresses, local development and on-prem VM setups often need those hostnames resolvable. Editing `/etc/hosts` (or `C:\Windows\System32\drivers\etc\hosts` on Windows) to map each peer hostname to `127.0.0.1` (when running multiple instances on one machine) or to the correct internal IP lets the peers reach each other without relying on a full DNS setup.
@@ -463,6 +566,14 @@ sudo dscacheutil -flushcache
 ```
 
 **Real-life scenario:** Running a 3-node Eureka cluster on a single developer laptop for testing peer replication requires distinct hostnames mapped in `/etc/hosts` so each Eureka instance (bound to a different port) can address its peers by name exactly as it would in a real multi-host deployment.
+
+**Interview Q&A:**
+
+**Q: Why use hostnames instead of `localhost` directly for each peer in a single-machine test cluster?**
+Using distinct hostnames (all mapped to `127.0.0.1` in `/etc/hosts`) mirrors how peer configuration would look in a real multi-host deployment, making the local test setup representative of production behavior.
+
+**Q: In a Kubernetes deployment, what replaces manual `/etc/hosts` editing for peer resolution?**
+A headless Service providing stable per-pod DNS names, so peers can address each other by predictable DNS entries without any manual host-file management.
 
 ### Staring up Eureka Discovery Server Cluster
 
@@ -495,6 +606,14 @@ sequenceDiagram
 
 **Real-life scenario:** In a Kubernetes deployment, three Eureka pods behind a headless service each start with an environment variable pointing at the other two pods' stable DNS names, forming a resilient cluster that survives the loss of any single pod.
 
+**Interview Q&A:**
+
+**Q: What is the purpose of `--spring.profiles.active` when starting each Eureka peer?**
+It selects a profile-specific configuration file (e.g., `application-peer1.yml`) so each node binds to its own port/hostname and points at the correct set of peers, without needing separate JARs or codebases.
+
+**Q: Why does the startup sequence diagram show each peer registering with every other peer?**
+Because true peer awareness is symmetric — every node must know about and replicate to every other node, not just one designated node, so there's no single leader whose failure would break the cluster.
+
 ### Eureka Server Dashboard: Checking Registered Peers
 
 Each Eureka node's dashboard (`http://<host>:<port>/`) shows a "DS Replicas" panel listing the other nodes it considers its peers, alongside the "Instances currently registered with Eureka" table showing every registered application and instance. Checking this panel after startup is the simplest way to confirm peer awareness actually worked — if a node's DS Replicas list is empty or incorrect, replication silently isn't happening even though the server appears to run fine.
@@ -502,6 +621,14 @@ Each Eureka node's dashboard (`http://<host>:<port>/`) shows a "DS Replicas" pan
 The dashboard also surfaces general server health: uptime, renewal threshold, whether self-preservation is active, and the current renewals-per-minute versus the expected threshold, which is the first place to check when diagnosing why an instance appears in an unexpected state.
 
 **Real-life scenario:** After deploying a new Eureka node into an existing cluster, an engineer checks the dashboard's "DS Replicas" section on all three nodes to confirm the new node is visible everywhere before routing any production traffic through it.
+
+**Interview Q&A:**
+
+**Q: What does an empty or incomplete "DS Replicas" panel indicate?**
+That peer awareness/replication configuration is broken for that node — even though the Eureka server process runs fine and may still serve its own registry, it isn't actually syncing with its intended peers.
+
+**Q: Besides DS Replicas, what other information does the Eureka dashboard surface for diagnosing issues?**
+Server uptime, the renewal threshold, whether self-preservation mode is currently active, and the current renewals-per-minute compared to the expected threshold.
 
 ### Eureka Discovery Client with Default Configuration
 
@@ -518,6 +645,14 @@ spring:
 ```
 
 **Real-life scenario:** A developer's integration test suite mysteriously hangs trying to reach `localhost:8761` in a CI pipeline where no Eureka server runs — the fix is either providing `eureka.client.enabled=false` for tests or spinning up a lightweight Eureka test server, since the default `service-url` silently assumed a local instance exists.
+
+**Interview Q&A:**
+
+**Q: What is the default `eureka.client.service-url.defaultZone` if none is configured?**
+`http://localhost:8761/eureka/` — convenient for local development but a silent trap in other environments where no Eureka server runs at that address.
+
+**Q: How can tests avoid unnecessary Eureka registration attempts?**
+By setting `eureka.client.enabled=false` in the test configuration, which disables the Eureka client entirely instead of letting it try (and fail or hang) to reach a non-existent local server.
 
 ### Register Eureka Client with Eureka Cluster
 
@@ -543,6 +678,14 @@ flowchart TD
 ```
 
 **Real-life scenario:** During a rolling restart of the Eureka cluster itself (e.g., for a version upgrade), client services configured with all three peer URLs keep registering and renewing leases uninterrupted because they transparently fail over to whichever peer is currently available.
+
+**Interview Q&A:**
+
+**Q: What happens if a client is configured with only one Eureka node's URL and that node goes down for maintenance?**
+The client can't register or renew its lease against that node, and since no fallback URL exists, discovery for that client is disrupted until the node returns or its configuration is updated to include other peers.
+
+**Q: Does the order of URLs in a comma-separated `defaultZone` list matter?**
+The client tries them in order, using the first reachable one, but since all peers hold an equivalent replicated registry, the choice of which one ends up serving the client doesn't affect correctness — only initial connection latency.
 
 ## Interview Questions & Answers
 

@@ -1,16 +1,5 @@
 # Spring Cloud Security
 
-
-## Topics
-
-- Securing Microservices with OAuth2 and JWT
-- Setting up an Authorization Server for Microservices
-- Configuring Resource Servers to Validate JWT Tokens
-- Propagating JWT Tokens Between Microservices
-- TokenRelay Filter in Spring Cloud Gateway
-- Role-Based Access Control Across Microservices
-- Securing Actuator Endpoints Across Microservices
-
 ## Detailed Guide
 
 ### Securing Microservices with OAuth2 and JWT
@@ -40,6 +29,14 @@ sequenceDiagram
 |---|---|---|---|
 | Server-side sessions | Stateful (shared session store) | Requires sticky sessions or shared cache | Immediate (delete session) |
 | JWT / OAuth2 bearer tokens | Stateless | Scales horizontally with no shared state | Harder — needs short expiry + refresh tokens or a blocklist |
+
+**Interview Q&A:**
+
+**Q: Why don't resource servers need the authorization server's private key?**
+JWTs are signed with asymmetric cryptography (typically RS256); the authorization server keeps the private key to sign tokens, while resource servers only need the public key (via JWKS) to verify signatures, so no shared secret is ever distributed.
+
+**Q: What's the practical downside of stateless JWTs compared to server-side sessions?**
+Revocation is harder — since there's no central session to delete, a compromised token stays valid until it naturally expires unless the system adds extra machinery like short expiries with refresh tokens or a token blocklist.
 
 ### Setting up an Authorization Server for Microservices
 
@@ -78,6 +75,14 @@ spring:
 
 **Real-life scenario:** A platform team stands up a single Spring Authorization Server instance that every microservice and the front-end SPA authenticate against, centralizing user credential storage and token issuance so individual teams never build their own login logic.
 
+**Interview Q&A:**
+
+**Q: What replaced the deprecated Spring Security OAuth project for building an authorization server?**
+Spring Authorization Server, which is the officially supported project for issuing OAuth2/OIDC-compliant tokens within the Spring ecosystem.
+
+**Q: What endpoints does a Spring Authorization Server expose that resource servers rely on?**
+The OIDC discovery metadata endpoint (`/.well-known/openid-configuration`) and the JWKS endpoint (`/oauth2/jwks`), which resource servers use to discover the issuer's configuration and public signing keys respectively.
+
 ### Configuring Resource Servers to Validate JWT Tokens
 
 Any microservice that receives requests carrying a bearer token and needs to protect its endpoints is a "resource server." Spring Security's OAuth2 Resource Server support (`spring-boot-starter-oauth2-resource-server`) handles JWT validation declaratively: given the authorization server's `issuer-uri` or `jwk-set-uri`, Spring Security automatically fetches (and caches) the public signing keys, validates the token's signature and expiry on every request, and populates the security context with the token's claims/authorities.
@@ -112,6 +117,14 @@ public class ResourceServerConfig {
 ```
 
 **Real-life scenario:** `order-service` requires `SCOPE_order.write` to accept a new order; a JWT issued to a read-only reporting client that only has `SCOPE_order.read` is rejected with a `403 Forbidden` automatically, with zero custom authorization code written in `order-service` itself.
+
+**Interview Q&A:**
+
+**Q: What configuration is minimally required for a Spring Boot service to act as an OAuth2 resource server?**
+The `spring-boot-starter-oauth2-resource-server` dependency plus `spring.security.oauth2.resourceserver.jwt.issuer-uri` pointing at the authorization server — Spring Security auto-configures JWKS key fetching, caching, and signature/expiry validation from that.
+
+**Q: How does Spring Security map JWT scopes to authorities by default?**
+Each value in the token's `scope`/`scp` claim is prefixed with `SCOPE_` and exposed as a `GrantedAuthority`, so a scope of `order.read` becomes the authority `SCOPE_order.read` usable in `hasAuthority()` checks.
 
 ### Propagating JWT Tokens Between Microservices
 
@@ -150,6 +163,14 @@ sequenceDiagram
 ```
 
 **Real-life scenario:** A fraud-check step inside `order-service` calls `customer-service` to fetch risk signals; propagating the original JWT lets `customer-service` apply the same per-user authorization rules (e.g., data residency restrictions tied to the user's region) instead of trusting an unauthenticated internal call.
+
+**Interview Q&A:**
+
+**Q: What happens if a downstream service call in a chain doesn't propagate the original JWT?**
+The downstream service has no way to know who the original caller was or what they're authorized to do, so it either has to trust the call blindly (a security gap) or reject it outright as unauthenticated.
+
+**Q: How does a Feign client automatically attach the current request's JWT to an outgoing call?**
+A `RequestInterceptor` bean reads the `Authentication` from `SecurityContextHolder`, extracts the `JwtAuthenticationToken`'s token value, and sets it as the `Authorization: Bearer` header on the outgoing `RequestTemplate`.
 
 ### TokenRelay Filter in Spring Cloud Gateway
 
@@ -194,6 +215,14 @@ flowchart LR
 
 **Real-life scenario:** A server-rendered web application logs users in through the gateway's OAuth2 Login flow; every API call the browser makes through the gateway automatically carries the logged-in user's access token to backend services via `TokenRelay`, with no manual token handling in the frontend.
 
+**Interview Q&A:**
+
+**Q: What must the gateway be configured as for `TokenRelay=` to have a token available to forward?**
+An OAuth2 client (with `spring.security.oauth2.client.registration`/`provider` configured), because it needs to complete the OAuth2 Login flow and hold the resulting access token in the user's session before it can relay it.
+
+**Q: Is `TokenRelay` applied per-route or globally in Spring Cloud Gateway?**
+It can be either — it's commonly added as a filter on specific route definitions, but it can also be configured as a default filter applied to all routes if every backend needs the relayed token.
+
 ### Role-Based Access Control Across Microservices
 
 RBAC in a JWT-secured microservices system is typically implemented by encoding roles or scopes as claims in the token (e.g., a `roles` claim or `scope`/`authorities` claim), and each resource server maps those claims to Spring Security `GrantedAuthority` objects using a `JwtAuthenticationConverter`. Authorization rules are then expressed declaratively with `hasRole()`/`hasAuthority()` in the `SecurityFilterChain`, consistently across every service, since they all derive their authorities from the same token claims.
@@ -237,6 +266,14 @@ flowchart TD
 
 **Real-life scenario:** A support engineer's token carries `roles: ["SUPPORT"]`, granting read-only access to `order-service` and `customer-service` endpoints across the platform, while a `roles: ["ADMIN"]` token unlocks refund and account-deletion endpoints — all enforced consistently by each service reading the same claim.
 
+**Interview Q&A:**
+
+**Q: What Spring Security component maps a custom JWT claim (like `roles`) into `GrantedAuthority` objects?**
+`JwtGrantedAuthoritiesConverter`, configured with `setAuthoritiesClaimName("roles")` and typically an `ROLE_` prefix, wired into a `JwtAuthenticationConverter` used by the OAuth2 resource server configuration.
+
+**Q: Why is centralizing roles in the authorization server's issued token preferable to each microservice maintaining its own role table?**
+It guarantees every service applies authorization consistently from a single source of truth, avoiding drift between services that might otherwise disagree about what a given user is allowed to do.
+
 ### Securing Actuator Endpoints Across Microservices
 
 Actuator endpoints (`/actuator/env`, `/actuator/heapdump`, `/actuator/shutdown`, etc.) expose sensitive operational data and dangerous operations, so leaving them unauthenticated is a serious security gap — `/actuator/env` alone can leak database passwords and API keys from configuration properties. In an OAuth2/JWT-secured microservices setup, Actuator endpoints should be included in the same `SecurityFilterChain` rules as business endpoints, typically requiring a distinct `ACTUATOR` or `ADMIN` scope/role rather than being open to any authenticated user.
@@ -277,6 +314,14 @@ public SecurityFilterChain actuatorSecurityFilterChain(HttpSecurity http) throws
 | Separate management port, network-isolated | Lowest | Preferred for internal-only Actuator access in production clusters |
 
 **Real-life scenario:** A penetration test flags that `/actuator/env` is publicly reachable and reveals the production database password in plaintext; moving Actuator to a separate, network-isolated management port and requiring an `actuator.admin` scope closes the finding.
+
+**Interview Q&A:**
+
+**Q: Why should `/actuator/env` and `/actuator/heapdump` never be exposed without authentication?**
+Both can leak highly sensitive data — `/actuator/env` reveals resolved configuration properties including secrets, and `/actuator/heapdump` can expose in-memory data such as session tokens or decrypted credentials.
+
+**Q: What is the benefit of binding Actuator to a separate management port?**
+It lets operational endpoints be reachable only from an internal network (e.g., not exposed by the Kubernetes Service or ingress), so even a misconfigured authorization rule doesn't expose them to the public internet.
 
 ## Interview Questions & Answers
 
