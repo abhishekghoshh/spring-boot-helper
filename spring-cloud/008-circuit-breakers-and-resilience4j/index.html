@@ -1,0 +1,2396 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<link href="https://abhishekghoshh.github.io/spring-boot-helper/spring-cloud/008-circuit-breakers-and-resilience4j/" rel="canonical"/>
+<link href="../007-spring-cloud-security/" rel="prev"/>
+<link href="../009-messaging/" rel="next"/>
+<link href="../../assets/images/favicon.png" rel="icon"/>
+<meta content="mkdocs-1.6.1, mkdocs-material-9.5.50" name="generator"/>
+<title>Circuit Breaker and Resilience4j - spring-boot-helper</title>
+<link href="../../assets/stylesheets/main.a40c8224.min.css" rel="stylesheet"/>
+<link href="../../assets/stylesheets/palette.06af60db.min.css" rel="stylesheet"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
+<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+<meta content="website" property="og:type"/>
+<meta content="Circuit Breaker and Resilience4j - spring-boot-helper" property="og:title"/>
+<meta content="None" property="og:description"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/assets/images/social/spring-cloud/008-circuit-breakers-and-resilience4j.png" property="og:image"/>
+<meta content="image/png" property="og:image:type"/>
+<meta content="1200" property="og:image:width"/>
+<meta content="630" property="og:image:height"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/spring-cloud/008-circuit-breakers-and-resilience4j/" property="og:url"/>
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="Circuit Breaker and Resilience4j - spring-boot-helper" name="twitter:title"/>
+<meta content="None" name="twitter:description"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/assets/images/social/spring-cloud/008-circuit-breakers-and-resilience4j.png" name="twitter:image"/>
+</head>
+<body data-md-color-accent="purple" data-md-color-primary="teal" data-md-color-scheme="default" dir="ltr">
+<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
+<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
+<label class="md-overlay" for="__drawer"></label>
+<div data-md-component="skip">
+<a class="md-skip" href="#circuit-breakers-and-resilience4j">
+          Skip to content
+        </a>
+</div>
+<div data-md-component="announce">
+</div>
+<header class="md-header" data-md-component="header">
+<nav aria-label="Header" class="md-header__inner md-grid">
+<a aria-label="spring-boot-helper" class="md-header__button md-logo" data-md-component="logo" href="../.." title="spring-boot-helper">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+<label class="md-header__button md-icon" for="__drawer">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+</label>
+<div class="md-header__title" data-md-component="header-title">
+<div class="md-header__ellipsis">
+<div class="md-header__topic">
+<span class="md-ellipsis">
+            spring-boot-helper
+          </span>
+</div>
+<div class="md-header__topic" data-md-component="header-topic">
+<span class="md-ellipsis">
+            
+              Circuit Breaker and Resilience4j
+            
+          </span>
+</div>
+</div>
+</div>
+<form class="md-header__option" data-md-component="palette">
+<input aria-label="Switch to dark mode" class="md-option" data-md-color-accent="purple" data-md-color-media="" data-md-color-primary="teal" data-md-color-scheme="default" id="__palette_0" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_1" hidden="" title="Switch to dark mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"></path></svg>
+</label>
+<input aria-label="Switch to light mode" class="md-option" data-md-color-accent="lime" data-md-color-media="" data-md-color-primary="teal" data-md-color-scheme="slate" id="__palette_1" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_0" hidden="" title="Switch to light mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"></path></svg>
+</label>
+</form>
+<script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+<label class="md-header__button md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+</label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input aria-label="Search" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="Search" required="" spellcheck="false" type="text"/>
+<label class="md-search__icon md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+</label>
+<nav aria-label="Search" class="md-search__options">
+<button aria-label="Clear" class="md-search__icon md-icon" tabindex="-1" title="Clear" type="reset">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+</button>
+</nav>
+<div class="md-search__suggest" data-md-component="search-suggest"></div>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix="" tabindex="0">
+<div class="md-search-result" data-md-component="search-result">
+<div class="md-search-result__meta">
+            Initializing search
+          </div>
+<ol class="md-search-result__list" role="presentation"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+</nav>
+</header>
+<div class="md-container" data-md-component="container">
+<nav aria-label="Tabs" class="md-tabs" data-md-component="tabs">
+<div class="md-grid">
+<ul class="md-tabs__list">
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../..">
+        
+  
+    
+  
+  Home
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-introduction/">
+          
+  
+  Introduction
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-aop/">
+          
+  
+  Spring AOP
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-transactions/">
+          
+  
+  Spring Transaction
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-jpa/">
+          
+  
+  Spring JPA
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-security/">
+          
+  
+  Spring Security
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-testing/">
+          
+  
+  Spring Testing
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-kafka/">
+          
+  
+  Spring Kafka
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-redis/">
+          
+  
+  Spring Redis
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-mongo/">
+          
+  
+  Spring Mongo
+
+        </a>
+</li>
+<li class="md-tabs__item md-tabs__item--active">
+<a class="md-tabs__link" href="../">
+          
+  
+  Spring Cloud
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../others/">
+          
+  
+  Others
+
+        </a>
+</li>
+</ul>
+</div>
+</nav>
+<main class="md-main" data-md-component="main">
+<div class="md-main__inner md-grid">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="Navigation" class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" data-md-level="0">
+<label class="md-nav__title" for="__drawer">
+<a aria-label="spring-boot-helper" class="md-nav__button md-logo" data-md-component="logo" href="../.." title="spring-boot-helper">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+    spring-boot-helper
+  </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../..">
+<span class="md-ellipsis">
+    Home
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_2" type="checkbox"/>
+<label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+<span class="md-ellipsis">
+    Introduction
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_2_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_2">
+<span class="md-nav__icon md-icon"></span>
+            Introduction
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/interview-helper/">
+<span class="md-ellipsis">
+    Interview Helper
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/001-history/">
+<span class="md-ellipsis">
+    001 - History
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/002-spring-mvc/">
+<span class="md-ellipsis">
+    002 - Spring MVC
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/003-spring-boot/">
+<span class="md-ellipsis">
+    003 - Spring Boot
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/004-maven-and-gradle/">
+<span class="md-ellipsis">
+    004 - Maven and Gradle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/005-annotations/">
+<span class="md-ellipsis">
+    005 - Spring Annotations
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/006-bean-management/">
+<span class="md-ellipsis">
+    006 - Spring Bean Management
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/007-config/">
+<span class="md-ellipsis">
+    007 - Spring Boot Config Management
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/008-async/">
+<span class="md-ellipsis">
+    008 - Async with Spring Boot
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/009-spring-with-virtual-thread/">
+<span class="md-ellipsis">
+    009 - Spring with Virtual Thread
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/010-intercepter-and-filter/">
+<span class="md-ellipsis">
+    010 - Interceptor and Filter
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/011-spring-hateos/">
+<span class="md-ellipsis">
+    011 - Spring HATEOS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/012-exception-handling/">
+<span class="md-ellipsis">
+    012 - Exception Handling
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/013-spring-actuator/">
+<span class="md-ellipsis">
+    013 - Spring Boot Actuator
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_3" type="checkbox"/>
+<label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring AOP
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_3_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_3">
+<span class="md-nav__icon md-icon"></span>
+            Spring AOP
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/001-what-is-aop/">
+<span class="md-ellipsis">
+    001 - What is AOP? Why and How We Use It?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/002-advantages-and-disadvantages/">
+<span class="md-ellipsis">
+    002 - Advantages and Disadvantages of AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/003-real-life-examples/">
+<span class="md-ellipsis">
+    003 - Real-Life Examples and Industry Usages
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/004-aop-annotations/">
+<span class="md-ellipsis">
+    004 - All Spring AOP Annotations Explained
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/005-code-examples/">
+<span class="md-ellipsis">
+    005 - Code Examples with Spring AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/006-summary/">
+<span class="md-ellipsis">
+    006 - Summary
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/007-aop-intercepts-method-invocation/">
+<span class="md-ellipsis">
+    007 - How AOP Intercepts Method Invocation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/008-aop-focus-on-business-logic/">
+<span class="md-ellipsis">
+    008 - How AOP Allows Focus on Business Logic
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/009-aop-reusability-and-maintainability/">
+<span class="md-ellipsis">
+    009 - How AOP Achieves Reusability and Maintainability
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/010-what-is-a-pointcut/">
+<span class="md-ellipsis">
+    010 - What is a Pointcut?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/011-pointcut-expression-structure/">
+<span class="md-ellipsis">
+    011 - Pointcut Expression Structure
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/012-pointcut-designators/">
+<span class="md-ellipsis">
+    012 - Different Types of Pointcut Designators
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/013-combining-pointcut-expressions/">
+<span class="md-ellipsis">
+    013 - Combining Pointcut Expressions (AND, OR, NOT)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/014-named-pointcuts/">
+<span class="md-ellipsis">
+    014 - Named Pointcuts — Reusable Pointcut Definitions
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/015-how-aop-works-internally/">
+<span class="md-ellipsis">
+    015 - How AOP Works Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/016-what-is-advice/">
+<span class="md-ellipsis">
+    016 - What is Advice? How It Works
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/017-what-is-joinpoint/">
+<span class="md-ellipsis">
+    017 - What is JoinPoint? How It Works
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/018-before-after-around-internals/">
+<span class="md-ellipsis">
+    018 - How @Before, @After, and @Around Work Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/019-matching-linking-interception/">
+<span class="md-ellipsis">
+    019 - How Matching, Linking, and Interception Work Together
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/020-performance-and-caching/">
+<span class="md-ellipsis">
+    020 - What If We Have 100s of Pointcuts? — Performance &amp; Caching
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_4" type="checkbox"/>
+<label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Transaction
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_4_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_4">
+<span class="md-nav__icon md-icon"></span>
+            Spring Transaction
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/001-prerequisites/">
+<span class="md-ellipsis">
+    001 - Prerequisites
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/002-critical-section/">
+<span class="md-ellipsis">
+    002 - What is a Critical Section?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/003-transactional-annotation/">
+<span class="md-ellipsis">
+    003 - What is @Transactional? Why and How to Use It?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/004-acid-properties/">
+<span class="md-ellipsis">
+    004 - ACID Properties with @Transactional
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/005-imports-and-yaml-configuration/">
+<span class="md-ellipsis">
+    005 - Imports for RDBMS vs NoSQL and YAML Configuration
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/006-enable-transaction-management/">
+<span class="md-ellipsis">
+    006 - What is @EnableTransactionManagement?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/007-method-vs-class-level-transactional/">
+<span class="md-ellipsis">
+    007 - Method-Level vs Class-Level @Transactional
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/008-transactional-internals-spring-aop/">
+<span class="md-ellipsis">
+    008 - How @Transactional Internally Uses Spring AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/009-aop-annotations-pointcut-around/">
+<span class="md-ellipsis">
+    009 - AOP Annotations Used Internally — Pointcut and @Around
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/010-rollback-internals/">
+<span class="md-ellipsis">
+    010 - How Rollback Happens Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/011-transaction-manager-hierarchy/">
+<span class="md-ellipsis">
+    011 - Hierarchy of TransactionManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/012-ways-to-manage-transactions/">
+<span class="md-ellipsis">
+    012 - How Many Ways Can We Manage Transactions?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/013-transaction-propagation/">
+<span class="md-ellipsis">
+    013 - What is Transaction Propagation?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/014-isolation-level/">
+<span class="md-ellipsis">
+    014 - What is Isolation Level?
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5" type="checkbox"/>
+<label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring JPA
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_5_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_5">
+<span class="md-nav__icon md-icon"></span>
+            Spring JPA
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/dbms/">
+<span class="md-ellipsis">
+    Database Management Systems (DBMS)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/sql/">
+<span class="md-ellipsis">
+    Structured Query Language (SQL)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/000-jdbc/">
+<span class="md-ellipsis">
+    JDBC
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/001-architecture/">
+<span class="md-ellipsis">
+    001 - Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/002-entity-lifecycle/">
+<span class="md-ellipsis">
+    002 - Entity Lifecycle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/003-entity-manager-factory-and-entity-manager/">
+<span class="md-ellipsis">
+    003 - EntityManagerFactory and EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/004-persistence-context/">
+<span class="md-ellipsis">
+    004 - Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/005-transaction-manager/">
+<span class="md-ellipsis">
+    005 - Transaction Manager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/006-hibernate-implementation/">
+<span class="md-ellipsis">
+    006 - Hibernate Implementation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/007-how-jpa-repository-uses-entity-manager/">
+<span class="md-ellipsis">
+    007 - How JPA Repository Uses EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/008-persistence-context-annotation-vs-autowired/">
+<span class="md-ellipsis">
+    008 - Why @PersistenceContext Instead of @Autowired
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/009-transactional-with-entity-manager/">
+<span class="md-ellipsis">
+    009 - Why @Transactional is Used for EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/010-entity-manager-creates-persistence-context/">
+<span class="md-ellipsis">
+    010 - How EntityManager Creates Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/011-role-of-persistence-context/">
+<span class="md-ellipsis">
+    011 - Role of Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/012-transaction-bounded-operations/">
+<span class="md-ellipsis">
+    012 - Transaction-Bounded Operations
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/013-first-level-caching/">
+<span class="md-ellipsis">
+    013 - First-Level Caching
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/014-second-level-caching/">
+<span class="md-ellipsis">
+    014 - Second-Level Caching
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/015-ddl-auto/">
+<span class="md-ellipsis">
+    015 - spring.jpa.hibernate.ddl-auto
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/016-table-annotation/">
+<span class="md-ellipsis">
+    016 - "@Table Annotation"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/017-column-annotation/">
+<span class="md-ellipsis">
+    017 - "@Column Annotation"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/018-id-and-composite-ids/">
+<span class="md-ellipsis">
+    018 - "@Id Annotation and Composite IDs"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/019-sequence-generator/">
+<span class="md-ellipsis">
+    019 - "@SequenceGenerator"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/020-generated-value-and-generation-strategies/">
+<span class="md-ellipsis">
+    020 - "@GeneratedValue and Generation Strategies"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/021-one-to-one-unidirectional-mapping/">
+<span class="md-ellipsis">
+    021 - OneToOne Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/022-eager-and-lazy-loading/">
+<span class="md-ellipsis">
+    022 - Eager and Lazy Loading
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/023-one-to-one-bidirectional-mapping/">
+<span class="md-ellipsis">
+    023 - OneToOne Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/024-one-to-many-unidirectional-mapping/">
+<span class="md-ellipsis">
+    024 - OneToMany Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/025-one-to-many-bidirectional-mapping/">
+<span class="md-ellipsis">
+    025 - OneToMany Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/026-many-to-one-bidirectional-mapping/">
+<span class="md-ellipsis">
+    026 - ManyToOne Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/027-many-to-many-unidirectional-mapping/">
+<span class="md-ellipsis">
+    027 - ManyToMany Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/028-many-to-many-bidirectional-mapping/">
+<span class="md-ellipsis">
+    028 - ManyToMany Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/029-derived-query-methods/">
+<span class="md-ellipsis">
+    029 - Derived Query Methods
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/030-jpql/">
+<span class="md-ellipsis">
+    030 - JPQL
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/031-n-plus-1-problem/">
+<span class="md-ellipsis">
+    031 - The N+1 Problem in JPA
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/032-named-query/">
+<span class="md-ellipsis">
+    032 - "@NamedQuery"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/033-native-query/">
+<span class="md-ellipsis">
+    033 - Native Query
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/034-dynamic-native-query/">
+<span class="md-ellipsis">
+    034 - Dynamic Native Query
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/035-criteria-api/">
+<span class="md-ellipsis">
+    035 - Criteria API
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/036-jpa-specification-api/">
+<span class="md-ellipsis">
+    036 - JPA Specification API
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_6" type="checkbox"/>
+<label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Security
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_6_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_6">
+<span class="md-nav__icon md-icon"></span>
+            Spring Security
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/001-different-types-of-attacks/">
+<span class="md-ellipsis">
+    001 - Different Types of Attacks
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/002-authorization-and-authentication/">
+<span class="md-ellipsis">
+    002 - Authentication and Authorization
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/003-request-response-architecture/">
+<span class="md-ellipsis">
+    003 - Request/Response Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/004-spring-security-architecture/">
+<span class="md-ellipsis">
+    004 - Spring Security Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/005-default-user-creation/">
+<span class="md-ellipsis">
+    005 - Default User Creation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/006-password-encoding-delegating-password-encoder/">
+<span class="md-ellipsis">
+    006 - Password Encoding &amp; DelegatingPasswordEncoder
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/007-database-based-authentication/">
+<span class="md-ellipsis">
+    007 - Database-Based Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/008-form-login-stateful-authentication/">
+<span class="md-ellipsis">
+    008 - Form Login Stateful Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/009-form-login-user-flow-session-lifecycle/">
+<span class="md-ellipsis">
+    009 - Form Login User Flow &amp; Session Lifecycle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/010-customizing-form-login/">
+<span class="md-ellipsis">
+    010 - Customizing Form Login
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/011-session-persistence-spring-session-jdbc/">
+<span class="md-ellipsis">
+    011 - Session Persistence (Spring Session JDBC)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/012-distributed-sessions-with-redis/">
+<span class="md-ellipsis">
+    012 - Distributed Sessions with Redis
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/013-dao-authentication-provider/">
+<span class="md-ellipsis">
+    013 - DaoAuthenticationProvider Deep Dive
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/014-authenticated-request-flow/">
+<span class="md-ellipsis">
+    014 - Authenticated Request Flow
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/015-session-management-and-creation-policy/">
+<span class="md-ellipsis">
+    015 - Session Management &amp; Creation Policy
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/016-http-basic-authentication/">
+<span class="md-ellipsis">
+    016 - HTTP Basic Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/017-jwt-json-web-token/">
+<span class="md-ellipsis">
+    017 - JWT (JSON Web Token)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/018-access-token-refresh-token-jwks/">
+<span class="md-ellipsis">
+    018 - Access Token, Refresh Token &amp; JWKS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/019-jwt-authentication-custom-security-filters/">
+<span class="md-ellipsis">
+    019 - JWT Authentication with Custom Filters
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/020-oauth2-and-openid-connect/">
+<span class="md-ellipsis">
+    020 - OAuth 2.0 &amp; OpenID Connect
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/021-role-based-authorization-rbac/">
+<span class="md-ellipsis">
+    021 - Role-Based Authorization (RBAC)
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_7" type="checkbox"/>
+<label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Testing
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_7_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_7">
+<span class="md-nav__icon md-icon"></span>
+            Spring Testing
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-testing/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_8" type="checkbox"/>
+<label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Kafka
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_8_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_8">
+<span class="md-nav__icon md-icon"></span>
+            Spring Kafka
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-kafka/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-kafka/kafka/">
+<span class="md-ellipsis">
+    Kafka Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_9" type="checkbox"/>
+<label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Redis
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_9_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_9">
+<span class="md-nav__icon md-icon"></span>
+            Spring Redis
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-redis/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-redis/redis/">
+<span class="md-ellipsis">
+    Redis Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_10" type="checkbox"/>
+<label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Mongo
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_10_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_10">
+<span class="md-nav__icon md-icon"></span>
+            Spring Mongo
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-mongo/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-mongo/mongodb/">
+<span class="md-ellipsis">
+    MongoDB Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" id="__nav_11" type="checkbox"/>
+<label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+<span class="md-ellipsis">
+    Spring Cloud
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="true" aria-labelledby="__nav_11_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_11">
+<span class="md-nav__icon md-icon"></span>
+            Spring Cloud
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../001-spring-cloud-config/">
+<span class="md-ellipsis">
+    Spring Cloud Config
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../002-spring-cloud-bus/">
+<span class="md-ellipsis">
+    Spring Cloud Bus
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../003-service-discovery/">
+<span class="md-ellipsis">
+    Service Discovery
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../004-spring-cloud-load-balancing/">
+<span class="md-ellipsis">
+    Spring Cloud Load balancing
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../005-rest-client/">
+<span class="md-ellipsis">
+    Rest Client
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../006-spring-cloud-api-gateway/">
+<span class="md-ellipsis">
+    Spring Cloud API Gateway
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../007-spring-cloud-security/">
+<span class="md-ellipsis">
+    Spring Cloud Security
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
+<label class="md-nav__link md-nav__link--active" for="__toc">
+<span class="md-ellipsis">
+    Circuit Breaker and Resilience4j
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<a class="md-nav__link md-nav__link--active" href="./">
+<span class="md-ellipsis">
+    Circuit Breaker and Resilience4j
+  </span>
+</a>
+<nav aria-label="Table of contents" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#detailed-guide">
+<span class="md-ellipsis">
+      Detailed Guide
+    </span>
+</a>
+<nav aria-label="Detailed Guide" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#getting-started-with-circuit-breaker-resilience4j">
+<span class="md-ellipsis">
+      Getting started with Circuit Breaker - Resilience4j
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#adding-resilience4j-to-spring-boot-microservice">
+<span class="md-ellipsis">
+      Adding Resilience4j to Spring Boot Microservice
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#circuit-breaker-features-of-resilience4j">
+<span class="md-ellipsis">
+      Circuit Breaker Features of Resilience4j
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#resilience4j-retry-and-fallback-methods">
+<span class="md-ellipsis">
+      Resilience4j - Retry and Fallback Methods
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#rate-limiting-and-bulkhead-features-of-resilience4j">
+<span class="md-ellipsis">
+      Rate Limiting and BulkHead Features of Resilience4j
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#bulkhead-pattern-thread-pool-vs-semaphore-isolation">
+<span class="md-ellipsis">
+      Bulkhead Pattern - Thread Pool vs Semaphore Isolation
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#time-limiter-in-resilience4j">
+<span class="md-ellipsis">
+      Time Limiter in Resilience4j
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#circuit-breaker-configuration-properties">
+<span class="md-ellipsis">
+      Circuit Breaker configuration properties
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#actuator-health-endpoint">
+<span class="md-ellipsis">
+      Actuator /health Endpoint
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#configure-access-to-actuator-endpoints">
+<span class="md-ellipsis">
+      Configure Access to Actuator endpoints
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#monitoring-circuit-breaker-events-in-actuator">
+<span class="md-ellipsis">
+      Monitoring Circuit Breaker events in Actuator
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#retry-annotation-in-resilience4j">
+<span class="md-ellipsis">
+      @Retry annotation in Resilience4j
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#aspect-order-in-resilience4j">
+<span class="md-ellipsis">
+      Aspect Order in Resilience4j
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#resilience4j-retry-configuration-properties">
+<span class="md-ellipsis">
+      Resilience4j Retry configuration properties
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#trying-how-it-works-resilience4j-retry-works">
+<span class="md-ellipsis">
+      Trying how it works Resilience4j Retry works
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#interview-questions-answers">
+<span class="md-ellipsis">
+      Interview Questions &amp; Answers
+    </span>
+</a>
+<nav aria-label="Interview Questions &amp; Answers" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#circuit-breaker-fundamentals">
+<span class="md-ellipsis">
+      Circuit Breaker Fundamentals
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#retry-fallback-and-aspect-ordering">
+<span class="md-ellipsis">
+      Retry, Fallback, and Aspect Ordering
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#rate-limiter-bulkhead-and-time-limiter">
+<span class="md-ellipsis">
+      Rate Limiter, Bulkhead, and Time Limiter
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#configuration-actuator-and-monitoring">
+<span class="md-ellipsis">
+      Configuration, Actuator, and Monitoring
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#resources">
+<span class="md-ellipsis">
+      Resources
+    </span>
+</a>
+<nav aria-label="Resources" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#medium">
+<span class="md-ellipsis">
+      Medium
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#youtube">
+<span class="md-ellipsis">
+      Youtube
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../009-messaging/">
+<span class="md-ellipsis">
+    Spring Messaging
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../010-distributed-tracing/">
+<span class="md-ellipsis">
+    Distributed Tracing
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../011-log-aggregation-with-elk/">
+<span class="md-ellipsis">
+    Log Aggregation with ELK
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../012-testing/">
+<span class="md-ellipsis">
+    Spring Cloud Testing
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_12" type="checkbox"/>
+<label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+<span class="md-ellipsis">
+    Others
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_12_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_12">
+<span class="md-nav__icon md-icon"></span>
+            Others
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-batch/">
+<span class="md-ellipsis">
+    Spring Batch
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cassandra/">
+<span class="md-ellipsis">
+    Spring Cassandra
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-graphql/">
+<span class="md-ellipsis">
+    Spring GraphQL
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-reactive-programming/">
+<span class="md-ellipsis">
+    Spring Reactive Programming
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cloud-functions/">
+<span class="md-ellipsis">
+    Spring Cloud Functions
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-aws/">
+<span class="md-ellipsis">
+    Spring AWS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-k8s/">
+<span class="md-ellipsis">
+    Spring Kubernetes
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cicd/">
+<span class="md-ellipsis">
+    Spring CI/CD
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-observability/">
+<span class="md-ellipsis">
+    Spring Observability
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-splunk/">
+<span class="md-ellipsis">
+    Spring Splunk
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-docs/">
+<span class="md-ellipsis">
+    Spring Docs
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-content" data-md-component="content">
+<article class="md-content__inner md-typeset">
+<div><h1 id="circuit-breakers-and-resilience4j">Circuit Breakers and Resilience4j</h1>
+<h2 id="detailed-guide">Detailed Guide</h2>
+<h3 id="getting-started-with-circuit-breaker-resilience4j">Getting started with Circuit Breaker - Resilience4j</h3>
+<p>Resilience4j is a lightweight, modular fault-tolerance library designed for Java 8+ and functional programming, built as a spiritual successor to Netflix Hystrix (which is now in maintenance mode). Unlike Hystrix, which bundled every resilience concern into a single monolithic dependency, Resilience4j splits each pattern into its own module — <code>resilience4j-circuitbreaker</code>, <code>resilience4j-retry</code>, <code>resilience4j-ratelimiter</code>, <code>resilience4j-bulkhead</code>, <code>resilience4j-timelimiter</code> — so you only pull in what you need. The core idea of the Circuit Breaker pattern is to prevent a client from repeatedly calling a downstream service that is known to be failing, giving the failing service time to recover and protecting the caller from cascading failures and resource exhaustion (thread starvation, connection pool depletion, etc.).</p>
+<p>A circuit breaker wraps a "protected" function call and tracks the outcome of each call in a sliding window (count-based or time-based). When the failure rate (or slow-call rate) crosses a configured threshold, the circuit "trips" and moves from <code>CLOSED</code> to <code>OPEN</code>. While <code>OPEN</code>, calls are rejected immediately with a <code>CallNotPermittedException</code> without even attempting the downstream call — this is the key mechanism that gives the failing dependency breathing room. After a configured wait duration, the breaker transitions to <code>HALF_OPEN</code> and allows a limited number of trial calls through; if those succeed, the breaker closes again, otherwise it reopens.</p>
+<p>In Spring Boot, Resilience4j integrates via the <code>resilience4j-spring-boot3</code> starter (for Spring Boot 3.x) which auto-configures AOP aspects, actuator endpoints, and Micrometer metrics binding. The most common usage style is annotation-driven — decorating a Spring bean method with <code>@CircuitBreaker(name = "...")</code> — although a lower-level, fully programmatic API using <code>CircuitBreakerRegistry</code> and <code>CircuitBreaker.decorateSupplier(...)</code> is also available for non-Spring or highly custom use cases.</p>
+<p><strong>Real-life scenario:</strong> An e-commerce checkout service calls a third-party payment gateway. During a payment provider outage, without a circuit breaker every checkout request would hang for the full HTTP timeout (say 30s) waiting on a dead dependency, exhausting the checkout service's thread pool and taking down checkout entirely for all customers — even those whose orders don't need immediate payment confirmation. With a circuit breaker, after a handful of failures the breaker opens, subsequent calls fail fast in milliseconds, and the checkout service can immediately show "payment temporarily unavailable, please retry" while its own threads stay free to serve other requests.</p>
+<pre class="mermaid"><code>stateDiagram-v2
+    [*] --&gt; Closed
+    Closed --&gt; Open: failure rate &gt;= threshold
+    Open --&gt; HalfOpen: wait duration elapsed
+    HalfOpen --&gt; Closed: calls succeed
+    HalfOpen --&gt; Open: calls fail
+    Closed --&gt; Closed: failure rate &lt; threshold
+</code></pre>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why did Resilience4j replace Hystrix as the preferred circuit breaker library for Spring Boot?</strong>
+Hystrix entered maintenance mode with no new features, while Resilience4j is modular (separate artifacts per pattern), lightweight, built on functional interfaces, and has first-class Spring Boot 3 support.</p>
+<p><strong>Q: What exception is thrown when a call is rejected while the circuit is <code>OPEN</code>?</strong>
+<code>CallNotPermittedException</code> is thrown immediately, without ever attempting the downstream call.</p>
+<h3 id="adding-resilience4j-to-spring-boot-microservice">Adding Resilience4j to Spring Boot Microservice</h3>
+<p>Integrating Resilience4j into a Spring Boot microservice starts with adding the Spring Boot starter dependency, which wires up auto-configuration, AOP proxies, and actuator health/metrics contributors automatically. For Maven:</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="nt">&lt;dependency&gt;</span>
+<a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="w">    </span><span class="nt">&lt;groupId&gt;</span>io.github.resilience4j<span class="nt">&lt;/groupId&gt;</span>
+<a href="#__codelineno-0-3" id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="w">    </span><span class="nt">&lt;artifactId&gt;</span>resilience4j-spring-boot3<span class="nt">&lt;/artifactId&gt;</span>
+<a href="#__codelineno-0-4" id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="w">    </span><span class="nt">&lt;version&gt;</span>2.2.0<span class="nt">&lt;/version&gt;</span>
+<a href="#__codelineno-0-5" id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="nt">&lt;/dependency&gt;</span>
+<a href="#__codelineno-0-6" id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="nt">&lt;dependency&gt;</span>
+<a href="#__codelineno-0-7" id="__codelineno-0-7" name="__codelineno-0-7"></a><span class="w">    </span><span class="nt">&lt;groupId&gt;</span>org.springframework.boot<span class="nt">&lt;/groupId&gt;</span>
+<a href="#__codelineno-0-8" id="__codelineno-0-8" name="__codelineno-0-8"></a><span class="w">    </span><span class="nt">&lt;artifactId&gt;</span>spring-boot-starter-aop<span class="nt">&lt;/artifactId&gt;</span>
+<a href="#__codelineno-0-9" id="__codelineno-0-9" name="__codelineno-0-9"></a><span class="nt">&lt;/dependency&gt;</span>
+<a href="#__codelineno-0-10" id="__codelineno-0-10" name="__codelineno-0-10"></a><span class="nt">&lt;dependency&gt;</span>
+<a href="#__codelineno-0-11" id="__codelineno-0-11" name="__codelineno-0-11"></a><span class="w">    </span><span class="nt">&lt;groupId&gt;</span>org.springframework.boot<span class="nt">&lt;/groupId&gt;</span>
+<a href="#__codelineno-0-12" id="__codelineno-0-12" name="__codelineno-0-12"></a><span class="w">    </span><span class="nt">&lt;artifactId&gt;</span>spring-boot-starter-actuator<span class="nt">&lt;/artifactId&gt;</span>
+<a href="#__codelineno-0-13" id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="nt">&lt;/dependency&gt;</span>
+</code></pre></div>
+<p>The <code>spring-boot-starter-aop</code> dependency is required because Resilience4j's annotations (<code>@CircuitBreaker</code>, <code>@Retry</code>, <code>@RateLimiter</code>, <code>@Bulkhead</code>, <code>@TimeLimiter</code>) are implemented as Spring AOP aspects that wrap the annotated method in a proxy. Without AOP on the classpath, the annotations are silently ignored and calls pass straight through unprotected — a very common gotcha for teams new to the library.</p>
+<p>Once the dependency is present, each resilience "instance" (circuit breaker, retry, etc.) is identified by a <code>name</code> that you choose, and configured either in <code>application.yml</code> under <code>resilience4j.circuitbreaker.instances.&lt;name&gt;</code> or programmatically by registering a custom <code>CircuitBreakerConfig</code> bean. A minimal working example is a service method annotated with <code>@CircuitBreaker</code>, backed by default configuration, that will start using Resilience4j's <code>CLOSED</code> state and default 50% failure-rate threshold immediately with zero extra code:</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="nd">@Service</span>
+<a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">InventoryClient</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a>
+<a href="#__codelineno-1-4" id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">RestTemplate</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">;</span>
+<a href="#__codelineno-1-5" id="__codelineno-1-5" name="__codelineno-1-5"></a>
+<a href="#__codelineno-1-6" id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">InventoryClient</span><span class="p">(</span><span class="n">RestTemplate</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-1-7" id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">restTemplate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">;</span>
+<a href="#__codelineno-1-8" id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-1-9" id="__codelineno-1-9" name="__codelineno-1-9"></a>
+<a href="#__codelineno-1-10" id="__codelineno-1-10" name="__codelineno-1-10"></a><span class="w">    </span><span class="nd">@CircuitBreaker</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"inventoryService"</span><span class="p">,</span><span class="w"> </span><span class="n">fallbackMethod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"fallbackInventory"</span><span class="p">)</span>
+<a href="#__codelineno-1-11" id="__codelineno-1-11" name="__codelineno-1-11"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">InventoryResponse</span><span class="w"> </span><span class="nf">checkStock</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">sku</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-1-12" id="__codelineno-1-12" name="__codelineno-1-12"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">.</span><span class="na">getForObject</span><span class="p">(</span><span class="s">"/inventory/{sku}"</span><span class="p">,</span><span class="w"> </span><span class="n">InventoryResponse</span><span class="p">.</span><span class="na">class</span><span class="p">,</span><span class="w"> </span><span class="n">sku</span><span class="p">);</span>
+<a href="#__codelineno-1-13" id="__codelineno-1-13" name="__codelineno-1-13"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-1-14" id="__codelineno-1-14" name="__codelineno-1-14"></a>
+<a href="#__codelineno-1-15" id="__codelineno-1-15" name="__codelineno-1-15"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">InventoryResponse</span><span class="w"> </span><span class="nf">fallbackInventory</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">sku</span><span class="p">,</span><span class="w"> </span><span class="n">Throwable</span><span class="w"> </span><span class="n">throwable</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-1-16" id="__codelineno-1-16" name="__codelineno-1-16"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">InventoryResponse</span><span class="p">.</span><span class="na">unknown</span><span class="p">(</span><span class="n">sku</span><span class="p">);</span>
+<a href="#__codelineno-1-17" id="__codelineno-1-17" name="__codelineno-1-17"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-1-18" id="__codelineno-1-18" name="__codelineno-1-18"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A team migrating from a monolith to microservices adds <code>resilience4j-spring-boot3</code> to their order service so that every outbound call to the inventory, pricing, and shipping microservices is wrapped in its own named circuit breaker — allowing pricing service instability to be isolated from shipping availability, instead of one flaky dependency degrading the entire order flow.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What happens if you add <code>@CircuitBreaker</code> but forget <code>spring-boot-starter-aop</code>?</strong>
+The annotation is silently ignored because there's no AOP proxy to intercept calls, so the method executes completely unprotected with no warnings raised.</p>
+<p><strong>Q: How is a Resilience4j "instance" identified across the codebase and configuration?</strong>
+By a developer-chosen name string (e.g., <code>name = "inventoryService"</code>), which links the annotation on the method to the matching <code>resilience4j.circuitbreaker.instances.&lt;name&gt;</code> config block.</p>
+<h3 id="circuit-breaker-features-of-resilience4j">Circuit Breaker Features of Resilience4j</h3>
+<p>Resilience4j's <code>CircuitBreaker</code> module offers a rich feature set beyond the basic open/closed mechanism. It supports both <strong>count-based</strong> sliding windows (e.g., "look at the last 100 calls") and <strong>time-based</strong> sliding windows (e.g., "look at calls in the last 10 seconds"), configurable independently of the minimum number of calls required before the failure rate is even calculated (<code>minimumNumberOfCalls</code>). It also tracks a separate <strong>slow call rate</strong> — calls that complete successfully but exceed a configured <code>slowCallDurationThreshold</code> — so that a dependency which is technically "succeeding" but has degraded to unacceptable latency can still trip the breaker.</p>
+<p>Other notable features include: automatic transition from <code>OPEN</code> to <code>HALF_OPEN</code> after a wait duration, or manual transitions via <code>transitionToOpenState()</code> for operational overrides; a <code>DISABLED</code>, <code>FORCED_OPEN</code>, and <code>METRICS_ONLY</code> state for testing and canary rollouts; an <code>ignoreExceptions</code> / <code>recordExceptions</code> list so that business exceptions (like a validation <code>4xx</code>) don't count as circuit-breaker failures while infrastructure exceptions (<code>5xx</code>, timeouts) do; and a rich <code>EventPublisher</code> that lets you subscribe to <code>onStateTransition</code>, <code>onCallNotPermitted</code>, <code>onError</code>, and <code>onSuccess</code> events for logging or alerting.</p>
+<p>Resilience4j also supports combining a circuit breaker with the other modules (retry, rate limiter, bulkhead, time limiter) on the same method, in a well-defined aspect order, so you can build a comprehensive resilience strategy — for example, retrying a call a few times, but only within a bulkhead-limited pool of concurrent attempts, all guarded by an overarching circuit breaker.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">CircuitBreakerConfig</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CircuitBreakerConfig</span><span class="p">.</span><span class="na">custom</span><span class="p">()</span>
+<a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="w">    </span><span class="p">.</span><span class="na">failureRateThreshold</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
+<a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="w">    </span><span class="p">.</span><span class="na">slowCallRateThreshold</span><span class="p">(</span><span class="mi">80</span><span class="p">)</span>
+<a href="#__codelineno-2-4" id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="w">    </span><span class="p">.</span><span class="na">slowCallDurationThreshold</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<a href="#__codelineno-2-5" id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="w">    </span><span class="p">.</span><span class="na">slidingWindowType</span><span class="p">(</span><span class="n">CircuitBreakerConfig</span><span class="p">.</span><span class="na">SlidingWindowType</span><span class="p">.</span><span class="na">COUNT_BASED</span><span class="p">)</span>
+<a href="#__codelineno-2-6" id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="w">    </span><span class="p">.</span><span class="na">slidingWindowSize</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+<a href="#__codelineno-2-7" id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="w">    </span><span class="p">.</span><span class="na">minimumNumberOfCalls</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<a href="#__codelineno-2-8" id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="w">    </span><span class="p">.</span><span class="na">waitDurationInOpenState</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">30</span><span class="p">))</span>
+<a href="#__codelineno-2-9" id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="w">    </span><span class="p">.</span><span class="na">permittedNumberOfCallsInHalfOpenState</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<a href="#__codelineno-2-10" id="__codelineno-2-10" name="__codelineno-2-10"></a><span class="w">    </span><span class="p">.</span><span class="na">recordExceptions</span><span class="p">(</span><span class="n">IOException</span><span class="p">.</span><span class="na">class</span><span class="p">,</span><span class="w"> </span><span class="n">TimeoutException</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+<a href="#__codelineno-2-11" id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="w">    </span><span class="p">.</span><span class="na">ignoreExceptions</span><span class="p">(</span><span class="n">BusinessValidationException</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+<a href="#__codelineno-2-12" id="__codelineno-2-12" name="__codelineno-2-12"></a><span class="w">    </span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+<a href="#__codelineno-2-13" id="__codelineno-2-13" name="__codelineno-2-13"></a>
+<a href="#__codelineno-2-14" id="__codelineno-2-14" name="__codelineno-2-14"></a><span class="n">CircuitBreakerRegistry</span><span class="w"> </span><span class="n">registry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CircuitBreakerRegistry</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">config</span><span class="p">);</span>
+<a href="#__codelineno-2-15" id="__codelineno-2-15" name="__codelineno-2-15"></a><span class="n">CircuitBreaker</span><span class="w"> </span><span class="n">circuitBreaker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">registry</span><span class="p">.</span><span class="na">circuitBreaker</span><span class="p">(</span><span class="s">"inventoryService"</span><span class="p">);</span>
+<a href="#__codelineno-2-16" id="__codelineno-2-16" name="__codelineno-2-16"></a>
+<a href="#__codelineno-2-17" id="__codelineno-2-17" name="__codelineno-2-17"></a><span class="n">Supplier</span><span class="o">&lt;</span><span class="n">InventoryResponse</span><span class="o">&gt;</span><span class="w"> </span><span class="n">decorated</span><span class="w"> </span><span class="o">=</span>
+<a href="#__codelineno-2-18" id="__codelineno-2-18" name="__codelineno-2-18"></a><span class="w">    </span><span class="n">CircuitBreaker</span><span class="p">.</span><span class="na">decorateSupplier</span><span class="p">(</span><span class="n">circuitBreaker</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">inventoryClient</span><span class="p">.</span><span class="na">checkStock</span><span class="p">(</span><span class="s">"SKU-1"</span><span class="p">));</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Count-based sliding window</td>
+<td>Trip based on last N calls, regardless of elapsed time</td>
+</tr>
+<tr>
+<td>Time-based sliding window</td>
+<td>Trip based on calls within last N seconds</td>
+</tr>
+<tr>
+<td>Slow call rate threshold</td>
+<td>Treat "successful but slow" calls as failures</td>
+</tr>
+<tr>
+<td><code>recordExceptions</code> / <code>ignoreExceptions</code></td>
+<td>Fine-tune which exceptions count toward failure rate</td>
+</tr>
+<tr>
+<td>Manual state transitions</td>
+<td>Force <code>OPEN</code>/<code>CLOSED</code>/<code>DISABLED</code> for ops/testing</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What's the purpose of the <code>METRICS_ONLY</code> state?</strong>
+It lets a circuit breaker record metrics and evaluate what it <em>would</em> do without actually rejecting calls, useful for canary-testing a new configuration in production before enforcing it.</p>
+<p><strong>Q: How does <code>ignoreExceptions</code> differ from <code>recordExceptions</code> in effect?</strong>
+<code>recordExceptions</code> explicitly whitelists which exceptions count toward the failure rate (everything else is ignored), while <code>ignoreExceptions</code> blacklists specific exceptions from counting while everything else is recorded by default.</p>
+<h3 id="resilience4j-retry-and-fallback-methods">Resilience4j - Retry and Fallback Methods</h3>
+<p>The Retry module automatically re-invokes a failed operation a configured number of times before giving up, which is useful for transient failures such as brief network blips, momentary service overload, or optimistic-locking conflicts. Resilience4j's <code>@Retry</code> annotation (or the programmatic <code>Retry</code> API) supports a fixed <code>maxAttempts</code>, configurable <code>waitDuration</code> between attempts, and pluggable backoff strategies — most notably <code>IntervalFunction.ofExponentialBackoff(...)</code>, which increases the wait time after each failed attempt to avoid hammering an already-struggling dependency (a technique often combined with jitter to avoid thundering-herd retries across many client instances).</p>
+<p>A <strong>fallback method</strong> is a separate mechanism, usable together with any Resilience4j annotation (<code>@Retry</code>, <code>@CircuitBreaker</code>, <code>@RateLimiter</code>, <code>@Bulkhead</code>, <code>@TimeLimiter</code>), that provides an alternative code path to execute when the primary method ultimately throws an exception the resilience policy could not resolve — e.g., retries exhausted, or the circuit is open. The fallback method must have the same return type and the same parameter list as the original method, plus one extra final parameter of type <code>Throwable</code> (or a specific exception subtype) capturing the failure cause. Spring locates the fallback by name via reflection on the same bean, so it must be a method (public or private) within the same class.</p>
+<p>It's important to understand the interaction: retry happens <em>first</em>, transparently, inside the aspect chain; only after all retry attempts are exhausted does control fall through to the fallback. This means a method annotated with both <code>@Retry</code> and a <code>fallbackMethod</code> will silently retry N times, and only surface the fallback value to the caller if every attempt fails — the caller is never aware retries happened unless it inspects logs or metrics.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="nd">@Service</span>
+<a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">PricingClient</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-3-3" id="__codelineno-3-3" name="__codelineno-3-3"></a>
+<a href="#__codelineno-3-4" id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="w">    </span><span class="nd">@Retry</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"pricingService"</span><span class="p">,</span><span class="w"> </span><span class="n">fallbackMethod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"fallbackPrice"</span><span class="p">)</span>
+<a href="#__codelineno-3-5" id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">PriceResponse</span><span class="w"> </span><span class="nf">getPrice</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">sku</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-3-6" id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">.</span><span class="na">getForObject</span><span class="p">(</span><span class="s">"/pricing/{sku}"</span><span class="p">,</span><span class="w"> </span><span class="n">PriceResponse</span><span class="p">.</span><span class="na">class</span><span class="p">,</span><span class="w"> </span><span class="n">sku</span><span class="p">);</span>
+<a href="#__codelineno-3-7" id="__codelineno-3-7" name="__codelineno-3-7"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-3-8" id="__codelineno-3-8" name="__codelineno-3-8"></a>
+<a href="#__codelineno-3-9" id="__codelineno-3-9" name="__codelineno-3-9"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">PriceResponse</span><span class="w"> </span><span class="nf">fallbackPrice</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">sku</span><span class="p">,</span><span class="w"> </span><span class="n">Throwable</span><span class="w"> </span><span class="n">throwable</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-3-10" id="__codelineno-3-10" name="__codelineno-3-10"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">PriceResponse</span><span class="p">.</span><span class="na">cached</span><span class="p">(</span><span class="n">sku</span><span class="p">);</span>
+<a href="#__codelineno-3-11" id="__codelineno-3-11" name="__codelineno-3-11"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-3-12" id="__codelineno-3-12" name="__codelineno-3-12"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="nt">resilience4j</span><span class="p">:</span>
+<a href="#__codelineno-4-2" id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="w">  </span><span class="nt">retry</span><span class="p">:</span>
+<a href="#__codelineno-4-3" id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="w">    </span><span class="nt">instances</span><span class="p">:</span>
+<a href="#__codelineno-4-4" id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="w">      </span><span class="nt">pricingService</span><span class="p">:</span>
+<a href="#__codelineno-4-5" id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="w">        </span><span class="nt">max-attempts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<a href="#__codelineno-4-6" id="__codelineno-4-6" name="__codelineno-4-6"></a><span class="w">        </span><span class="nt">wait-duration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500ms</span>
+<a href="#__codelineno-4-7" id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="w">        </span><span class="nt">enable-exponential-backoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a href="#__codelineno-4-8" id="__codelineno-4-8" name="__codelineno-4-8"></a><span class="w">        </span><span class="nt">exponential-backoff-multiplier</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<a href="#__codelineno-4-9" id="__codelineno-4-9" name="__codelineno-4-9"></a><span class="w">        </span><span class="nt">retry-exceptions</span><span class="p">:</span>
+<a href="#__codelineno-4-10" id="__codelineno-4-10" name="__codelineno-4-10"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">java.io.IOException</span>
+<a href="#__codelineno-4-11" id="__codelineno-4-11" name="__codelineno-4-11"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">org.springframework.web.client.ResourceAccessException</span>
+<a href="#__codelineno-4-12" id="__codelineno-4-12" name="__codelineno-4-12"></a><span class="w">        </span><span class="nt">ignore-exceptions</span><span class="p">:</span>
+<a href="#__codelineno-4-13" id="__codelineno-4-13" name="__codelineno-4-13"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">com.example.BusinessValidationException</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A mobile banking app calls a balance-inquiry microservice that occasionally times out due to brief database failover events lasting under a second. Instead of surfacing an error to the user immediately, the client retries twice with a short exponential backoff, and only falls back to displaying a "last known balance" cached value if all three attempts fail — dramatically improving perceived reliability without any user-visible errors for transient blips.</p>
+<pre class="mermaid"><code>flowchart TD
+    A[Call protected method] --&gt; B{Call succeeds?}
+    B -- Yes --&gt; C[Return result]
+    B -- No --&gt; D{Retries exhausted?}
+    D -- No --&gt; E[Wait backoff interval]
+    E --&gt; A
+    D -- Yes --&gt; F[Invoke fallback method]
+    F --&gt; G[Return fallback result]
+</code></pre>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Does the caller know if retries happened before a fallback result is returned?</strong>
+Not unless it inspects logs, metrics, or actuator retry events — the retry aspect is fully transparent, so the caller only ever observes the final fallback result or the eventual successful outcome.</p>
+<p><strong>Q: What must match between a fallback method and its original method's signature?</strong>
+The return type and parameter list must be identical, with the fallback adding exactly one extra trailing parameter of type <code>Throwable</code> (or a subtype) to receive the failure cause.</p>
+<h3 id="rate-limiting-and-bulkhead-features-of-resilience4j">Rate Limiting and BulkHead Features of Resilience4j</h3>
+<p>The <strong>Rate Limiter</strong> module restricts the number of calls permitted to a protected function within a given time period (a "refresh period"), rejecting or blocking excess calls once the limit is reached. This protects downstream services from being overwhelmed, and is typically used to enforce a self-imposed quota — for example, respecting a third-party API's rate limit of "100 requests per minute" so your service never gets throttled or banned by that provider. Configuration revolves around three properties: <code>limitForPeriod</code> (how many calls are allowed), <code>limitRefreshPeriod</code> (how often the limit resets), and <code>timeoutDuration</code> (how long a call will wait for a permit before failing with <code>RequestNotPermitted</code>).</p>
+<p>The <strong>Bulkhead</strong> module, named after ship-hull bulkheads that contain flooding to one compartment, limits the number of <em>concurrent</em> calls to a protected function so that a slow or overloaded dependency cannot consume unlimited resources and starve unrelated calls elsewhere in the application. Resilience4j offers two bulkhead implementations: a <strong>semaphore-based</strong> bulkhead (a simple counting semaphore limiting concurrent calls on the caller's own thread) and a <strong>thread-pool-based</strong> bulkhead (which executes calls asynchronously on a dedicated, bounded thread pool with its own queue) — covered in depth in the next topic.</p>
+<p>Both rate limiting and bulkheading are commonly combined with a circuit breaker: the rate limiter prevents self-inflicted overload, the bulkhead contains concurrency-related resource exhaustion, and the circuit breaker reacts to the failures that do occur. All three can be stacked on a single method using multiple annotations simultaneously.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="nd">@Service</span>
+<a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">ExternalApiClient</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a>
+<a href="#__codelineno-5-4" id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="w">    </span><span class="nd">@RateLimiter</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"externalApi"</span><span class="p">)</span>
+<a href="#__codelineno-5-5" id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="w">    </span><span class="nd">@Bulkhead</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"externalApi"</span><span class="p">)</span>
+<a href="#__codelineno-5-6" id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">ApiResponse</span><span class="w"> </span><span class="nf">callThirdParty</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">query</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-5-7" id="__codelineno-5-7" name="__codelineno-5-7"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">webClient</span><span class="p">.</span><span class="na">get</span><span class="p">().</span><span class="na">uri</span><span class="p">(</span><span class="s">"/search?q={q}"</span><span class="p">,</span><span class="w"> </span><span class="n">query</span><span class="p">)</span>
+<a href="#__codelineno-5-8" id="__codelineno-5-8" name="__codelineno-5-8"></a><span class="w">                </span><span class="p">.</span><span class="na">retrieve</span><span class="p">()</span>
+<a href="#__codelineno-5-9" id="__codelineno-5-9" name="__codelineno-5-9"></a><span class="w">                </span><span class="p">.</span><span class="na">bodyToMono</span><span class="p">(</span><span class="n">ApiResponse</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+<a href="#__codelineno-5-10" id="__codelineno-5-10" name="__codelineno-5-10"></a><span class="w">                </span><span class="p">.</span><span class="na">block</span><span class="p">();</span>
+<a href="#__codelineno-5-11" id="__codelineno-5-11" name="__codelineno-5-11"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-5-12" id="__codelineno-5-12" name="__codelineno-5-12"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="nt">resilience4j</span><span class="p">:</span>
+<a href="#__codelineno-6-2" id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="w">  </span><span class="nt">ratelimiter</span><span class="p">:</span>
+<a href="#__codelineno-6-3" id="__codelineno-6-3" name="__codelineno-6-3"></a><span class="w">    </span><span class="nt">instances</span><span class="p">:</span>
+<a href="#__codelineno-6-4" id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="w">      </span><span class="nt">externalApi</span><span class="p">:</span>
+<a href="#__codelineno-6-5" id="__codelineno-6-5" name="__codelineno-6-5"></a><span class="w">        </span><span class="nt">limit-for-period</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<a href="#__codelineno-6-6" id="__codelineno-6-6" name="__codelineno-6-6"></a><span class="w">        </span><span class="nt">limit-refresh-period</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60s</span>
+<a href="#__codelineno-6-7" id="__codelineno-6-7" name="__codelineno-6-7"></a><span class="w">        </span><span class="nt">timeout-duration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0s</span>
+<a href="#__codelineno-6-8" id="__codelineno-6-8" name="__codelineno-6-8"></a><span class="w">  </span><span class="nt">bulkhead</span><span class="p">:</span>
+<a href="#__codelineno-6-9" id="__codelineno-6-9" name="__codelineno-6-9"></a><span class="w">    </span><span class="nt">instances</span><span class="p">:</span>
+<a href="#__codelineno-6-10" id="__codelineno-6-10" name="__codelineno-6-10"></a><span class="w">      </span><span class="nt">externalApi</span><span class="p">:</span>
+<a href="#__codelineno-6-11" id="__codelineno-6-11" name="__codelineno-6-11"></a><span class="w">        </span><span class="nt">max-concurrent-calls</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<a href="#__codelineno-6-12" id="__codelineno-6-12" name="__codelineno-6-12"></a><span class="w">        </span><span class="nt">max-wait-duration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0s</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A weather-data aggregator calls a free-tier third-party weather API capped at 100 requests/minute. A rate limiter enforces that cap application-wide so the service is never banned for exceeding quota, while a bulkhead ensures that even if hundreds of internal requests arrive simultaneously, only a handful concurrently reach the outbound HTTP client, protecting the connection pool from exhaustion.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What does <code>timeoutDuration</code> control in a Rate Limiter?</strong>
+How long a call will wait for an available permit before failing with <code>RequestNotPermitted</code>, rather than failing immediately the instant the limit is reached.</p>
+<p><strong>Q: Why combine Rate Limiter and Bulkhead rather than relying on just one?</strong>
+Rate Limiter throttles the total call rate over time (protecting against quota breaches), while Bulkhead caps concurrent in-flight calls (protecting against resource exhaustion) — they guard against different, complementary failure modes.</p>
+<h3 id="bulkhead-pattern-thread-pool-vs-semaphore-isolation">Bulkhead Pattern - Thread Pool vs Semaphore Isolation</h3>
+<p>Resilience4j provides two distinct bulkhead implementations, and choosing between them is one of the most consequential resilience decisions in a Spring Boot service. The <strong><code>SemaphoreBulkhead</code></strong> limits concurrency by acquiring a permit from a <code>java.util.concurrent.Semaphore</code> before executing the call <em>on the calling thread itself</em>. If no permit is available within <code>maxWaitDuration</code>, the call fails fast with a <code>BulkheadFullException</code>. This approach has very low overhead (no thread hand-off, no separate executor) but has a critical limitation: it cannot enforce a timeout on a call that is already executing, because it runs on the caller's thread — a hung downstream call will block that thread indefinitely regardless of the bulkhead.</p>
+<p>The <strong><code>ThreadPoolBulkhead</code></strong> instead submits the call as a task to a dedicated, bounded <code>ExecutorService</code> with its own queue, decoupling execution from the caller's thread. This means the caller can time out and move on (e.g., the web request thread) even if the downstream call itself is still stuck, and it naturally combines with <code>@TimeLimiter</code> to cap execution time. The tradeoff is higher overhead (thread context switching, queueing latency) and a differently shaped API — annotated methods must return <code>CompletionStage</code>/<code>CompletableFuture</code> rather than a plain value, since execution is inherently asynchronous.</p>
+<p>Choosing between them depends on your workload: use <strong>semaphore bulkheads</strong> for lightweight, fast, synchronous calls where you mainly want to cap concurrency without added latency; use <strong>thread-pool bulkheads</strong> when you need true isolation from a slow or blocking dependency, especially when paired with a time limiter, or when the calling code is already reactive/asynchronous.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="c1">// Semaphore bulkhead — synchronous, runs on caller's thread</span>
+<a href="#__codelineno-7-2" id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="nd">@Bulkhead</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"reportService"</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Bulkhead</span><span class="p">.</span><span class="na">Type</span><span class="p">.</span><span class="na">SEMAPHORE</span><span class="p">)</span>
+<a href="#__codelineno-7-3" id="__codelineno-7-3" name="__codelineno-7-3"></a><span class="kd">public</span><span class="w"> </span><span class="n">ReportResponse</span><span class="w"> </span><span class="nf">generateReport</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">reportId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-7-4" id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">reportClient</span><span class="p">.</span><span class="na">generate</span><span class="p">(</span><span class="n">reportId</span><span class="p">);</span>
+<a href="#__codelineno-7-5" id="__codelineno-7-5" name="__codelineno-7-5"></a><span class="p">}</span>
+<a href="#__codelineno-7-6" id="__codelineno-7-6" name="__codelineno-7-6"></a>
+<a href="#__codelineno-7-7" id="__codelineno-7-7" name="__codelineno-7-7"></a><span class="c1">// Thread-pool bulkhead — asynchronous, runs on dedicated executor</span>
+<a href="#__codelineno-7-8" id="__codelineno-7-8" name="__codelineno-7-8"></a><span class="nd">@Bulkhead</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"reportService"</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Bulkhead</span><span class="p">.</span><span class="na">Type</span><span class="p">.</span><span class="na">THREADPOOL</span><span class="p">)</span>
+<a href="#__codelineno-7-9" id="__codelineno-7-9" name="__codelineno-7-9"></a><span class="kd">public</span><span class="w"> </span><span class="n">CompletableFuture</span><span class="o">&lt;</span><span class="n">ReportResponse</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">generateReportAsync</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">reportId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-7-10" id="__codelineno-7-10" name="__codelineno-7-10"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">CompletableFuture</span><span class="p">.</span><span class="na">supplyAsync</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">reportClient</span><span class="p">.</span><span class="na">generate</span><span class="p">(</span><span class="n">reportId</span><span class="p">));</span>
+<a href="#__codelineno-7-11" id="__codelineno-7-11" name="__codelineno-7-11"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-8-1" id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="nt">resilience4j</span><span class="p">:</span>
+<a href="#__codelineno-8-2" id="__codelineno-8-2" name="__codelineno-8-2"></a><span class="w">  </span><span class="nt">bulkhead</span><span class="p">:</span>
+<a href="#__codelineno-8-3" id="__codelineno-8-3" name="__codelineno-8-3"></a><span class="w">    </span><span class="nt">instances</span><span class="p">:</span>
+<a href="#__codelineno-8-4" id="__codelineno-8-4" name="__codelineno-8-4"></a><span class="w">      </span><span class="nt">reportService</span><span class="p">:</span>
+<a href="#__codelineno-8-5" id="__codelineno-8-5" name="__codelineno-8-5"></a><span class="w">        </span><span class="nt">max-concurrent-calls</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span>
+<a href="#__codelineno-8-6" id="__codelineno-8-6" name="__codelineno-8-6"></a><span class="w">        </span><span class="nt">max-wait-duration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10ms</span>
+<a href="#__codelineno-8-7" id="__codelineno-8-7" name="__codelineno-8-7"></a><span class="w">  </span><span class="nt">thread-pool-bulkhead</span><span class="p">:</span>
+<a href="#__codelineno-8-8" id="__codelineno-8-8" name="__codelineno-8-8"></a><span class="w">    </span><span class="nt">instances</span><span class="p">:</span>
+<a href="#__codelineno-8-9" id="__codelineno-8-9" name="__codelineno-8-9"></a><span class="w">      </span><span class="nt">reportService</span><span class="p">:</span>
+<a href="#__codelineno-8-10" id="__codelineno-8-10" name="__codelineno-8-10"></a><span class="w">        </span><span class="nt">max-thread-pool-size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<a href="#__codelineno-8-11" id="__codelineno-8-11" name="__codelineno-8-11"></a><span class="w">        </span><span class="nt">core-thread-pool-size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<a href="#__codelineno-8-12" id="__codelineno-8-12" name="__codelineno-8-12"></a><span class="w">        </span><span class="nt">queue-capacity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span>
+</code></pre></div>
+<pre class="mermaid"><code>flowchart TD
+    subgraph ThreadPoolBulkhead["Thread Pool Bulkhead"]
+        A1[Caller Thread] --&gt;|submits task| Q1[Bounded Queue]
+        Q1 --&gt; P1[Dedicated Thread Pool]
+        P1 --&gt; R1[Downstream Call]
+    end
+    subgraph SemaphoreBulkhead["Semaphore Bulkhead"]
+        A2[Caller Thread] --&gt;|acquires permit| S2[Semaphore N permits]
+        S2 --&gt; R2[Downstream Call on Same Thread]
+    end
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Semaphore Bulkhead</th>
+<th>Thread Pool Bulkhead</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Execution thread</td>
+<td>Caller's own thread</td>
+<td>Dedicated executor thread</td>
+</tr>
+<tr>
+<td>Return type</td>
+<td>Plain value (<code>T</code>)</td>
+<td><code>CompletableFuture&lt;T&gt;</code> / <code>CompletionStage&lt;T&gt;</code></td>
+</tr>
+<tr>
+<td>Overhead</td>
+<td>Very low</td>
+<td>Higher (context switch, queueing)</td>
+</tr>
+<tr>
+<td>Can be combined with <code>@TimeLimiter</code> to abort a hung call</td>
+<td>No — caller thread still blocks</td>
+<td>Yes — caller thread returns even if task hangs</td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>Fast, synchronous, low-risk calls</td>
+<td>Slow, potentially blocking, or unreliable dependencies</td>
+</tr>
+<tr>
+<td>Queue support</td>
+<td>No queue, only permits</td>
+<td>Bounded queue for pending tasks</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Real-life scenario:</strong> A document-processing service calls a legacy SOAP-based tax calculation system known to occasionally hang for minutes under load. Using a semaphore bulkhead alone would leave caller threads stuck if a hang occurred; switching to a thread-pool bulkhead combined with a <code>@TimeLimiter</code> lets the web-request thread return a "processing" response immediately while the tax call is abandoned server-side after a strict timeout, keeping the web tier responsive.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why must a thread-pool-bulkhead-annotated method return <code>CompletableFuture</code>?</strong>
+Because execution is submitted to a separate executor and runs asynchronously, so the method must return a future-like type for the caller to observe completion rather than a plain synchronous value.</p>
+<p><strong>Q: What's a downside of the thread pool bulkhead compared to the semaphore bulkhead?</strong>
+Higher overhead from thread hand-off and queueing latency, plus added complexity from requiring asynchronous return types to propagate throughout the call chain.</p>
+<h3 id="time-limiter-in-resilience4j">Time Limiter in Resilience4j</h3>
+<p>The <strong>Time Limiter</strong> module enforces a maximum execution time on an asynchronous operation (one returning <code>CompletableFuture</code> or <code>CompletionStage</code>), throwing a <code>TimeoutException</code> if the operation does not complete within the configured <code>timeoutDuration</code>. Unlike a plain client-side HTTP timeout, the time limiter operates at the application code level and works with any asynchronous supplier, not just HTTP calls — making it useful for wrapping database queries, message processing, or any long-running computation that has been made asynchronous.</p>
+<p>Because <code>@TimeLimiter</code> requires an asynchronous return type, it is most naturally combined with the <code>ThreadPoolBulkhead</code> (also asynchronous) rather than the semaphore bulkhead. A common and powerful combination is <code>@TimeLimiter</code> + <code>@Bulkhead(type = THREADPOOL)</code> + <code>@CircuitBreaker</code>: the bulkhead isolates concurrent executions to a bounded pool, the time limiter caps how long any single execution is allowed to run, and the circuit breaker reacts to the resulting timeouts/failures by tripping open once they become frequent. It's worth noting that Resilience4j's time limiter cancels the underlying <code>Future</code> by default (<code>cancelRunningFuture: true</code>), but this only <em>requests</em> cancellation — it does not forcibly stop a thread that ignores interruption, so genuinely un-interruptible blocking calls can still tie up a thread-pool thread even after the caller receives a <code>TimeoutException</code>.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-9-1" id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="nd">@Service</span>
+<a href="#__codelineno-9-2" id="__codelineno-9-2" name="__codelineno-9-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">ReportService</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-9-3" id="__codelineno-9-3" name="__codelineno-9-3"></a>
+<a href="#__codelineno-9-4" id="__codelineno-9-4" name="__codelineno-9-4"></a><span class="w">    </span><span class="nd">@TimeLimiter</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"reportService"</span><span class="p">)</span>
+<a href="#__codelineno-9-5" id="__codelineno-9-5" name="__codelineno-9-5"></a><span class="w">    </span><span class="nd">@Bulkhead</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"reportService"</span><span class="p">,</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Bulkhead</span><span class="p">.</span><span class="na">Type</span><span class="p">.</span><span class="na">THREADPOOL</span><span class="p">)</span>
+<a href="#__codelineno-9-6" id="__codelineno-9-6" name="__codelineno-9-6"></a><span class="w">    </span><span class="nd">@CircuitBreaker</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"reportService"</span><span class="p">,</span><span class="w"> </span><span class="n">fallbackMethod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"fallbackReport"</span><span class="p">)</span>
+<a href="#__codelineno-9-7" id="__codelineno-9-7" name="__codelineno-9-7"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">CompletableFuture</span><span class="o">&lt;</span><span class="n">ReportResponse</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">generateReport</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">reportId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-9-8" id="__codelineno-9-8" name="__codelineno-9-8"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">CompletableFuture</span><span class="p">.</span><span class="na">supplyAsync</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">reportClient</span><span class="p">.</span><span class="na">generate</span><span class="p">(</span><span class="n">reportId</span><span class="p">));</span>
+<a href="#__codelineno-9-9" id="__codelineno-9-9" name="__codelineno-9-9"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-9-10" id="__codelineno-9-10" name="__codelineno-9-10"></a>
+<a href="#__codelineno-9-11" id="__codelineno-9-11" name="__codelineno-9-11"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">CompletableFuture</span><span class="o">&lt;</span><span class="n">ReportResponse</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">fallbackReport</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">reportId</span><span class="p">,</span><span class="w"> </span><span class="n">Throwable</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-9-12" id="__codelineno-9-12" name="__codelineno-9-12"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">CompletableFuture</span><span class="p">.</span><span class="na">completedFuture</span><span class="p">(</span><span class="n">ReportResponse</span><span class="p">.</span><span class="na">unavailable</span><span class="p">(</span><span class="n">reportId</span><span class="p">));</span>
+<a href="#__codelineno-9-13" id="__codelineno-9-13" name="__codelineno-9-13"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-9-14" id="__codelineno-9-14" name="__codelineno-9-14"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-10-1" id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="nt">resilience4j</span><span class="p">:</span>
+<a href="#__codelineno-10-2" id="__codelineno-10-2" name="__codelineno-10-2"></a><span class="w">  </span><span class="nt">timelimiter</span><span class="p">:</span>
+<a href="#__codelineno-10-3" id="__codelineno-10-3" name="__codelineno-10-3"></a><span class="w">    </span><span class="nt">instances</span><span class="p">:</span>
+<a href="#__codelineno-10-4" id="__codelineno-10-4" name="__codelineno-10-4"></a><span class="w">      </span><span class="nt">reportService</span><span class="p">:</span>
+<a href="#__codelineno-10-5" id="__codelineno-10-5" name="__codelineno-10-5"></a><span class="w">        </span><span class="nt">timeout-duration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2s</span>
+<a href="#__codelineno-10-6" id="__codelineno-10-6" name="__codelineno-10-6"></a><span class="w">        </span><span class="nt">cancel-running-future</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A search aggregation service fans out to five downstream search providers concurrently and must respond within 800ms regardless of how slow any single provider is. Each provider call is wrapped in its own <code>@TimeLimiter</code> set to 700ms, so a single slow provider is abandoned and excluded from the aggregated result rather than delaying the whole response to the end user.</p>
+<pre class="mermaid"><code>sequenceDiagram
+    participant C as Caller
+    participant TL as TimeLimiter
+    participant S as Slow Service
+    C-&gt;&gt;TL: invoke supplier (async)
+    TL-&gt;&gt;S: call downstream
+    alt completes within timeout
+        S--&gt;&gt;TL: result
+        TL--&gt;&gt;C: return result
+    else exceeds timeout
+        TL--&gt;&gt;C: throw TimeoutException
+        TL-&gt;&gt;S: (call may continue/be cancelled)
+    end
+</code></pre>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Can <code>@TimeLimiter</code> be applied to a synchronous method?</strong>
+No — it only works with asynchronous return types like <code>CompletableFuture</code> or <code>CompletionStage</code>, since it needs a future-like handle to cancel/time out against.</p>
+<p><strong>Q: Why might a thread continue running after a <code>TimeLimiter</code> times out?</strong>
+Because <code>cancelRunningFuture</code> only requests cooperative cancellation; a task that doesn't check for interruption or performs an uninterruptible blocking call keeps its thread occupied regardless of the timeout.</p>
+<h3 id="circuit-breaker-configuration-properties">Circuit Breaker configuration properties</h3>
+<p>Resilience4j circuit breakers are typically configured declaratively in <code>application.yml</code> under <code>resilience4j.circuitbreaker</code>, either as a shared <code>default</code> configuration inherited by all instances, or per-instance overrides. The most commonly tuned properties are: <code>failureRateThreshold</code> (percentage of failed calls that trips the breaker, default 50%), <code>slowCallRateThreshold</code> and <code>slowCallDurationThreshold</code> (for latency-based tripping), <code>slidingWindowType</code> and <code>slidingWindowSize</code> (how many recent calls/seconds are analyzed), <code>minimumNumberOfCalls</code> (minimum sample size before the failure rate is evaluated — prevents tripping on a tiny, statistically insignificant sample), <code>waitDurationInOpenState</code> (how long the breaker stays open before trying half-open), and <code>permittedNumberOfCallsInHalfOpenState</code>.</p>
+<p>Using the <code>configs.default</code> block lets teams establish sane baseline resilience settings once and only override what differs per dependency — for example, a payment gateway might need a stricter <code>failureRateThreshold</code> and longer <code>waitDurationInOpenState</code> than an internal, low-risk lookup service.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-11-1" id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="nt">resilience4j</span><span class="p">:</span>
+<a href="#__codelineno-11-2" id="__codelineno-11-2" name="__codelineno-11-2"></a><span class="w">  </span><span class="nt">circuitbreaker</span><span class="p">:</span>
+<a href="#__codelineno-11-3" id="__codelineno-11-3" name="__codelineno-11-3"></a><span class="w">    </span><span class="nt">configs</span><span class="p">:</span>
+<a href="#__codelineno-11-4" id="__codelineno-11-4" name="__codelineno-11-4"></a><span class="w">      </span><span class="nt">default</span><span class="p">:</span>
+<a href="#__codelineno-11-5" id="__codelineno-11-5" name="__codelineno-11-5"></a><span class="w">        </span><span class="nt">register-health-indicator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a href="#__codelineno-11-6" id="__codelineno-11-6" name="__codelineno-11-6"></a><span class="w">        </span><span class="nt">sliding-window-type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">COUNT_BASED</span>
+<a href="#__codelineno-11-7" id="__codelineno-11-7" name="__codelineno-11-7"></a><span class="w">        </span><span class="nt">sliding-window-size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+<a href="#__codelineno-11-8" id="__codelineno-11-8" name="__codelineno-11-8"></a><span class="w">        </span><span class="nt">minimum-number-of-calls</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<a href="#__codelineno-11-9" id="__codelineno-11-9" name="__codelineno-11-9"></a><span class="w">        </span><span class="nt">failure-rate-threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+<a href="#__codelineno-11-10" id="__codelineno-11-10" name="__codelineno-11-10"></a><span class="w">        </span><span class="nt">slow-call-rate-threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<a href="#__codelineno-11-11" id="__codelineno-11-11" name="__codelineno-11-11"></a><span class="w">        </span><span class="nt">slow-call-duration-threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2s</span>
+<a href="#__codelineno-11-12" id="__codelineno-11-12" name="__codelineno-11-12"></a><span class="w">        </span><span class="nt">wait-duration-in-open-state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
+<a href="#__codelineno-11-13" id="__codelineno-11-13" name="__codelineno-11-13"></a><span class="w">        </span><span class="nt">permitted-number-of-calls-in-half-open-state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<a href="#__codelineno-11-14" id="__codelineno-11-14" name="__codelineno-11-14"></a><span class="w">        </span><span class="nt">automatic-transition-from-open-to-half-open-enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a href="#__codelineno-11-15" id="__codelineno-11-15" name="__codelineno-11-15"></a><span class="w">    </span><span class="nt">instances</span><span class="p">:</span>
+<a href="#__codelineno-11-16" id="__codelineno-11-16" name="__codelineno-11-16"></a><span class="w">      </span><span class="nt">paymentService</span><span class="p">:</span>
+<a href="#__codelineno-11-17" id="__codelineno-11-17" name="__codelineno-11-17"></a><span class="w">        </span><span class="nt">base-config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<a href="#__codelineno-11-18" id="__codelineno-11-18" name="__codelineno-11-18"></a><span class="w">        </span><span class="nt">failure-rate-threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<a href="#__codelineno-11-19" id="__codelineno-11-19" name="__codelineno-11-19"></a><span class="w">        </span><span class="nt">wait-duration-in-open-state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60s</span>
+<a href="#__codelineno-11-20" id="__codelineno-11-20" name="__codelineno-11-20"></a><span class="w">      </span><span class="nt">inventoryService</span><span class="p">:</span>
+<a href="#__codelineno-11-21" id="__codelineno-11-21" name="__codelineno-11-21"></a><span class="w">        </span><span class="nt">base-config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>failureRateThreshold</code></td>
+<td>% of failed calls to trip the breaker</td>
+</tr>
+<tr>
+<td><code>slidingWindowSize</code> / <code>slidingWindowType</code></td>
+<td>Sample size and measurement strategy (count vs time based)</td>
+</tr>
+<tr>
+<td><code>minimumNumberOfCalls</code></td>
+<td>Minimum calls before failure rate is evaluated</td>
+</tr>
+<tr>
+<td><code>waitDurationInOpenState</code></td>
+<td>Time spent <code>OPEN</code> before trying <code>HALF_OPEN</code></td>
+</tr>
+<tr>
+<td><code>permittedNumberOfCallsInHalfOpenState</code></td>
+<td>Trial calls allowed while <code>HALF_OPEN</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Real-life scenario:</strong> A platform team defines a strict <code>default</code> circuit breaker configuration in a shared Spring Boot starter used across dozens of internal microservices, ensuring every team gets sensible resilience defaults out of the box, while individual teams only override <code>failureRateThreshold</code> or <code>waitDurationInOpenState</code> for the specific characteristics of their own downstream dependencies.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What's the benefit of using <code>configs.default</code> with <code>base-config: default</code> per instance?</strong>
+It centralizes baseline resilience settings in one place, avoiding duplication across dozens of instances while still allowing targeted overrides for dependencies with different risk profiles.</p>
+<p><strong>Q: If <code>failureRateThreshold</code> and <code>slowCallRateThreshold</code> are both configured, are they independent?</strong>
+Yes — a call is judged both on whether it errored (counts toward failure rate) and, if it succeeded, whether it exceeded <code>slowCallDurationThreshold</code> (counts toward slow-call rate); breaching either threshold can trip the breaker.</p>
+<h3 id="actuator-health-endpoint">Actuator /health Endpoint</h3>
+<p>Spring Boot Actuator's <code>/actuator/health</code> endpoint aggregates the health of all registered <code>HealthIndicator</code> beans into a single up/down status. When <code>resilience4j-spring-boot3</code> is on the classpath and <code>register-health-indicator: true</code> is set for a circuit breaker instance, Resilience4j contributes a health indicator named after the circuit breaker that reports <code>UP</code> when the breaker is <code>CLOSED</code> or <code>HALF_OPEN</code>, and by default still reports <code>UP</code> even when <code>OPEN</code> (since an open circuit is a deliberate self-protective state, not necessarily an indication the whole application is unhealthy) — this behavior can be tuned via <code>management.health.circuitbreakers.enabled</code> and downstream health-status mapping.</p>
+<p>By default, <code>/actuator/health</code> returns a minimal <code>{"status": "UP"}</code> unless <code>management.endpoint.health.show-details</code> is set to <code>always</code> or <code>when-authorized</code>, in which case the response includes a breakdown per indicator (including each named circuit breaker) with its individual status and details such as failure rate and current state.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-12-1" id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="nt">management</span><span class="p">:</span>
+<a href="#__codelineno-12-2" id="__codelineno-12-2" name="__codelineno-12-2"></a><span class="w">  </span><span class="nt">endpoint</span><span class="p">:</span>
+<a href="#__codelineno-12-3" id="__codelineno-12-3" name="__codelineno-12-3"></a><span class="w">    </span><span class="nt">health</span><span class="p">:</span>
+<a href="#__codelineno-12-4" id="__codelineno-12-4" name="__codelineno-12-4"></a><span class="w">      </span><span class="nt">show-details</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<a href="#__codelineno-12-5" id="__codelineno-12-5" name="__codelineno-12-5"></a><span class="w">  </span><span class="nt">health</span><span class="p">:</span>
+<a href="#__codelineno-12-6" id="__codelineno-12-6" name="__codelineno-12-6"></a><span class="w">    </span><span class="nt">circuitbreakers</span><span class="p">:</span>
+<a href="#__codelineno-12-7" id="__codelineno-12-7" name="__codelineno-12-7"></a><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-13-1" id="__codelineno-13-1" name="__codelineno-13-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:8080/actuator/health<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+<a href="#__codelineno-13-2" id="__codelineno-13-2" name="__codelineno-13-2"></a><span class="c1"># {</span>
+<a href="#__codelineno-13-3" id="__codelineno-13-3" name="__codelineno-13-3"></a><span class="c1">#   "status": "UP",</span>
+<a href="#__codelineno-13-4" id="__codelineno-13-4" name="__codelineno-13-4"></a><span class="c1">#   "components": {</span>
+<a href="#__codelineno-13-5" id="__codelineno-13-5" name="__codelineno-13-5"></a><span class="c1">#     "circuitBreakers": {</span>
+<a href="#__codelineno-13-6" id="__codelineno-13-6" name="__codelineno-13-6"></a><span class="c1">#       "status": "UP",</span>
+<a href="#__codelineno-13-7" id="__codelineno-13-7" name="__codelineno-13-7"></a><span class="c1">#       "details": {</span>
+<a href="#__codelineno-13-8" id="__codelineno-13-8" name="__codelineno-13-8"></a><span class="c1">#         "inventoryService": { "status": "UP", "details": { "state": "CLOSED", "failureRate": "12.5%" } }</span>
+<a href="#__codelineno-13-9" id="__codelineno-13-9" name="__codelineno-13-9"></a><span class="c1">#       }</span>
+<a href="#__codelineno-13-10" id="__codelineno-13-10" name="__codelineno-13-10"></a><span class="c1">#     }</span>
+<a href="#__codelineno-13-11" id="__codelineno-13-11" name="__codelineno-13-11"></a><span class="c1">#   }</span>
+<a href="#__codelineno-13-12" id="__codelineno-13-12" name="__codelineno-13-12"></a><span class="c1"># }</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A Kubernetes readiness/liveness probe hits <code>/actuator/health</code> to decide whether to keep routing traffic to a pod; because Resilience4j reports circuit breaker health as part of the aggregate, an operations team can see at a glance in their monitoring dashboard whether a pod's dependencies are degraded, without needing a separate custom health check for every downstream integration.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Does an <code>OPEN</code> circuit breaker automatically make <code>/actuator/health</code> report <code>DOWN</code>?</strong>
+No, by default an <code>OPEN</code> breaker still reports <code>UP</code> since it's considered a deliberate self-protective state rather than an application failure; this mapping can be customized if desired.</p>
+<p><strong>Q: What setting controls whether the health response includes per-indicator details?</strong>
+<code>management.endpoint.health.show-details</code>, set to <code>always</code> or <code>when-authorized</code> to expose the breakdown instead of just the minimal top-level status.</p>
+<h3 id="configure-access-to-actuator-endpoints">Configure Access to Actuator endpoints</h3>
+<p>By default, Spring Boot Actuator exposes only <code>/health</code> and <code>/info</code> over HTTP; every other endpoint, including Resilience4j-specific ones like <code>/actuator/circuitbreakers</code>, <code>/actuator/circuitbreakerevents</code>, <code>/actuator/retryevents</code>, and <code>/actuator/ratelimiterevents</code>, must be explicitly opted into via <code>management.endpoints.web.exposure.include</code>. This is a deliberate security default — actuator endpoints can leak sensitive operational details (bean names, config values, live metrics) and some (like <code>/shutdown</code>) can even mutate application state, so blanket exposure is discouraged in production.</p>
+<p>Teams typically expose a curated list of endpoints rather than <code>*</code> (which exposes everything), and further restrict access at the network layer (a separate management port, firewall rules, or an API gateway) and/or via Spring Security so only authenticated operators or internal monitoring systems can reach them. Combining <code>include</code>/<code>exclude</code> lists with a dedicated <code>management.server.port</code> is a common production pattern: it lets internal tooling scrape metrics on a port not exposed to the public internet at all.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-14-1" id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="nt">management</span><span class="p">:</span>
+<a href="#__codelineno-14-2" id="__codelineno-14-2" name="__codelineno-14-2"></a><span class="w">  </span><span class="nt">server</span><span class="p">:</span>
+<a href="#__codelineno-14-3" id="__codelineno-14-3" name="__codelineno-14-3"></a><span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9001</span>
+<a href="#__codelineno-14-4" id="__codelineno-14-4" name="__codelineno-14-4"></a><span class="w">  </span><span class="nt">endpoints</span><span class="p">:</span>
+<a href="#__codelineno-14-5" id="__codelineno-14-5" name="__codelineno-14-5"></a><span class="w">    </span><span class="nt">web</span><span class="p">:</span>
+<a href="#__codelineno-14-6" id="__codelineno-14-6" name="__codelineno-14-6"></a><span class="w">      </span><span class="nt">exposure</span><span class="p">:</span>
+<a href="#__codelineno-14-7" id="__codelineno-14-7" name="__codelineno-14-7"></a><span class="w">        </span><span class="nt">include</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">health, info, circuitbreakers, circuitbreakerevents, retryevents, ratelimiterevents, metrics, prometheus</span>
+<a href="#__codelineno-14-8" id="__codelineno-14-8" name="__codelineno-14-8"></a><span class="w">      </span><span class="nt">base-path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/actuator</span>
+<a href="#__codelineno-14-9" id="__codelineno-14-9" name="__codelineno-14-9"></a><span class="w">  </span><span class="nt">endpoint</span><span class="p">:</span>
+<a href="#__codelineno-14-10" id="__codelineno-14-10" name="__codelineno-14-10"></a><span class="w">    </span><span class="nt">health</span><span class="p">:</span>
+<a href="#__codelineno-14-11" id="__codelineno-14-11" name="__codelineno-14-11"></a><span class="w">      </span><span class="nt">show-details</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">when-authorized</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-15-1" id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="c1"># Verify only the intended endpoints are reachable</span>
+<a href="#__codelineno-15-2" id="__codelineno-15-2" name="__codelineno-15-2"></a>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:9001/actuator<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'._links | keys'</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A financial-services company runs a security audit and discovers that <code>management.endpoints.web.exposure.include: "*"</code> had accidentally exposed the <code>/actuator/env</code> endpoint (which can reveal environment variables, including secrets) on the public internet; the fix was to explicitly whitelist only the endpoints actually needed by monitoring tooling and move the actuator port behind an internal-only network policy.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why shouldn't you set <code>management.endpoints.web.exposure.include</code> to <code>"*"</code> in production?</strong>
+It exposes every actuator endpoint, some of which reveal sensitive details (env vars, config, beans) or can mutate state (like <code>/shutdown</code>), creating unnecessary attack surface.</p>
+<p><strong>Q: What's a common defense-in-depth practice alongside curating exposed endpoints?</strong>
+Running actuator on a separate <code>management.server.port</code> not reachable from the public internet, combined with Spring Security or network policies restricting access to internal operators/tools.</p>
+<h3 id="monitoring-circuit-breaker-events-in-actuator">Monitoring Circuit Breaker events in Actuator</h3>
+<p>Resilience4j publishes a rolling, in-memory event log for each protected resource, exposed via actuator at <code>/actuator/circuitbreakerevents</code> (and a per-instance variant like <code>/actuator/circuitbreakerevents/{name}</code>). Each event captures the type (<code>STATE_TRANSITION</code>, <code>ERROR</code>, <code>SUCCESS</code>, <code>NOT_PERMITTED</code>, <code>IGNORED_ERROR</code>), the circuit breaker name, and a timestamp — giving operators visibility into exactly when and why a breaker tripped, without needing to correlate raw application logs.</p>
+<p>Beyond the actuator event endpoints, Resilience4j integrates with Micrometer to publish gauges and counters (<code>resilience4j_circuitbreaker_state</code>, <code>resilience4j_circuitbreaker_calls</code>, <code>resilience4j_circuitbreaker_failure_rate</code>, etc.) that flow into <code>/actuator/prometheus</code> and from there into Grafana dashboards, enabling alerting rules such as "page on-call if any circuit breaker has been OPEN for more than 5 minutes." Programmatically, you can also subscribe directly to a <code>CircuitBreaker</code>'s <code>EventPublisher</code> for custom logging or business-specific alerting logic.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-16-1" id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="n">CircuitBreaker</span><span class="w"> </span><span class="n">circuitBreaker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">registry</span><span class="p">.</span><span class="na">circuitBreaker</span><span class="p">(</span><span class="s">"inventoryService"</span><span class="p">);</span>
+<a href="#__codelineno-16-2" id="__codelineno-16-2" name="__codelineno-16-2"></a><span class="n">circuitBreaker</span><span class="p">.</span><span class="na">getEventPublisher</span><span class="p">()</span>
+<a href="#__codelineno-16-3" id="__codelineno-16-3" name="__codelineno-16-3"></a><span class="w">    </span><span class="p">.</span><span class="na">onStateTransition</span><span class="p">(</span><span class="n">event</span><span class="w"> </span><span class="o">-&gt;</span>
+<a href="#__codelineno-16-4" id="__codelineno-16-4" name="__codelineno-16-4"></a><span class="w">        </span><span class="n">log</span><span class="p">.</span><span class="na">warn</span><span class="p">(</span><span class="s">"Circuit breaker {} transitioned {} -&gt; {}"</span><span class="p">,</span>
+<a href="#__codelineno-16-5" id="__codelineno-16-5" name="__codelineno-16-5"></a><span class="w">            </span><span class="n">event</span><span class="p">.</span><span class="na">getCircuitBreakerName</span><span class="p">(),</span>
+<a href="#__codelineno-16-6" id="__codelineno-16-6" name="__codelineno-16-6"></a><span class="w">            </span><span class="n">event</span><span class="p">.</span><span class="na">getStateTransition</span><span class="p">().</span><span class="na">getFromState</span><span class="p">(),</span>
+<a href="#__codelineno-16-7" id="__codelineno-16-7" name="__codelineno-16-7"></a><span class="w">            </span><span class="n">event</span><span class="p">.</span><span class="na">getStateTransition</span><span class="p">().</span><span class="na">getToState</span><span class="p">()))</span>
+<a href="#__codelineno-16-8" id="__codelineno-16-8" name="__codelineno-16-8"></a><span class="w">    </span><span class="p">.</span><span class="na">onCallNotPermitted</span><span class="p">(</span><span class="n">event</span><span class="w"> </span><span class="o">-&gt;</span>
+<a href="#__codelineno-16-9" id="__codelineno-16-9" name="__codelineno-16-9"></a><span class="w">        </span><span class="n">log</span><span class="p">.</span><span class="na">warn</span><span class="p">(</span><span class="s">"Call rejected — circuit breaker {} is OPEN"</span><span class="p">,</span><span class="w"> </span><span class="n">event</span><span class="p">.</span><span class="na">getCircuitBreakerName</span><span class="p">()));</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-17-1" id="__codelineno-17-1" name="__codelineno-17-1"></a>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:8080/actuator/circuitbreakerevents/inventoryService<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.circuitBreakerEvents[-1]'</span>
+</code></pre></div>
+<pre class="mermaid"><code>flowchart TD
+    A[Circuit Breaker emits event] --&gt; B[Resilience4j EventPublisher]
+    B --&gt; C["Actuator resilience4jcircuitbreakers endpoint"]
+    B --&gt; D[Actuator health indicator]
+    C --&gt; E["Ops dashboard or curl"]
+    D --&gt; F["actuator/health response"]
+</code></pre>
+<p><strong>Real-life scenario:</strong> An SRE team wires Resilience4j's Micrometer metrics into an existing Grafana + Prometheus stack and creates an alert rule that pages the on-call engineer the moment any circuit breaker's state gauge reports <code>OPEN</code> for longer than five minutes, turning what used to be a customer-reported outage into a proactive, automatically-detected incident.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What event types appear in the <code>/actuator/circuitbreakerevents</code> log?</strong>
+<code>STATE_TRANSITION</code>, <code>ERROR</code>, <code>SUCCESS</code>, <code>NOT_PERMITTED</code>, and <code>IGNORED_ERROR</code>, each timestamped and tied to a specific circuit breaker instance.</p>
+<p><strong>Q: How would you set up alerting beyond just viewing actuator events manually?</strong>
+By scraping Resilience4j's Micrometer metrics (e.g., <code>resilience4j_circuitbreaker_state</code>) via <code>/actuator/prometheus</code> into Prometheus/Grafana and defining alert rules such as paging when a breaker stays <code>OPEN</code> beyond a threshold duration.</p>
+<h3 id="retry-annotation-in-resilience4j">@Retry annotation in Resilience4j</h3>
+<p>The <code>@Retry</code> annotation is Resilience4j's declarative, AOP-based way to add retry behavior to any Spring-managed bean method without writing manual retry loops. Applying <code>@Retry(name = "serviceName")</code> to a method causes the Spring AOP proxy to intercept calls, and on failure, re-invoke the underlying method according to the named configuration's <code>maxAttempts</code> and <code>waitDuration</code>/backoff settings — completely transparently to the caller. It supports both synchronous return types and <code>CompletableFuture</code>/reactive return types (via the separate <code>resilience4j-reactor</code> or <code>resilience4j-rxjava3</code> modules for <code>Mono</code>/<code>Flux</code>/<code>Single</code>).</p>
+<p>Two lesser-known but important capabilities are <code>retryExceptions</code>/<code>ignoreExceptions</code> (controlling exactly which thrown types trigger a retry — for instance, retrying <code>IOException</code> but never retrying a <code>400 Bad Request</code> client error since retrying won't help) and a <strong>retry-on-result</strong> predicate (<code>resultPredicate</code> in the programmatic API, or a custom <code>IntervalBiFunction</code>), which lets you retry not just on exceptions but on a "successful" return value that represents a business-level failure, such as an HTTP 200 response body containing <code>{"status": "PENDING"}</code> when you expect <code>"COMPLETED"</code>.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-18-1" id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="nd">@Service</span>
+<a href="#__codelineno-18-2" id="__codelineno-18-2" name="__codelineno-18-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">OrderStatusClient</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-18-3" id="__codelineno-18-3" name="__codelineno-18-3"></a>
+<a href="#__codelineno-18-4" id="__codelineno-18-4" name="__codelineno-18-4"></a><span class="w">    </span><span class="nd">@Retry</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"orderStatus"</span><span class="p">)</span>
+<a href="#__codelineno-18-5" id="__codelineno-18-5" name="__codelineno-18-5"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">OrderStatusResponse</span><span class="w"> </span><span class="nf">fetchStatus</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">orderId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-18-6" id="__codelineno-18-6" name="__codelineno-18-6"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">.</span><span class="na">getForObject</span><span class="p">(</span><span class="s">"/orders/{id}/status"</span><span class="p">,</span><span class="w"> </span><span class="n">OrderStatusResponse</span><span class="p">.</span><span class="na">class</span><span class="p">,</span><span class="w"> </span><span class="n">orderId</span><span class="p">);</span>
+<a href="#__codelineno-18-7" id="__codelineno-18-7" name="__codelineno-18-7"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-18-8" id="__codelineno-18-8" name="__codelineno-18-8"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-19-1" id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="n">RetryConfig</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RetryConfig</span><span class="p">.</span><span class="o">&lt;</span><span class="n">OrderStatusResponse</span><span class="o">&gt;</span><span class="n">custom</span><span class="p">()</span>
+<a href="#__codelineno-19-2" id="__codelineno-19-2" name="__codelineno-19-2"></a><span class="w">    </span><span class="p">.</span><span class="na">maxAttempts</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<a href="#__codelineno-19-3" id="__codelineno-19-3" name="__codelineno-19-3"></a><span class="w">    </span><span class="p">.</span><span class="na">waitDuration</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofMillis</span><span class="p">(</span><span class="mi">300</span><span class="p">))</span>
+<a href="#__codelineno-19-4" id="__codelineno-19-4" name="__codelineno-19-4"></a><span class="w">    </span><span class="p">.</span><span class="na">retryOnResult</span><span class="p">(</span><span class="n">response</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">"PENDING"</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="na">getStatus</span><span class="p">()))</span>
+<a href="#__codelineno-19-5" id="__codelineno-19-5" name="__codelineno-19-5"></a><span class="w">    </span><span class="p">.</span><span class="na">retryExceptions</span><span class="p">(</span><span class="n">IOException</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+<a href="#__codelineno-19-6" id="__codelineno-19-6" name="__codelineno-19-6"></a><span class="w">    </span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A logistics service polls a carrier's shipment-tracking API which occasionally returns a transient <code>"PROCESSING"</code> placeholder body with a 200 OK status instead of a real error. Using a retry-on-result predicate, the client automatically retries until a definitive status is returned, rather than treating the placeholder response as a final (and incorrect) answer.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: How can Retry react to a "successful" response that's actually a business failure?</strong>
+Via a retry-on-result predicate (<code>resultPredicate</code>/<code>retryOnResult</code>), which retries when the returned value itself indicates an incomplete or unacceptable outcome, not just when an exception is thrown.</p>
+<p><strong>Q: Which Resilience4j modules add reactive (<code>Mono</code>/<code>Flux</code>) support for <code>@Retry</code>?</strong>
+<code>resilience4j-reactor</code> and <code>resilience4j-rxjava3</code>, which extend retry (and other) decorators to reactive stream types.</p>
+<h3 id="aspect-order-in-resilience4j">Aspect Order in Resilience4j</h3>
+<p>When multiple Resilience4j annotations are stacked on the same method (e.g., <code>@Retry</code>, <code>@CircuitBreaker</code>, <code>@RateLimiter</code>, <code>@Bulkhead</code>, <code>@TimeLimiter</code> all together), the order in which their AOP aspects wrap the underlying call matters enormously, because it determines which pattern "sees" the effects of the others. Resilience4j's Spring integration applies a fixed default order — from outermost to innermost: <strong>Retry → CircuitBreaker → RateLimiter → Bulkhead → TimeLimiter → the actual function call</strong>. This means Retry is the outermost aspect: it can trigger multiple attempts, each of which passes through the circuit breaker, rate limiter, bulkhead, and time limiter in turn.</p>
+<p>This ordering has important practical consequences. Because <code>CircuitBreaker</code> sits inside <code>Retry</code>, every retried attempt is itself subject to the circuit breaker — so if the breaker opens partway through a retry sequence, subsequent attempts fail fast with <code>CallNotPermittedException</code> rather than continuing to hit a downstream service. Because <code>Bulkhead</code> sits inside <code>RateLimiter</code>, the rate limiter throttles the <em>rate</em> of attempts before they even compete for a bulkhead permit. The order can be customized via the <code>resilience4j.&lt;module&gt;.instances.&lt;name&gt;.order</code> or globally via Spring properties, but doing so is rare and should only be done with a clear understanding of the interaction effects — for example, putting <code>CircuitBreaker</code> outside <code>Retry</code> would mean the breaker sees only the <em>final</em> outcome of a whole retry sequence rather than each individual failure, changing its failure-rate statistics significantly.</p>
+<pre class="mermaid"><code>flowchart LR
+    Retry --&gt; CircuitBreaker --&gt; RateLimiter --&gt; Bulkhead --&gt; TimeLimiter --&gt; Function
+</code></pre>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-20-1" id="__codelineno-20-1" name="__codelineno-20-1"></a><span class="nd">@Retry</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"backend"</span><span class="p">,</span><span class="w"> </span><span class="n">fallbackMethod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"fallback"</span><span class="p">)</span>
+<a href="#__codelineno-20-2" id="__codelineno-20-2" name="__codelineno-20-2"></a><span class="nd">@CircuitBreaker</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"backend"</span><span class="p">)</span>
+<a href="#__codelineno-20-3" id="__codelineno-20-3" name="__codelineno-20-3"></a><span class="nd">@RateLimiter</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"backend"</span><span class="p">)</span>
+<a href="#__codelineno-20-4" id="__codelineno-20-4" name="__codelineno-20-4"></a><span class="nd">@Bulkhead</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"backend"</span><span class="p">)</span>
+<a href="#__codelineno-20-5" id="__codelineno-20-5" name="__codelineno-20-5"></a><span class="nd">@TimeLimiter</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"backend"</span><span class="p">)</span>
+<a href="#__codelineno-20-6" id="__codelineno-20-6" name="__codelineno-20-6"></a><span class="kd">public</span><span class="w"> </span><span class="n">CompletableFuture</span><span class="o">&lt;</span><span class="n">Response</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">callBackend</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-20-7" id="__codelineno-20-7" name="__codelineno-20-7"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">CompletableFuture</span><span class="p">.</span><span class="na">supplyAsync</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">backendClient</span><span class="p">.</span><span class="na">call</span><span class="p">());</span>
+<a href="#__codelineno-20-8" id="__codelineno-20-8" name="__codelineno-20-8"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A team debugging why their circuit breaker's failure rate metric looked "too good" during an incident discovered that they had mistakenly assumed <code>CircuitBreaker</code> executed before <code>Retry</code>; once they understood the actual default order (<code>Retry</code> outermost), they realized each retried attempt was independently counted by the circuit breaker — explaining why the breaker tripped much sooner than expected under sustained failures, since 3 retries per logical call meant 3x the failure events feeding the sliding window.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: If you wanted <code>CircuitBreaker</code> to see only the final outcome of a full retry sequence, what would you need to change?</strong>
+You'd need to customize the default aspect order so <code>CircuitBreaker</code> wraps outside <code>Retry</code>, though this is rare and significantly changes failure-rate statistics compared to the default nesting.</p>
+<p><strong>Q: Which aspect is innermost by default, right next to the actual function call?</strong>
+<code>TimeLimiter</code>, meaning it directly wraps the real invocation, with <code>Bulkhead</code>, <code>RateLimiter</code>, <code>CircuitBreaker</code>, and <code>Retry</code> layered around it from inside out.</p>
+<h3 id="resilience4j-retry-configuration-properties">Resilience4j Retry configuration properties</h3>
+<p>Retry instances are configured under <code>resilience4j.retry</code> in <code>application.yml</code>, mirroring the shared <code>configs.default</code> + per-instance override pattern used by the circuit breaker module. Key properties include <code>maxAttempts</code> (total attempts including the first, so <code>maxAttempts: 3</code> means 1 initial call + 2 retries), <code>waitDuration</code> (base delay between attempts), <code>enableExponentialBackoff</code>/<code>exponentialBackoffMultiplier</code> or <code>enableRandomizedWait</code>/<code>randomizedWaitFactor</code> (for jittered backoff to avoid synchronized retry storms across many instances), and <code>retryExceptions</code>/<code>ignoreExceptions</code> to scope which failures are retryable.</p>
+<p>A frequently overlooked but critical property is <code>failAfterMaxAttempts</code> combined with how retries interact with a fallback method — when all attempts are exhausted, the last exception is what gets passed to the fallback method's final <code>Throwable</code> parameter, so logging inside the fallback should be aware it's seeing the <em>last</em> failure, not necessarily representative of every attempt's failure mode.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-21-1" id="__codelineno-21-1" name="__codelineno-21-1"></a><span class="nt">resilience4j</span><span class="p">:</span>
+<a href="#__codelineno-21-2" id="__codelineno-21-2" name="__codelineno-21-2"></a><span class="w">  </span><span class="nt">retry</span><span class="p">:</span>
+<a href="#__codelineno-21-3" id="__codelineno-21-3" name="__codelineno-21-3"></a><span class="w">    </span><span class="nt">configs</span><span class="p">:</span>
+<a href="#__codelineno-21-4" id="__codelineno-21-4" name="__codelineno-21-4"></a><span class="w">      </span><span class="nt">default</span><span class="p">:</span>
+<a href="#__codelineno-21-5" id="__codelineno-21-5" name="__codelineno-21-5"></a><span class="w">        </span><span class="nt">max-attempts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<a href="#__codelineno-21-6" id="__codelineno-21-6" name="__codelineno-21-6"></a><span class="w">        </span><span class="nt">wait-duration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500ms</span>
+<a href="#__codelineno-21-7" id="__codelineno-21-7" name="__codelineno-21-7"></a><span class="w">        </span><span class="nt">enable-exponential-backoff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a href="#__codelineno-21-8" id="__codelineno-21-8" name="__codelineno-21-8"></a><span class="w">        </span><span class="nt">exponential-backoff-multiplier</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<a href="#__codelineno-21-9" id="__codelineno-21-9" name="__codelineno-21-9"></a><span class="w">        </span><span class="nt">enable-randomized-wait</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a href="#__codelineno-21-10" id="__codelineno-21-10" name="__codelineno-21-10"></a><span class="w">        </span><span class="nt">randomized-wait-factor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.5</span>
+<a href="#__codelineno-21-11" id="__codelineno-21-11" name="__codelineno-21-11"></a><span class="w">        </span><span class="nt">retry-exceptions</span><span class="p">:</span>
+<a href="#__codelineno-21-12" id="__codelineno-21-12" name="__codelineno-21-12"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">java.io.IOException</span>
+<a href="#__codelineno-21-13" id="__codelineno-21-13" name="__codelineno-21-13"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">java.util.concurrent.TimeoutException</span>
+<a href="#__codelineno-21-14" id="__codelineno-21-14" name="__codelineno-21-14"></a><span class="w">        </span><span class="nt">ignore-exceptions</span><span class="p">:</span>
+<a href="#__codelineno-21-15" id="__codelineno-21-15" name="__codelineno-21-15"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">com.example.exception.BusinessValidationException</span>
+<a href="#__codelineno-21-16" id="__codelineno-21-16" name="__codelineno-21-16"></a><span class="w">    </span><span class="nt">instances</span><span class="p">:</span>
+<a href="#__codelineno-21-17" id="__codelineno-21-17" name="__codelineno-21-17"></a><span class="w">      </span><span class="nt">pricingService</span><span class="p">:</span>
+<a href="#__codelineno-21-18" id="__codelineno-21-18" name="__codelineno-21-18"></a><span class="w">        </span><span class="nt">base-config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<a href="#__codelineno-21-19" id="__codelineno-21-19" name="__codelineno-21-19"></a><span class="w">      </span><span class="nt">orderStatus</span><span class="p">:</span>
+<a href="#__codelineno-21-20" id="__codelineno-21-20" name="__codelineno-21-20"></a><span class="w">        </span><span class="nt">base-config</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<a href="#__codelineno-21-21" id="__codelineno-21-21" name="__codelineno-21-21"></a><span class="w">        </span><span class="nt">max-attempts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>maxAttempts</code></td>
+<td>Total attempts, including the first call</td>
+</tr>
+<tr>
+<td><code>waitDuration</code></td>
+<td>Base delay between attempts</td>
+</tr>
+<tr>
+<td><code>enableExponentialBackoff</code> / <code>exponentialBackoffMultiplier</code></td>
+<td>Growing delay to reduce load on a struggling dependency</td>
+</tr>
+<tr>
+<td><code>enableRandomizedWait</code> / <code>randomizedWaitFactor</code></td>
+<td>Adds jitter to avoid synchronized retry storms</td>
+</tr>
+<tr>
+<td><code>retryExceptions</code> / <code>ignoreExceptions</code></td>
+<td>Which exception types are (or aren't) retryable</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Real-life scenario:</strong> During a regional cloud outage, dozens of service instances all experiencing the same downstream failure would, without jitter, retry in near-perfect synchrony every 500ms — creating repeated load spikes on the recovering dependency. Enabling <code>enable-randomized-wait</code> spreads those retries out over a window, smoothing the load pattern and giving the recovering service a realistic chance to stabilize.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: If <code>maxAttempts</code> is set to 3, how many total calls does that allow?</strong>
+Three total — the initial call plus two retries, not three retries after the initial call.</p>
+<p><strong>Q: Why enable both exponential backoff and randomized wait together?</strong>
+Exponential backoff grows the delay after each failure to reduce load on a struggling dependency, while randomized jitter prevents many client instances from retrying in synchronized bursts, smoothing overall retry traffic.</p>
+<h3 id="trying-how-it-works-resilience4j-retry-works">Trying how it works Resilience4j Retry works</h3>
+<p>Understanding Resilience4j Retry hands-on is best done by writing a small test harness that forces failures and observes attempt counts, timing, and final outcomes. A common approach is to use an <code>AtomicInteger</code> counter inside a test double to fail N times before succeeding, then assert both the total number of invocations and the elapsed time to confirm backoff behavior is applied as configured.</p>
+<p>Registering an event listener on the <code>Retry</code> instance during such a test is invaluable for understanding <em>exactly</em> what Resilience4j is doing internally on each attempt — logging <code>onRetry</code>, <code>onSuccess</code>, and <code>onError</code> events reveals the precise sequence: attempt 1 fails → wait → attempt 2 fails → wait longer (if exponential backoff) → attempt 3 succeeds → <code>onSuccess</code> fires with the final result. This kind of experimentation is highly recommended before shipping any non-default retry configuration to production, since subtle misconfigurations (like retrying non-idempotent operations, causing duplicate side effects) are far easier to catch in a fast local test than in production traffic.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-22-1" id="__codelineno-22-1" name="__codelineno-22-1"></a><span class="nd">@Test</span>
+<a href="#__codelineno-22-2" id="__codelineno-22-2" name="__codelineno-22-2"></a><span class="kt">void</span><span class="w"> </span><span class="nf">retriesUntilSuccess</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-22-3" id="__codelineno-22-3" name="__codelineno-22-3"></a><span class="w">    </span><span class="n">AtomicInteger</span><span class="w"> </span><span class="n">attempts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">AtomicInteger</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<a href="#__codelineno-22-4" id="__codelineno-22-4" name="__codelineno-22-4"></a><span class="w">    </span><span class="n">RetryConfig</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RetryConfig</span><span class="p">.</span><span class="na">custom</span><span class="p">()</span>
+<a href="#__codelineno-22-5" id="__codelineno-22-5" name="__codelineno-22-5"></a><span class="w">        </span><span class="p">.</span><span class="na">maxAttempts</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<a href="#__codelineno-22-6" id="__codelineno-22-6" name="__codelineno-22-6"></a><span class="w">        </span><span class="p">.</span><span class="na">waitDuration</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofMillis</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+<a href="#__codelineno-22-7" id="__codelineno-22-7" name="__codelineno-22-7"></a><span class="w">        </span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+<a href="#__codelineno-22-8" id="__codelineno-22-8" name="__codelineno-22-8"></a><span class="w">    </span><span class="n">Retry</span><span class="w"> </span><span class="n">retry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Retry</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">"test"</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">);</span>
+<a href="#__codelineno-22-9" id="__codelineno-22-9" name="__codelineno-22-9"></a>
+<a href="#__codelineno-22-10" id="__codelineno-22-10" name="__codelineno-22-10"></a><span class="w">    </span><span class="n">retry</span><span class="p">.</span><span class="na">getEventPublisher</span><span class="p">()</span>
+<a href="#__codelineno-22-11" id="__codelineno-22-11" name="__codelineno-22-11"></a><span class="w">        </span><span class="p">.</span><span class="na">onRetry</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Retry attempt #"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="na">getNumberOfRetryAttempts</span><span class="p">()))</span>
+<a href="#__codelineno-22-12" id="__codelineno-22-12" name="__codelineno-22-12"></a><span class="w">        </span><span class="p">.</span><span class="na">onSuccess</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Succeeded after "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="na">getNumberOfRetryAttempts</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">" retries"</span><span class="p">));</span>
+<a href="#__codelineno-22-13" id="__codelineno-22-13" name="__codelineno-22-13"></a>
+<a href="#__codelineno-22-14" id="__codelineno-22-14" name="__codelineno-22-14"></a><span class="w">    </span><span class="n">Supplier</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">flakySupplier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-22-15" id="__codelineno-22-15" name="__codelineno-22-15"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">attempts</span><span class="p">.</span><span class="na">incrementAndGet</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-22-16" id="__codelineno-22-16" name="__codelineno-22-16"></a><span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RuntimeException</span><span class="p">(</span><span class="s">"Transient failure #"</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">attempts</span><span class="p">.</span><span class="na">get</span><span class="p">());</span>
+<a href="#__codelineno-22-17" id="__codelineno-22-17" name="__codelineno-22-17"></a><span class="w">        </span><span class="p">}</span>
+<a href="#__codelineno-22-18" id="__codelineno-22-18" name="__codelineno-22-18"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="s">"OK"</span><span class="p">;</span>
+<a href="#__codelineno-22-19" id="__codelineno-22-19" name="__codelineno-22-19"></a><span class="w">    </span><span class="p">};</span>
+<a href="#__codelineno-22-20" id="__codelineno-22-20" name="__codelineno-22-20"></a>
+<a href="#__codelineno-22-21" id="__codelineno-22-21" name="__codelineno-22-21"></a><span class="w">    </span><span class="n">String</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Retry</span><span class="p">.</span><span class="na">decorateSupplier</span><span class="p">(</span><span class="n">retry</span><span class="p">,</span><span class="w"> </span><span class="n">flakySupplier</span><span class="p">).</span><span class="na">get</span><span class="p">();</span>
+<a href="#__codelineno-22-22" id="__codelineno-22-22" name="__codelineno-22-22"></a>
+<a href="#__codelineno-22-23" id="__codelineno-22-23" name="__codelineno-22-23"></a><span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="s">"OK"</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">);</span>
+<a href="#__codelineno-22-24" id="__codelineno-22-24" name="__codelineno-22-24"></a><span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="n">attempts</span><span class="p">.</span><span class="na">get</span><span class="p">());</span>
+<a href="#__codelineno-22-25" id="__codelineno-22-25" name="__codelineno-22-25"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> Before rolling out a new <code>maxAttempts: 5</code> retry policy for a non-idempotent "charge customer" endpoint, an engineer writes exactly this kind of local test and discovers that retries would cause duplicate charges on transient network errors after the payment had actually succeeded server-side — leading the team to add an idempotency key to the request instead of blindly increasing retry attempts.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why register an event listener during retry testing instead of just checking the final result?</strong>
+It reveals the exact sequence of <code>onRetry</code>/<code>onError</code>/<code>onSuccess</code> events per attempt, confirming both the attempt count and that backoff timing behaves as configured — details a simple pass/fail assertion wouldn't show.</p>
+<p><strong>Q: What kind of bug can hands-on retry testing catch before production?</strong>
+Misconfigured retries on non-idempotent operations, where retrying after an ambiguous failure (the request succeeded server-side but the response was lost) causes duplicate side effects like double charges.</p>
+<h2 id="interview-questions-answers">Interview Questions &amp; Answers</h2>
+<h3 id="circuit-breaker-fundamentals">Circuit Breaker Fundamentals</h3>
+<p><strong>Q: What problem does the Circuit Breaker pattern solve?</strong></p>
+<p>It prevents a client application from repeatedly calling a downstream dependency that is failing or degraded, avoiding cascading failures, resource exhaustion (thread pool/connection pool starvation), and wasted latency on calls that are very likely to fail. By failing fast once a failure threshold is crossed, it gives the failing dependency time to recover and keeps the calling application responsive.</p>
+<p><strong>Q: What are the states of a Resilience4j circuit breaker, and how does it transition between them?</strong></p>
+<p>The core states are <code>CLOSED</code> (calls pass through normally, failures are tracked), <code>OPEN</code> (calls are rejected immediately with <code>CallNotPermittedException</code>), and <code>HALF_OPEN</code> (a limited number of trial calls are permitted to test recovery). It transitions <code>CLOSED → OPEN</code> when the failure rate or slow-call rate crosses the configured threshold over the sliding window; <code>OPEN → HALF_OPEN</code> after <code>waitDurationInOpenState</code> elapses; and from <code>HALF_OPEN</code> either back to <code>CLOSED</code> (if trial calls succeed) or back to <code>OPEN</code> (if they fail). There are also two special states, <code>DISABLED</code> and <code>FORCED_OPEN</code>, used for testing and operational overrides.</p>
+<p><strong>Q: What is the difference between a count-based and a time-based sliding window?</strong></p>
+<p>A count-based window evaluates the failure rate over the last N calls regardless of how much time they span (e.g., last 100 calls). A time-based window evaluates the failure rate over calls that occurred within the last N seconds, regardless of how many calls that includes. Count-based is simpler and more predictable for low-traffic services; time-based better reflects "recent" behavior for high-traffic services where a fixed call count might span very different real-world durations.</p>
+<p><strong>Q: Why does Resilience4j require a <code>minimumNumberOfCalls</code> before evaluating the failure rate?</strong></p>
+<p>To avoid tripping the breaker on a statistically insignificant sample — for example, without a minimum, two failed calls out of two total calls would be a 100% failure rate and immediately open the circuit, even though two calls is far too small a sample to conclude the dependency is actually unhealthy.</p>
+<p><strong>Q: What happens when a call is made while the circuit breaker is <code>OPEN</code>?</strong></p>
+<p>The call is rejected immediately without ever reaching the protected code — Resilience4j throws a <code>CallNotPermittedException</code> (or invokes the fallback method if one is configured), so the caller fails fast instead of waiting on a call that is very likely to fail or time out.</p>
+<p><strong>Q: How does Resilience4j distinguish a "slow" successful call from a normal one, and why does that matter?</strong></p>
+<p>Via <code>slowCallDurationThreshold</code> and <code>slowCallRateThreshold</code> — any call exceeding the duration threshold is counted as "slow," and if the proportion of slow calls exceeds the rate threshold, the breaker trips even though those calls technically returned successfully. This matters because a dependency that has degraded to unacceptably high latency is often just as harmful to the calling system as one throwing outright errors (e.g., it still consumes threads and connections for longer).</p>
+<h3 id="retry-fallback-and-aspect-ordering">Retry, Fallback, and Aspect Ordering</h3>
+<p><strong>Q: What's the difference between Retry and a fallback method in Resilience4j?</strong></p>
+<p>Retry automatically re-attempts the <em>same</em> operation up to <code>maxAttempts</code> times when it fails, hoping a subsequent attempt succeeds. A fallback method provides an <em>alternative</em> code path/result to return when the primary operation ultimately fails (after retries, or due to an open circuit, etc.) — it doesn't re-attempt the original call, it substitutes a different outcome such as a cached value or default response.</p>
+<p><strong>Q: In what order do Retry and Fallback execute relative to each other?</strong></p>
+<p>Retry executes first and is transparent to the caller: the annotated method is invoked repeatedly according to the retry configuration. Only if all retry attempts are exhausted does the aspect chain fall through to the fallback method, which then receives the final exception as its last parameter.</p>
+<p><strong>Q: What is the default aspect ordering when multiple Resilience4j annotations are combined on one method?</strong></p>
+<p>From outermost to innermost: <code>Retry → CircuitBreaker → RateLimiter → Bulkhead → TimeLimiter →</code> the actual function. This means every retried attempt individually passes through the circuit breaker, rate limiter, bulkhead, and time limiter.</p>
+<p><strong>Q: Why does the default aspect order matter for circuit breaker statistics?</strong></p>
+<p>Because <code>CircuitBreaker</code> is nested inside <code>Retry</code>, each individual retry attempt is recorded as a separate call in the circuit breaker's sliding window. A single logical operation that retries 3 times before failing contributes 3 failure events to the breaker, not 1 — which can cause the breaker to trip faster than expected if this interaction isn't accounted for when choosing <code>failureRateThreshold</code> and <code>slidingWindowSize</code>.</p>
+<p><strong>Q: Can you configure a fallback method's signature arbitrarily?</strong></p>
+<p>No — the fallback method must return the same type as the original method and accept the same parameter list, plus exactly one additional final parameter of type <code>Throwable</code> (or a more specific exception type it wants to handle). Spring resolves it via reflection, so a signature mismatch means the fallback silently won't be applied and the original exception propagates instead.</p>
+<p><strong>Q: What kinds of exceptions should typically be excluded from retry (via <code>ignoreExceptions</code>)?</strong></p>
+<p>Business/validation exceptions that indicate the request itself was invalid (e.g., HTTP 400 Bad Request, a domain validation error) should be ignored, since retrying won't change the outcome — you'd just be wasting time and load. Only exceptions likely caused by transient conditions (I/O errors, timeouts, 5xx server errors) should be retryable.</p>
+<p><strong>Q: What risk does retrying introduce for non-idempotent operations, and how can it be mitigated?</strong></p>
+<p>Retrying a non-idempotent operation (like "charge a customer" or "create an order") can cause the same side effect to happen multiple times if the original call actually succeeded server-side but the response was lost before the client saw it (e.g., a network blip after the server processed the request). This is typically mitigated with an idempotency key sent with the request, so the server can detect and safely ignore duplicate attempts.</p>
+<h3 id="rate-limiter-bulkhead-and-time-limiter">Rate Limiter, Bulkhead, and Time Limiter</h3>
+<p><strong>Q: What does the Rate Limiter module protect against, and how is it configured?</strong></p>
+<p>It caps how many calls are permitted within a refresh period, protecting a downstream dependency (or a third-party API with its own imposed quota) from being overwhelmed by too many requests. It's configured with <code>limitForPeriod</code> (allowed calls per period), <code>limitRefreshPeriod</code> (how often the counter resets), and <code>timeoutDuration</code> (how long a call will wait for a permit before failing).</p>
+<p><strong>Q: What's the difference between the Semaphore Bulkhead and the Thread Pool Bulkhead?</strong></p>
+<p>The Semaphore Bulkhead limits concurrency using a counting semaphore and executes calls synchronously on the caller's own thread — low overhead but unable to enforce a timeout on an already-executing call. The Thread Pool Bulkhead executes calls asynchronously on a dedicated, bounded executor with its own queue, decoupling execution from the caller's thread, which allows the caller to give up (via a <code>TimeLimiter</code>) even if the downstream call is still hung — at the cost of extra thread hand-off overhead and requiring an async (<code>CompletableFuture</code>) return type.</p>
+<p><strong>Q: Why can't a Semaphore Bulkhead be combined effectively with a Time Limiter?</strong></p>
+<p>Because the semaphore bulkhead runs the protected call synchronously on the caller's own thread, there is no separate thread to "give back" control to if the call hangs — the caller thread itself would remain blocked regardless of any configured timeout. Time limiting requires the asynchronous execution model that the Thread Pool Bulkhead provides.</p>
+<p><strong>Q: What does the Time Limiter's <code>cancelRunningFuture</code> setting actually do?</strong></p>
+<p>When true (the default), Resilience4j requests cancellation of the underlying <code>Future</code> once the timeout elapses. However, this is a cooperative cancellation signal — if the running task doesn't check for interruption or is performing an uninterruptible blocking operation, the underlying thread may continue running even though the caller has already received a <code>TimeoutException</code>.</p>
+<p><strong>Q: When would you choose to combine Rate Limiter and Bulkhead on the same method?</strong></p>
+<p>When you need to protect against two different risks simultaneously: the Rate Limiter caps the overall call <em>rate</em> over time (preventing self-inflicted overload of a downstream service or breach of an external quota), while the Bulkhead caps <em>concurrent</em> in-flight calls (preventing resource exhaustion from too many simultaneous slow calls). They address complementary failure modes and are commonly combined.</p>
+<h3 id="configuration-actuator-and-monitoring">Configuration, Actuator, and Monitoring</h3>
+<p><strong>Q: What Spring Boot dependency is required for Resilience4j's annotations to actually work, and why?</strong></p>
+<p><code>spring-boot-starter-aop</code> — Resilience4j's <code>@CircuitBreaker</code>, <code>@Retry</code>, <code>@RateLimiter</code>, <code>@Bulkhead</code>, and <code>@TimeLimiter</code> annotations are implemented as Spring AOP aspects that proxy the annotated bean method. Without AOP support on the classpath, the annotations are effectively ignored and the method executes completely unprotected.</p>
+<p><strong>Q: How do you expose Resilience4j's actuator endpoints, and why aren't they available by default?</strong></p>
+<p>By adding their IDs (e.g., <code>circuitbreakers</code>, <code>circuitbreakerevents</code>, <code>retryevents</code>) to <code>management.endpoints.web.exposure.include</code>. They aren't exposed by default (only <code>health</code> and <code>info</code> are) because actuator endpoints can reveal sensitive operational details or internal state, so Spring Boot requires explicit opt-in as a security-conscious default.</p>
+<p><strong>Q: How does a Resilience4j circuit breaker integrate with the Actuator <code>/health</code> endpoint?</strong></p>
+<p>When <code>register-health-indicator: true</code> is set for a circuit breaker instance, Resilience4j contributes a named <code>HealthIndicator</code> that reports the breaker's status as part of the aggregated <code>/actuator/health</code> response, visible in detail when <code>management.endpoint.health.show-details</code> is set to <code>always</code> or <code>when-authorized</code>.</p>
+<p><strong>Q: How would you monitor circuit breaker state transitions in production?</strong></p>
+<p>Via <code>/actuator/circuitbreakerevents</code> for a rolling in-memory event log, and more robustly via Micrometer metrics (e.g., <code>resilience4j_circuitbreaker_state</code>) exposed through <code>/actuator/prometheus</code>, scraped by Prometheus and visualized/alerted on in Grafana — enabling alerts such as paging on-call when a breaker remains <code>OPEN</code> beyond an acceptable threshold.</p>
+<p><strong>Q: What's a good production practice for defining Resilience4j configuration across many instances?</strong></p>
+<p>Define a shared <code>configs.default</code> block with sensible baseline settings (failure rate threshold, sliding window, wait duration, etc.), then have individual named instances reference it via <code>base-config: default</code> and only override the specific properties that differ for that dependency's risk profile — avoiding config duplication while still allowing per-dependency tuning.</p>
+<h2 id="resources">Resources</h2>
+<h3 id="medium">Medium</h3>
+<ul>
+<li><a href="https://www.freecodecamp.org/news/how-to-build-your-own-circuit-breaker-in-spring-boot-and-really-understand-resilience4j/#heading-custom-breaker-vs-resilience4j">How to Build Your Own Circuit Breaker in Spring Boot – and Really Understand Resilience4j</a></li>
+<li>
+<p><a href="https://www.baeldung.com/spring-boot-resilience4j">Guide to Resilience4j With Spring Boot</a></p>
+</li>
+<li>
+<p><a href="https://medium.com/@mustafa_ciminli/implementing-circuit-breaker-with-resilience4j-in-spring-boot-fe8cc9b43e89">Implementing Circuit Breaker with Resilience4j in Spring Boot</a></p>
+</li>
+</ul>
+<h3 id="youtube">Youtube</h3>
+<ul>
+<li>
+<p><a href="https://www.youtube.com/watch?v=HxZy6XxRU00">Master Microservices Resiliency in one shot | CricuitBreaker Pattern | Retry Pattern [Hindi]</a></p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/watch?v=9AXAUlp3DBw">Resilience4j Tutorial with Spring Boot | Circuit Breaker, Retry, Rate Limiter</a></p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/watch?v=3-ChrD3Zosg">Spring Boot 3 | Circuit Breakers using Resilience4J | Microservices Resiliency Primer</a></p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/watch?v=5qqHbBhgcXo">Timeout Pattern | Resilience4J TimeLimiter with Spring Boot | Microservices Architecture Pattern</a></p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/watch?v=b6R4dElDtRc">Microservice | Resilience4J Circuit Breaker Implementation on Spring Boot | JavaTechie</a></p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/watch?v=Z4CSGsOLb1c">Microservice | Resilience4J Retry Module Implementation With Spring Boot | JavaTechie</a></p>
+</li>
+<li>
+<p><a href="https://www.youtube.com/watch?v=4sL00jc5BPc">Spring Boot Resilience4j Tutorial: Circuit Breaker &amp; Retry Implementation</a></p>
+</li>
+<li><a href="https://www.youtube.com/watch?v=omxt2Ps_zg4">Resilience4J Circuit Breaker Pattern | Microservice Implementation | Spring Boot | [REST Example]</a></li>
+</ul></div>
+</article>
+</div>
+<script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+</div>
+<button class="md-top md-icon" data-md-component="top" hidden="" type="button">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  Back to top
+</button>
+</main>
+<footer class="md-footer">
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-copyright">
+<div class="md-copyright__highlight">
+      © 2025 <a href="https://github.com/abhishekghoshh" rel="noopener" target="_blank">Abhishek Ghosh</a>
+</div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+      Material for MkDocs
+    </a>
+</div>
+<div class="md-social">
+<a class="md-social__link" href="https://github.com/abhishekghoshh" rel="noopener" target="_blank" title="github.com">
+<svg viewbox="0 0 480 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M186.1 328.7c0 20.9-10.9 55.1-36.7 55.1s-36.7-34.2-36.7-55.1 10.9-55.1 36.7-55.1 36.7 34.2 36.7 55.1M480 278.2c0 31.9-3.2 65.7-17.5 95-37.9 76.6-142.1 74.8-216.7 74.8-75.8 0-186.2 2.7-225.6-74.8-14.6-29-20.2-63.1-20.2-95 0-41.9 13.9-81.5 41.5-113.6-5.2-15.8-7.7-32.4-7.7-48.8 0-21.5 4.9-32.3 14.6-51.8 45.3 0 74.3 9 108.8 36 29-6.9 58.8-10 88.7-10 27 0 54.2 2.9 80.4 9.2 34-26.7 63-35.2 107.8-35.2 9.8 19.5 14.6 30.3 14.6 51.8 0 16.4-2.6 32.7-7.7 48.2 27.5 32.4 39 72.3 39 114.2m-64.3 50.5c0-43.9-26.7-82.6-73.5-82.6-18.9 0-37 3.4-56 6-14.9 2.3-29.8 3.2-45.1 3.2-15.2 0-30.1-.9-45.1-3.2-18.7-2.6-37-6-56-6-46.8 0-73.5 38.7-73.5 82.6 0 87.8 80.4 101.3 150.4 101.3h48.2c70.3 0 150.6-13.4 150.6-101.3m-82.6-55.1c-25.8 0-36.7 34.2-36.7 55.1s10.9 55.1 36.7 55.1 36.7-34.2 36.7-55.1-10.9-55.1-36.7-55.1"></path></svg>
+</a>
+<a class="md-social__link" href="https://x.com/abhishek_ghoshh" rel="noopener" target="_blank" title="x.com">
+<svg viewbox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253"></path></svg>
+</a>
+<a class="md-social__link" href="https://www.linkedin.com/in/abhishek-ghosh-220679132/" rel="noopener" target="_blank" title="www.linkedin.com">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5m282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"></path></svg>
+</a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<div class="md-dialog" data-md-component="dialog">
+<div class="md-dialog__inner md-typeset"></div>
+</div>
+<script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+<script src="../../assets/javascripts/bundle.60a45f97.min.js"></script>
+<script type="module">import mermaid from "https://unpkg.com/mermaid@10.4.0/dist/mermaid.esm.min.mjs";
+window.mermaidConfig = {default: {
+    startOnLoad: false
+}};</script></body>
+</html>

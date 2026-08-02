@@ -1,0 +1,2111 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<link href="https://abhishekghoshh.github.io/spring-boot-helper/spring-cloud/011-log-aggregation-with-elk/" rel="canonical"/>
+<link href="../010-distributed-tracing/" rel="prev"/>
+<link href="../012-testing/" rel="next"/>
+<link href="../../assets/images/favicon.png" rel="icon"/>
+<meta content="mkdocs-1.6.1, mkdocs-material-9.5.50" name="generator"/>
+<title>Log Aggregation with ELK - spring-boot-helper</title>
+<link href="../../assets/stylesheets/main.a40c8224.min.css" rel="stylesheet"/>
+<link href="../../assets/stylesheets/palette.06af60db.min.css" rel="stylesheet"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
+<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+<meta content="website" property="og:type"/>
+<meta content="Log Aggregation with ELK - spring-boot-helper" property="og:title"/>
+<meta content="None" property="og:description"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/assets/images/social/spring-cloud/011-log-aggregation-with-elk.png" property="og:image"/>
+<meta content="image/png" property="og:image:type"/>
+<meta content="1200" property="og:image:width"/>
+<meta content="630" property="og:image:height"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/spring-cloud/011-log-aggregation-with-elk/" property="og:url"/>
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="Log Aggregation with ELK - spring-boot-helper" name="twitter:title"/>
+<meta content="None" name="twitter:description"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/assets/images/social/spring-cloud/011-log-aggregation-with-elk.png" name="twitter:image"/>
+</head>
+<body data-md-color-accent="purple" data-md-color-primary="teal" data-md-color-scheme="default" dir="ltr">
+<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
+<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
+<label class="md-overlay" for="__drawer"></label>
+<div data-md-component="skip">
+<a class="md-skip" href="#log-aggregation-with-elk">
+          Skip to content
+        </a>
+</div>
+<div data-md-component="announce">
+</div>
+<header class="md-header" data-md-component="header">
+<nav aria-label="Header" class="md-header__inner md-grid">
+<a aria-label="spring-boot-helper" class="md-header__button md-logo" data-md-component="logo" href="../.." title="spring-boot-helper">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+<label class="md-header__button md-icon" for="__drawer">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+</label>
+<div class="md-header__title" data-md-component="header-title">
+<div class="md-header__ellipsis">
+<div class="md-header__topic">
+<span class="md-ellipsis">
+            spring-boot-helper
+          </span>
+</div>
+<div class="md-header__topic" data-md-component="header-topic">
+<span class="md-ellipsis">
+            
+              Log Aggregation with ELK
+            
+          </span>
+</div>
+</div>
+</div>
+<form class="md-header__option" data-md-component="palette">
+<input aria-label="Switch to dark mode" class="md-option" data-md-color-accent="purple" data-md-color-media="" data-md-color-primary="teal" data-md-color-scheme="default" id="__palette_0" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_1" hidden="" title="Switch to dark mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"></path></svg>
+</label>
+<input aria-label="Switch to light mode" class="md-option" data-md-color-accent="lime" data-md-color-media="" data-md-color-primary="teal" data-md-color-scheme="slate" id="__palette_1" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_0" hidden="" title="Switch to light mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"></path></svg>
+</label>
+</form>
+<script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+<label class="md-header__button md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+</label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input aria-label="Search" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="Search" required="" spellcheck="false" type="text"/>
+<label class="md-search__icon md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+</label>
+<nav aria-label="Search" class="md-search__options">
+<button aria-label="Clear" class="md-search__icon md-icon" tabindex="-1" title="Clear" type="reset">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+</button>
+</nav>
+<div class="md-search__suggest" data-md-component="search-suggest"></div>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix="" tabindex="0">
+<div class="md-search-result" data-md-component="search-result">
+<div class="md-search-result__meta">
+            Initializing search
+          </div>
+<ol class="md-search-result__list" role="presentation"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+</nav>
+</header>
+<div class="md-container" data-md-component="container">
+<nav aria-label="Tabs" class="md-tabs" data-md-component="tabs">
+<div class="md-grid">
+<ul class="md-tabs__list">
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../..">
+        
+  
+    
+  
+  Home
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-introduction/">
+          
+  
+  Introduction
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-aop/">
+          
+  
+  Spring AOP
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-transactions/">
+          
+  
+  Spring Transaction
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-jpa/">
+          
+  
+  Spring JPA
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-security/">
+          
+  
+  Spring Security
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-testing/">
+          
+  
+  Spring Testing
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-kafka/">
+          
+  
+  Spring Kafka
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-redis/">
+          
+  
+  Spring Redis
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-mongo/">
+          
+  
+  Spring Mongo
+
+        </a>
+</li>
+<li class="md-tabs__item md-tabs__item--active">
+<a class="md-tabs__link" href="../">
+          
+  
+  Spring Cloud
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../others/">
+          
+  
+  Others
+
+        </a>
+</li>
+</ul>
+</div>
+</nav>
+<main class="md-main" data-md-component="main">
+<div class="md-main__inner md-grid">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="Navigation" class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" data-md-level="0">
+<label class="md-nav__title" for="__drawer">
+<a aria-label="spring-boot-helper" class="md-nav__button md-logo" data-md-component="logo" href="../.." title="spring-boot-helper">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+    spring-boot-helper
+  </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../..">
+<span class="md-ellipsis">
+    Home
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_2" type="checkbox"/>
+<label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+<span class="md-ellipsis">
+    Introduction
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_2_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_2">
+<span class="md-nav__icon md-icon"></span>
+            Introduction
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/interview-helper/">
+<span class="md-ellipsis">
+    Interview Helper
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/001-history/">
+<span class="md-ellipsis">
+    001 - History
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/002-spring-mvc/">
+<span class="md-ellipsis">
+    002 - Spring MVC
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/003-spring-boot/">
+<span class="md-ellipsis">
+    003 - Spring Boot
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/004-maven-and-gradle/">
+<span class="md-ellipsis">
+    004 - Maven and Gradle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/005-annotations/">
+<span class="md-ellipsis">
+    005 - Spring Annotations
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/006-bean-management/">
+<span class="md-ellipsis">
+    006 - Spring Bean Management
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/007-config/">
+<span class="md-ellipsis">
+    007 - Spring Boot Config Management
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/008-async/">
+<span class="md-ellipsis">
+    008 - Async with Spring Boot
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/009-spring-with-virtual-thread/">
+<span class="md-ellipsis">
+    009 - Spring with Virtual Thread
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/010-intercepter-and-filter/">
+<span class="md-ellipsis">
+    010 - Interceptor and Filter
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/011-spring-hateos/">
+<span class="md-ellipsis">
+    011 - Spring HATEOS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/012-exception-handling/">
+<span class="md-ellipsis">
+    012 - Exception Handling
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/013-spring-actuator/">
+<span class="md-ellipsis">
+    013 - Spring Boot Actuator
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_3" type="checkbox"/>
+<label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring AOP
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_3_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_3">
+<span class="md-nav__icon md-icon"></span>
+            Spring AOP
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/001-what-is-aop/">
+<span class="md-ellipsis">
+    001 - What is AOP? Why and How We Use It?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/002-advantages-and-disadvantages/">
+<span class="md-ellipsis">
+    002 - Advantages and Disadvantages of AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/003-real-life-examples/">
+<span class="md-ellipsis">
+    003 - Real-Life Examples and Industry Usages
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/004-aop-annotations/">
+<span class="md-ellipsis">
+    004 - All Spring AOP Annotations Explained
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/005-code-examples/">
+<span class="md-ellipsis">
+    005 - Code Examples with Spring AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/006-summary/">
+<span class="md-ellipsis">
+    006 - Summary
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/007-aop-intercepts-method-invocation/">
+<span class="md-ellipsis">
+    007 - How AOP Intercepts Method Invocation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/008-aop-focus-on-business-logic/">
+<span class="md-ellipsis">
+    008 - How AOP Allows Focus on Business Logic
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/009-aop-reusability-and-maintainability/">
+<span class="md-ellipsis">
+    009 - How AOP Achieves Reusability and Maintainability
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/010-what-is-a-pointcut/">
+<span class="md-ellipsis">
+    010 - What is a Pointcut?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/011-pointcut-expression-structure/">
+<span class="md-ellipsis">
+    011 - Pointcut Expression Structure
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/012-pointcut-designators/">
+<span class="md-ellipsis">
+    012 - Different Types of Pointcut Designators
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/013-combining-pointcut-expressions/">
+<span class="md-ellipsis">
+    013 - Combining Pointcut Expressions (AND, OR, NOT)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/014-named-pointcuts/">
+<span class="md-ellipsis">
+    014 - Named Pointcuts — Reusable Pointcut Definitions
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/015-how-aop-works-internally/">
+<span class="md-ellipsis">
+    015 - How AOP Works Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/016-what-is-advice/">
+<span class="md-ellipsis">
+    016 - What is Advice? How It Works
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/017-what-is-joinpoint/">
+<span class="md-ellipsis">
+    017 - What is JoinPoint? How It Works
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/018-before-after-around-internals/">
+<span class="md-ellipsis">
+    018 - How @Before, @After, and @Around Work Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/019-matching-linking-interception/">
+<span class="md-ellipsis">
+    019 - How Matching, Linking, and Interception Work Together
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/020-performance-and-caching/">
+<span class="md-ellipsis">
+    020 - What If We Have 100s of Pointcuts? — Performance &amp; Caching
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_4" type="checkbox"/>
+<label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Transaction
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_4_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_4">
+<span class="md-nav__icon md-icon"></span>
+            Spring Transaction
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/001-prerequisites/">
+<span class="md-ellipsis">
+    001 - Prerequisites
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/002-critical-section/">
+<span class="md-ellipsis">
+    002 - What is a Critical Section?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/003-transactional-annotation/">
+<span class="md-ellipsis">
+    003 - What is @Transactional? Why and How to Use It?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/004-acid-properties/">
+<span class="md-ellipsis">
+    004 - ACID Properties with @Transactional
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/005-imports-and-yaml-configuration/">
+<span class="md-ellipsis">
+    005 - Imports for RDBMS vs NoSQL and YAML Configuration
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/006-enable-transaction-management/">
+<span class="md-ellipsis">
+    006 - What is @EnableTransactionManagement?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/007-method-vs-class-level-transactional/">
+<span class="md-ellipsis">
+    007 - Method-Level vs Class-Level @Transactional
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/008-transactional-internals-spring-aop/">
+<span class="md-ellipsis">
+    008 - How @Transactional Internally Uses Spring AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/009-aop-annotations-pointcut-around/">
+<span class="md-ellipsis">
+    009 - AOP Annotations Used Internally — Pointcut and @Around
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/010-rollback-internals/">
+<span class="md-ellipsis">
+    010 - How Rollback Happens Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/011-transaction-manager-hierarchy/">
+<span class="md-ellipsis">
+    011 - Hierarchy of TransactionManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/012-ways-to-manage-transactions/">
+<span class="md-ellipsis">
+    012 - How Many Ways Can We Manage Transactions?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/013-transaction-propagation/">
+<span class="md-ellipsis">
+    013 - What is Transaction Propagation?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/014-isolation-level/">
+<span class="md-ellipsis">
+    014 - What is Isolation Level?
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5" type="checkbox"/>
+<label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring JPA
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_5_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_5">
+<span class="md-nav__icon md-icon"></span>
+            Spring JPA
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/dbms/">
+<span class="md-ellipsis">
+    Database Management Systems (DBMS)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/sql/">
+<span class="md-ellipsis">
+    Structured Query Language (SQL)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/000-jdbc/">
+<span class="md-ellipsis">
+    JDBC
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/001-architecture/">
+<span class="md-ellipsis">
+    001 - Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/002-entity-lifecycle/">
+<span class="md-ellipsis">
+    002 - Entity Lifecycle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/003-entity-manager-factory-and-entity-manager/">
+<span class="md-ellipsis">
+    003 - EntityManagerFactory and EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/004-persistence-context/">
+<span class="md-ellipsis">
+    004 - Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/005-transaction-manager/">
+<span class="md-ellipsis">
+    005 - Transaction Manager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/006-hibernate-implementation/">
+<span class="md-ellipsis">
+    006 - Hibernate Implementation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/007-how-jpa-repository-uses-entity-manager/">
+<span class="md-ellipsis">
+    007 - How JPA Repository Uses EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/008-persistence-context-annotation-vs-autowired/">
+<span class="md-ellipsis">
+    008 - Why @PersistenceContext Instead of @Autowired
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/009-transactional-with-entity-manager/">
+<span class="md-ellipsis">
+    009 - Why @Transactional is Used for EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/010-entity-manager-creates-persistence-context/">
+<span class="md-ellipsis">
+    010 - How EntityManager Creates Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/011-role-of-persistence-context/">
+<span class="md-ellipsis">
+    011 - Role of Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/012-transaction-bounded-operations/">
+<span class="md-ellipsis">
+    012 - Transaction-Bounded Operations
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/013-first-level-caching/">
+<span class="md-ellipsis">
+    013 - First-Level Caching
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/014-second-level-caching/">
+<span class="md-ellipsis">
+    014 - Second-Level Caching
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/015-ddl-auto/">
+<span class="md-ellipsis">
+    015 - spring.jpa.hibernate.ddl-auto
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/016-table-annotation/">
+<span class="md-ellipsis">
+    016 - "@Table Annotation"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/017-column-annotation/">
+<span class="md-ellipsis">
+    017 - "@Column Annotation"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/018-id-and-composite-ids/">
+<span class="md-ellipsis">
+    018 - "@Id Annotation and Composite IDs"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/019-sequence-generator/">
+<span class="md-ellipsis">
+    019 - "@SequenceGenerator"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/020-generated-value-and-generation-strategies/">
+<span class="md-ellipsis">
+    020 - "@GeneratedValue and Generation Strategies"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/021-one-to-one-unidirectional-mapping/">
+<span class="md-ellipsis">
+    021 - OneToOne Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/022-eager-and-lazy-loading/">
+<span class="md-ellipsis">
+    022 - Eager and Lazy Loading
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/023-one-to-one-bidirectional-mapping/">
+<span class="md-ellipsis">
+    023 - OneToOne Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/024-one-to-many-unidirectional-mapping/">
+<span class="md-ellipsis">
+    024 - OneToMany Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/025-one-to-many-bidirectional-mapping/">
+<span class="md-ellipsis">
+    025 - OneToMany Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/026-many-to-one-bidirectional-mapping/">
+<span class="md-ellipsis">
+    026 - ManyToOne Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/027-many-to-many-unidirectional-mapping/">
+<span class="md-ellipsis">
+    027 - ManyToMany Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/028-many-to-many-bidirectional-mapping/">
+<span class="md-ellipsis">
+    028 - ManyToMany Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/029-derived-query-methods/">
+<span class="md-ellipsis">
+    029 - Derived Query Methods
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/030-jpql/">
+<span class="md-ellipsis">
+    030 - JPQL
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/031-n-plus-1-problem/">
+<span class="md-ellipsis">
+    031 - The N+1 Problem in JPA
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/032-named-query/">
+<span class="md-ellipsis">
+    032 - "@NamedQuery"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/033-native-query/">
+<span class="md-ellipsis">
+    033 - Native Query
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/034-dynamic-native-query/">
+<span class="md-ellipsis">
+    034 - Dynamic Native Query
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/035-criteria-api/">
+<span class="md-ellipsis">
+    035 - Criteria API
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/036-jpa-specification-api/">
+<span class="md-ellipsis">
+    036 - JPA Specification API
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_6" type="checkbox"/>
+<label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Security
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_6_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_6">
+<span class="md-nav__icon md-icon"></span>
+            Spring Security
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/001-different-types-of-attacks/">
+<span class="md-ellipsis">
+    001 - Different Types of Attacks
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/002-authorization-and-authentication/">
+<span class="md-ellipsis">
+    002 - Authentication and Authorization
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/003-request-response-architecture/">
+<span class="md-ellipsis">
+    003 - Request/Response Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/004-spring-security-architecture/">
+<span class="md-ellipsis">
+    004 - Spring Security Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/005-default-user-creation/">
+<span class="md-ellipsis">
+    005 - Default User Creation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/006-password-encoding-delegating-password-encoder/">
+<span class="md-ellipsis">
+    006 - Password Encoding &amp; DelegatingPasswordEncoder
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/007-database-based-authentication/">
+<span class="md-ellipsis">
+    007 - Database-Based Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/008-form-login-stateful-authentication/">
+<span class="md-ellipsis">
+    008 - Form Login Stateful Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/009-form-login-user-flow-session-lifecycle/">
+<span class="md-ellipsis">
+    009 - Form Login User Flow &amp; Session Lifecycle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/010-customizing-form-login/">
+<span class="md-ellipsis">
+    010 - Customizing Form Login
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/011-session-persistence-spring-session-jdbc/">
+<span class="md-ellipsis">
+    011 - Session Persistence (Spring Session JDBC)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/012-distributed-sessions-with-redis/">
+<span class="md-ellipsis">
+    012 - Distributed Sessions with Redis
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/013-dao-authentication-provider/">
+<span class="md-ellipsis">
+    013 - DaoAuthenticationProvider Deep Dive
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/014-authenticated-request-flow/">
+<span class="md-ellipsis">
+    014 - Authenticated Request Flow
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/015-session-management-and-creation-policy/">
+<span class="md-ellipsis">
+    015 - Session Management &amp; Creation Policy
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/016-http-basic-authentication/">
+<span class="md-ellipsis">
+    016 - HTTP Basic Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/017-jwt-json-web-token/">
+<span class="md-ellipsis">
+    017 - JWT (JSON Web Token)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/018-access-token-refresh-token-jwks/">
+<span class="md-ellipsis">
+    018 - Access Token, Refresh Token &amp; JWKS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/019-jwt-authentication-custom-security-filters/">
+<span class="md-ellipsis">
+    019 - JWT Authentication with Custom Filters
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/020-oauth2-and-openid-connect/">
+<span class="md-ellipsis">
+    020 - OAuth 2.0 &amp; OpenID Connect
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/021-role-based-authorization-rbac/">
+<span class="md-ellipsis">
+    021 - Role-Based Authorization (RBAC)
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_7" type="checkbox"/>
+<label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Testing
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_7_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_7">
+<span class="md-nav__icon md-icon"></span>
+            Spring Testing
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-testing/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_8" type="checkbox"/>
+<label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Kafka
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_8_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_8">
+<span class="md-nav__icon md-icon"></span>
+            Spring Kafka
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-kafka/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-kafka/kafka/">
+<span class="md-ellipsis">
+    Kafka Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_9" type="checkbox"/>
+<label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Redis
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_9_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_9">
+<span class="md-nav__icon md-icon"></span>
+            Spring Redis
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-redis/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-redis/redis/">
+<span class="md-ellipsis">
+    Redis Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_10" type="checkbox"/>
+<label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Mongo
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_10_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_10">
+<span class="md-nav__icon md-icon"></span>
+            Spring Mongo
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-mongo/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-mongo/mongodb/">
+<span class="md-ellipsis">
+    MongoDB Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" id="__nav_11" type="checkbox"/>
+<label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+<span class="md-ellipsis">
+    Spring Cloud
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="true" aria-labelledby="__nav_11_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_11">
+<span class="md-nav__icon md-icon"></span>
+            Spring Cloud
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../001-spring-cloud-config/">
+<span class="md-ellipsis">
+    Spring Cloud Config
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../002-spring-cloud-bus/">
+<span class="md-ellipsis">
+    Spring Cloud Bus
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../003-service-discovery/">
+<span class="md-ellipsis">
+    Service Discovery
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../004-spring-cloud-load-balancing/">
+<span class="md-ellipsis">
+    Spring Cloud Load balancing
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../005-rest-client/">
+<span class="md-ellipsis">
+    Rest Client
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../006-spring-cloud-api-gateway/">
+<span class="md-ellipsis">
+    Spring Cloud API Gateway
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../007-spring-cloud-security/">
+<span class="md-ellipsis">
+    Spring Cloud Security
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../008-circuit-breakers-and-resilience4j/">
+<span class="md-ellipsis">
+    Circuit Breaker and Resilience4j
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../009-messaging/">
+<span class="md-ellipsis">
+    Spring Messaging
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../010-distributed-tracing/">
+<span class="md-ellipsis">
+    Distributed Tracing
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
+<label class="md-nav__link md-nav__link--active" for="__toc">
+<span class="md-ellipsis">
+    Log Aggregation with ELK
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<a class="md-nav__link md-nav__link--active" href="./">
+<span class="md-ellipsis">
+    Log Aggregation with ELK
+  </span>
+</a>
+<nav aria-label="Table of contents" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#detailed-guide">
+<span class="md-ellipsis">
+      Detailed Guide
+    </span>
+</a>
+<nav aria-label="Detailed Guide" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#configuring-elk-stack">
+<span class="md-ellipsis">
+      Configuring ELK Stack
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#setting-up-and-launching-kibana-and-elastic-search">
+<span class="md-ellipsis">
+      Setting up And Launching Kibana And Elastic Search
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#exploring-log-stash">
+<span class="md-ellipsis">
+      Exploring Log stash
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#exploring-logstash-filters">
+<span class="md-ellipsis">
+      Exploring Logstash Filters
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#configuring-logstash-and-reading-logs">
+<span class="md-ellipsis">
+      Configuring Logstash And Reading Logs
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#exploring-logstash-grok">
+<span class="md-ellipsis">
+      Exploring Logstash Grok
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#reading-events-through-tcp-socket">
+<span class="md-ellipsis">
+      Reading Events Through TCP Socket
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#configure-microservices-to-log-into-a-file">
+<span class="md-ellipsis">
+      Configure Microservices to Log into a File
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#configure-logstash-to-read-log-files">
+<span class="md-ellipsis">
+      Configure Logstash to Read Log Files
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#visualizing-log-aggregation-with-kibana">
+<span class="md-ellipsis">
+      Visualizing Log Aggregation With Kibana
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#download-and-run-elasticsearch-with-security-enabled">
+<span class="md-ellipsis">
+      Download and Run Elasticsearch with Security Enabled
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#configure-elasticsearch-security-in-logstash">
+<span class="md-ellipsis">
+      Configure Elasticsearch Security in Logstash
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#run-search-query-in-elasticsearch">
+<span class="md-ellipsis">
+      Run Search Query in Elasticsearch
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#interview-questions-answers">
+<span class="md-ellipsis">
+      Interview Questions &amp; Answers
+    </span>
+</a>
+<nav aria-label="Interview Questions &amp; Answers" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#elk-stack-components">
+<span class="md-ellipsis">
+      ELK Stack Components
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#logstash-filters-grok">
+<span class="md-ellipsis">
+      Logstash Filters &amp; Grok
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#tcp-input-file-based-ingestion">
+<span class="md-ellipsis">
+      TCP Input &amp; File-Based Ingestion
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#elasticsearch-security-queries">
+<span class="md-ellipsis">
+      Elasticsearch Security &amp; Queries
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../012-testing/">
+<span class="md-ellipsis">
+    Spring Cloud Testing
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_12" type="checkbox"/>
+<label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+<span class="md-ellipsis">
+    Others
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_12_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_12">
+<span class="md-nav__icon md-icon"></span>
+            Others
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-batch/">
+<span class="md-ellipsis">
+    Spring Batch
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cassandra/">
+<span class="md-ellipsis">
+    Spring Cassandra
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-graphql/">
+<span class="md-ellipsis">
+    Spring GraphQL
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-reactive-programming/">
+<span class="md-ellipsis">
+    Spring Reactive Programming
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cloud-functions/">
+<span class="md-ellipsis">
+    Spring Cloud Functions
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-aws/">
+<span class="md-ellipsis">
+    Spring AWS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-k8s/">
+<span class="md-ellipsis">
+    Spring Kubernetes
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cicd/">
+<span class="md-ellipsis">
+    Spring CI/CD
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-observability/">
+<span class="md-ellipsis">
+    Spring Observability
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-splunk/">
+<span class="md-ellipsis">
+    Spring Splunk
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-docs/">
+<span class="md-ellipsis">
+    Spring Docs
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-content" data-md-component="content">
+<article class="md-content__inner md-typeset">
+<div><h1 id="log-aggregation-with-elk">Log Aggregation With ELK</h1>
+<h2 id="detailed-guide">Detailed Guide</h2>
+<h3 id="configuring-elk-stack">Configuring ELK Stack</h3>
+<p>The <strong>ELK Stack</strong> — Elasticsearch, Logstash, and Kibana (with <strong>Beats</strong>, particularly Filebeat, often added as lightweight shippers, making the acronym "Elastic Stack") — is the most widely used open-source solution for centralized log aggregation, search, and visualization. Each component has a distinct responsibility: <strong>Logstash</strong> (or a Beat) collects and parses raw log data from many sources, transforming unstructured text lines into structured JSON events; <strong>Elasticsearch</strong> indexes and stores those structured events, making them searchable at scale via a powerful query DSL; and <strong>Kibana</strong> provides the web UI for searching, filtering, and visualizing that data with dashboards, charts, and saved searches.</p>
+<p>Configuring the stack means wiring these three pieces together correctly: Logstash (or Filebeat) needs an <strong>input</strong> (where logs come from — a file, a TCP socket, a message queue), a <strong>filter</strong> chain (how to parse and enrich the raw log lines, most commonly with Grok patterns), and an <strong>output</strong> (where structured events go — normally Elasticsearch). Kibana then needs an <strong>index pattern</strong> pointed at the Elasticsearch indices that Logstash writes into, after which dashboards and visualizations can be built on top of the indexed fields.</p>
+<p>In a typical microservices deployment, every service instance writes its logs to a file (or stdout, captured by a container log driver). Logstash instances (or lightweight Filebeat agents on each host, forwarding to a central Logstash) tail these files, parse each line into a structured document (extracting fields like timestamp, log level, service name, trace ID, message), and bulk-index the documents into Elasticsearch under a time-based index naming convention (e.g. <code>app-logs-2026.08.02</code>). Engineers then use Kibana's Discover view or dashboards to search and visualize logs from all services in one place, instead of SSH-ing into individual hosts.</p>
+<pre class="mermaid"><code>flowchart LR
+    subgraph Microservices
+        S1[order-service log file]
+        S2[inventory-service log file]
+        S3[payment-service log file]
+    end
+    S1 --&gt; FB[Filebeat / Logstash input]
+    S2 --&gt; FB
+    S3 --&gt; FB
+    FB --&gt; F[Logstash filter: Grok parsing + enrichment]
+    F --&gt; ES[(Elasticsearch index: app-logs-*)]
+    ES --&gt; KB[Kibana Discover / Dashboards]
+    Dev[Developer / SRE] --&gt; KB
+</code></pre>
+<p><strong>Real-life scenario:</strong> A platform team standardizes log aggregation across 25 microservices by deploying Filebeat as a sidecar in every pod, all shipping to a shared Logstash cluster that enriches and indexes into Elasticsearch, giving every engineer a single Kibana dashboard to search logs across the entire fleet instead of relying on <code>kubectl logs</code> per pod.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why is the acronym sometimes written as "Elastic Stack" instead of "ELK Stack"?</strong>
+Because modern deployments frequently add Beats (lightweight shippers like Filebeat) as the first hop that collects and forwards logs before Logstash or Elasticsearch is involved; "Elastic Stack" acknowledges Beats as a first-class part of the pipeline alongside Elasticsearch, Logstash, and Kibana.</p>
+<p><strong>Q: What are the three responsibilities that must be wired together to configure the stack end-to-end?</strong>
+An input (where Logstash/Beats reads logs from), a filter chain (how raw lines are parsed and enriched, typically with Grok), and an output (where structured events are written, typically Elasticsearch) — plus a Kibana index pattern/data view pointed at the resulting indices so the data becomes searchable and visualizable.</p>
+<h3 id="setting-up-and-launching-kibana-and-elastic-search">Setting up And Launching Kibana And Elastic Search</h3>
+<p>Elasticsearch and Kibana are typically run as separate services that must be started in the right order: Elasticsearch first (since Kibana depends on it being reachable), followed by Kibana pointed at the Elasticsearch URL. For local development, Docker is the simplest way to get both running quickly.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="c1"># Create a dedicated network so the containers can resolve each other by name</span>
+<a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a>docker<span class="w"> </span>network<span class="w"> </span>create<span class="w"> </span>elastic
+<a href="#__codelineno-0-3" id="__codelineno-0-3" name="__codelineno-0-3"></a>
+<a href="#__codelineno-0-4" id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="c1"># Start Elasticsearch (single-node, security disabled for local dev simplicity)</span>
+<a href="#__codelineno-0-5" id="__codelineno-0-5" name="__codelineno-0-5"></a>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--name<span class="w"> </span>elasticsearch<span class="w"> </span>--net<span class="w"> </span>elastic<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-0-6" id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="w">  </span>-p<span class="w"> </span><span class="m">9200</span>:9200<span class="w"> </span>-p<span class="w"> </span><span class="m">9300</span>:9300<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-0-7" id="__codelineno-0-7" name="__codelineno-0-7"></a><span class="w">  </span>-e<span class="w"> </span><span class="s2">"discovery.type=single-node"</span><span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-0-8" id="__codelineno-0-8" name="__codelineno-0-8"></a><span class="w">  </span>-e<span class="w"> </span><span class="s2">"xpack.security.enabled=false"</span><span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-0-9" id="__codelineno-0-9" name="__codelineno-0-9"></a><span class="w">  </span>-e<span class="w"> </span><span class="s2">"ES_JAVA_OPTS=-Xms512m -Xmx512m"</span><span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-0-10" id="__codelineno-0-10" name="__codelineno-0-10"></a><span class="w">  </span>docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+<a href="#__codelineno-0-11" id="__codelineno-0-11" name="__codelineno-0-11"></a>
+<a href="#__codelineno-0-12" id="__codelineno-0-12" name="__codelineno-0-12"></a><span class="c1"># Verify it started correctly</span>
+<a href="#__codelineno-0-13" id="__codelineno-0-13" name="__codelineno-0-13"></a>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:9200
+<a href="#__codelineno-0-14" id="__codelineno-0-14" name="__codelineno-0-14"></a>
+<a href="#__codelineno-0-15" id="__codelineno-0-15" name="__codelineno-0-15"></a><span class="c1"># Start Kibana, pointed at Elasticsearch</span>
+<a href="#__codelineno-0-16" id="__codelineno-0-16" name="__codelineno-0-16"></a>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--name<span class="w"> </span>kibana<span class="w"> </span>--net<span class="w"> </span>elastic<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-0-17" id="__codelineno-0-17" name="__codelineno-0-17"></a><span class="w">  </span>-p<span class="w"> </span><span class="m">5601</span>:5601<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-0-18" id="__codelineno-0-18" name="__codelineno-0-18"></a><span class="w">  </span>-e<span class="w"> </span><span class="s2">"ELASTICSEARCH_HOSTS=http://elasticsearch:9200"</span><span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-0-19" id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="w">  </span>docker.elastic.co/kibana/kibana:8.13.4
+</code></pre></div>
+<p>Once both containers report healthy, Kibana is reachable at <code>http://localhost:5601</code> and will prompt for an Elasticsearch connection (already satisfied by the <code>ELASTICSEARCH_HOSTS</code> environment variable above). From here, index patterns can be created once Logstash starts writing documents into Elasticsearch.</p>
+<p><strong>Real-life scenario:</strong> A developer setting up a local reproduction environment for a bug uses this exact two-container Docker setup (security disabled, single node) to get a fully working Elasticsearch + Kibana pair running in under a minute, without needing the full production-grade, security-enabled cluster.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why must Elasticsearch be started before Kibana in a typical local setup?</strong>
+Kibana is purely a client of Elasticsearch's HTTP API — it has no data of its own and cannot render any UI functionality (index management, Discover, dashboards) until it can successfully reach a running Elasticsearch instance at the URL configured via <code>ELASTICSEARCH_HOSTS</code>.</p>
+<p><strong>Q: What does <code>discovery.type=single-node</code> do, and why is it used in local/dev setups?</strong>
+It tells Elasticsearch to skip its normal cluster-formation and master-election process (which expects multiple nodes to discover each other) and run as a self-contained single-node cluster, which is the simplest configuration for local development where a multi-node cluster isn't needed.</p>
+<h3 id="exploring-log-stash">Exploring Log stash</h3>
+<p><strong>Logstash</strong> is a server-side data processing pipeline that ingests data from multiple sources simultaneously, transforms it, and forwards it to one or more destinations ("stashes"), most commonly Elasticsearch. Its configuration is built around exactly three pipeline stages, always in this order: <strong>input</strong> (defines where events come from), <strong>filter</strong> (defines how events are parsed, enriched, or dropped), and <strong>output</strong> (defines where processed events are sent).</p>
+<p>Logstash pipelines are defined in a <code>.conf</code> file using its own configuration language, and pipelines can chain multiple filters together (e.g. <code>grok</code> to parse a log line, then <code>date</code> to fix the timestamp field, then <code>mutate</code> to rename or drop fields) before the event reaches the output stage. Logstash is written in JRuby and runs on the JVM, so it benefits from being co-located with adequate memory (it can be memory-hungry when processing large filter chains at high throughput), which is why many architectures put a lightweight Beat (Filebeat) directly on each application host to do the initial log shipping, forwarding to a smaller number of centralized Logstash instances that do the heavier parsing.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="c1"># Run Logstash via Docker, mounting a custom pipeline config</span>
+<a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--name<span class="w"> </span>logstash<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="w">  </span>--net<span class="w"> </span>elastic<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-1-4" id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="w">  </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/logstash.conf:/usr/share/logstash/pipeline/logstash.conf<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-1-5" id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="w">  </span>docker.elastic.co/logstash/logstash:8.13.4
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A team initially points Filebeat directly at Elasticsearch for simplicity, but later introduces a Logstash tier once they need to parse multi-line stack traces and enrich events with a lookup table (mapping internal service IDs to human-readable names) — logic that's a natural fit for Logstash's filter stage but awkward to do in Filebeat alone.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What are the three pipeline stages every Logstash configuration is built around, and which are mandatory?</strong>
+Input, filter, and output, always processed in that order. Input and output are mandatory since a pipeline needs a source and destination; filter is technically optional but is where nearly all real parsing/enrichment logic lives.</p>
+<p><strong>Q: Why is Logstash often paired with lightweight Beats agents rather than used alone on every host?</strong>
+Logstash runs on the JVM and can be memory- and CPU-intensive, especially with complex filter chains at high throughput. Running a lightweight Beat (like Filebeat) directly on each application host to ship raw logs, forwarding to a smaller centralized tier of Logstash instances for the heavy parsing, reduces per-host resource overhead while keeping the expensive processing centralized.</p>
+<h3 id="exploring-logstash-filters">Exploring Logstash Filters</h3>
+<p>The <strong>filter</strong> stage is where Logstash does its real work: transforming semi-structured or unstructured text into well-defined fields. The most commonly used filter plugins are <code>grok</code> (pattern-based text parsing, covered in depth in the next topic), <code>date</code> (parsing a timestamp string into the event's <code>@timestamp</code> field, replacing the time Logstash received the event with the time the log line was actually generated), <code>mutate</code> (renaming, removing, converting the type of, or lowercasing/uppercasing fields), <code>json</code> (parsing a field that already contains a JSON string into structured sub-fields), and <code>geoip</code> (enriching an IP address field with geographic location data).</p>
+<p>Filters run in the order they are declared and can be conditionally applied using <code>if</code>/<code>else</code> blocks based on tags or field values — for example, applying a different Grok pattern depending on which application produced the log line (distinguished by a <code>type</code> or <code>service</code> field set at the input stage).</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="l l-Scalar l-Scalar-Plain">filter {</span>
+<a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">if [fields][service] == "order-service" {</span>
+<a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">grok {</span>
+<a href="#__codelineno-2-4" id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">match =&gt; { "message" =&gt; "%{TIMESTAMP_ISO8601:log_timestamp} \[%{DATA:thread}\] %{LOGLEVEL:level} %{DATA:logger} \[traceId=%{DATA:traceId},spanId=%{DATA:spanId}\] - %{GREEDYDATA:log_message}" }</span>
+<a href="#__codelineno-2-5" id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-2-6" id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">date {</span>
+<a href="#__codelineno-2-7" id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">match =&gt; [ "log_timestamp", "yyyy-MM-dd HH:mm:ss.SSS" ]</span>
+<a href="#__codelineno-2-8" id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">target =&gt; "@timestamp"</span>
+<a href="#__codelineno-2-9" id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-2-10" id="__codelineno-2-10" name="__codelineno-2-10"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">mutate {</span>
+<a href="#__codelineno-2-11" id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">remove_field =&gt; [ "log_timestamp" ]</span>
+<a href="#__codelineno-2-12" id="__codelineno-2-12" name="__codelineno-2-12"></a><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">convert =&gt; { "level" =&gt; "string" }</span>
+<a href="#__codelineno-2-13" id="__codelineno-2-13" name="__codelineno-2-13"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-2-14" id="__codelineno-2-14" name="__codelineno-2-14"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-2-15" id="__codelineno-2-15" name="__codelineno-2-15"></a><span class="l l-Scalar l-Scalar-Plain">}</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> After enabling the <code>date</code> filter to use the log line's own embedded timestamp instead of Logstash's ingestion time, a team notices that logs delayed by a slow network link (or replayed from an old file during an incident investigation) are now correctly ordered by <em>when they actually happened</em> in Kibana, rather than by when Logstash happened to process them.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What does the <code>mutate</code> filter plugin do, and give two common uses.</strong>
+It performs general-purpose field manipulation on an event: renaming fields, removing fields, changing a field's data type, or altering case (upper/lowercase). Two common uses are dropping a temporary field created only to help parsing (e.g. the raw <code>log_timestamp</code> string after the <code>date</code> filter has consumed it) and converting a field like <code>level</code> to a consistent string type.</p>
+<p><strong>Q: How can a Logstash pipeline apply different filter logic depending on which service produced a log line?</strong>
+By using conditional <code>if</code>/<code>else</code> blocks in the filter stage keyed off a field set at the input stage (e.g. <code>[fields][service]</code>), so that, for example, one Grok pattern is applied for <code>order-service</code> logs and a different pattern is applied for a legacy service with an incompatible log format.</p>
+<h3 id="configuring-logstash-and-reading-logs">Configuring Logstash And Reading Logs</h3>
+<p>A complete Logstash pipeline configuration file has three top-level blocks. A minimal but realistic example reading application logs from a file and writing to Elasticsearch looks like this:</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="c1"># logstash.conf</span>
+<a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="l l-Scalar l-Scalar-Plain">input {</span>
+<a href="#__codelineno-3-3" id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">file {</span>
+<a href="#__codelineno-3-4" id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">path =&gt; "/var/log/app/*.log"</span>
+<a href="#__codelineno-3-5" id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">start_position =&gt; "beginning"</span>
+<a href="#__codelineno-3-6" id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">sincedb_path =&gt; "/dev/null"</span><span class="w">   </span><span class="c1"># dev-only: always reread from the start</span>
+<a href="#__codelineno-3-7" id="__codelineno-3-7" name="__codelineno-3-7"></a><span class="w">  </span><span class="err">}</span>
+<a href="#__codelineno-3-8" id="__codelineno-3-8" name="__codelineno-3-8"></a><span class="err">}</span>
+<a href="#__codelineno-3-9" id="__codelineno-3-9" name="__codelineno-3-9"></a>
+<a href="#__codelineno-3-10" id="__codelineno-3-10" name="__codelineno-3-10"></a><span class="l l-Scalar l-Scalar-Plain">filter {</span>
+<a href="#__codelineno-3-11" id="__codelineno-3-11" name="__codelineno-3-11"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">grok {</span>
+<a href="#__codelineno-3-12" id="__codelineno-3-12" name="__codelineno-3-12"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">match =&gt; { "message" =&gt; "%{TIMESTAMP_ISO8601:log_timestamp} \[%{DATA:thread}\] %{LOGLEVEL:level} %{DATA:logger} \[traceId=%{DATA:traceId},spanId=%{DATA:spanId}\] - %{GREEDYDATA:log_message}" }</span>
+<a href="#__codelineno-3-13" id="__codelineno-3-13" name="__codelineno-3-13"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-3-14" id="__codelineno-3-14" name="__codelineno-3-14"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">date {</span>
+<a href="#__codelineno-3-15" id="__codelineno-3-15" name="__codelineno-3-15"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">match =&gt; [ "log_timestamp", "yyyy-MM-dd HH:mm:ss.SSS" ]</span>
+<a href="#__codelineno-3-16" id="__codelineno-3-16" name="__codelineno-3-16"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">target =&gt; "@timestamp"</span>
+<a href="#__codelineno-3-17" id="__codelineno-3-17" name="__codelineno-3-17"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-3-18" id="__codelineno-3-18" name="__codelineno-3-18"></a><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-3-19" id="__codelineno-3-19" name="__codelineno-3-19"></a>
+<a href="#__codelineno-3-20" id="__codelineno-3-20" name="__codelineno-3-20"></a><span class="l l-Scalar l-Scalar-Plain">output {</span>
+<a href="#__codelineno-3-21" id="__codelineno-3-21" name="__codelineno-3-21"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">elasticsearch {</span>
+<a href="#__codelineno-3-22" id="__codelineno-3-22" name="__codelineno-3-22"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">hosts =&gt; ["http://elasticsearch:9200"]</span>
+<a href="#__codelineno-3-23" id="__codelineno-3-23" name="__codelineno-3-23"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">index =&gt; "app-logs-%{+YYYY.MM.dd}"</span>
+<a href="#__codelineno-3-24" id="__codelineno-3-24" name="__codelineno-3-24"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-3-25" id="__codelineno-3-25" name="__codelineno-3-25"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">stdout { codec =&gt; rubydebug }</span><span class="w">   </span><span class="c1"># useful for debugging the pipeline itself</span>
+<a href="#__codelineno-3-26" id="__codelineno-3-26" name="__codelineno-3-26"></a><span class="err">}</span>
+</code></pre></div>
+<p>The <code>sincedb_path</code> setting controls where Logstash's <code>file</code> input tracks its read offset for each monitored file, so that restarting Logstash doesn't reprocess the entire file from scratch (setting it to <code>/dev/null</code>, as above, is a common development trick to force full re-reads, but should never be used in production). The <code>stdout { codec =&gt; rubydebug }</code> output is a very common debugging technique — running it alongside the real Elasticsearch output prints every parsed event to the console in a readable format, making it easy to verify the Grok pattern is extracting fields correctly before trusting the pipeline in production.</p>
+<pre class="mermaid"><code>flowchart TD
+    LF["/var/log/app/order-service.log"] --&gt; IN["input: file { path, start_position, sincedb_path }"]
+    IN --&gt; FI["filter: grok + date"]
+    FI --&gt; OUT1["output: elasticsearch (index=app-logs-YYYY.MM.dd)"]
+    FI --&gt; OUT2["output: stdout (rubydebug, for pipeline debugging)"]
+</code></pre>
+<p><strong>Real-life scenario:</strong> During initial pipeline development, an engineer temporarily disables the Elasticsearch output and relies solely on <code>stdout { codec =&gt; rubydebug }</code> to iterate quickly on a tricky Grok pattern for a legacy application's inconsistent log format, only re-enabling the Elasticsearch output once every field extracts cleanly.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What is the purpose of <code>sincedb_path</code> in the <code>file</code> input plugin, and what is the risk of pointing it at <code>/dev/null</code> in production?</strong>
+It persists the read offset for each monitored file so a Logstash restart resumes reading from where it left off instead of starting over. Pointing it at <code>/dev/null</code> forces a full re-read from the beginning on every restart, which in production would cause massive duplicate ingestion of already-processed log data.</p>
+<p><strong>Q: Why add a <code>stdout { codec =&gt; rubydebug }</code> output alongside a real Elasticsearch output during development?</strong>
+It prints every parsed event to the console in a human-readable format, letting engineers verify that a Grok pattern (or the rest of the filter chain) is extracting the expected fields correctly before trusting the pipeline to write into production Elasticsearch indices.</p>
+<h3 id="exploring-logstash-grok">Exploring Logstash Grok</h3>
+<p><strong>Grok</strong> is Logstash's pattern-matching filter for turning unstructured text (like a typical application log line) into named fields, using a library of predefined patterns (<code>%{TIMESTAMP_ISO8601}</code>, <code>%{LOGLEVEL}</code>, <code>%{IP}</code>, <code>%{WORD}</code>, <code>%{GREEDYDATA}</code>, etc.) built on top of regular expressions. A Grok pattern is written as <code>%{PATTERN:field_name}</code>, where <code>PATTERN</code> is a named regex and <code>field_name</code> is the key the extracted value will be stored under in the resulting structured event.</p>
+<p>Grok is powerful but has a well-known weakness: complex patterns with many named captures can become slow and hard to maintain, especially with greedy patterns like <code>%{GREEDYDATA}</code> combined with backtracking-heavy constructs — a poorly written Grok pattern can become a performance bottleneck or even catastrophically slow ("Grok pattern that never returns") on certain malformed input. The <a href="https://grokdebugger.com">Grok Debugger</a> tool (and Kibana's own Grok Debugger under Dev Tools) is commonly used to iteratively build and test patterns against sample log lines before deploying them.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="l l-Scalar l-Scalar-Plain">filter {</span>
+<a href="#__codelineno-4-2" id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">grok {</span>
+<a href="#__codelineno-4-3" id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">match =&gt; {</span>
+<a href="#__codelineno-4-4" id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">"message" =&gt; "%{TIMESTAMP_ISO8601:log_timestamp}\s+\[%{DATA:thread}\]\s+%{LOGLEVEL:level}\s+%{DATA:logger}\s+\[traceId=%{DATA:traceId},spanId=%{DATA:spanId}\]\s+-\s+%{GREEDYDATA:log_message}"</span>
+<a href="#__codelineno-4-5" id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-4-6" id="__codelineno-4-6" name="__codelineno-4-6"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain"># Multiple patterns can be tried in order until one matches (useful for mixed log formats)</span>
+<a href="#__codelineno-4-7" id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">break_on_match =&gt; true</span>
+<a href="#__codelineno-4-8" id="__codelineno-4-8" name="__codelineno-4-8"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-4-9" id="__codelineno-4-9" name="__codelineno-4-9"></a><span class="l l-Scalar l-Scalar-Plain">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Grok parsing of plain-text logs</td>
+<td>Works with existing log formats without changing application code; flexible; huge library of built-in patterns</td>
+<td>Regex-based and can be slow/fragile; breaks silently if log format changes; harder to maintain complex patterns</td>
+</tr>
+<tr>
+<td>Structured JSON logging at the source (e.g. Logback JSON encoder)</td>
+<td>Fast and reliable parsing (Logstash <code>json</code> filter, no regex); resilient to field additions; less pipeline maintenance</td>
+<td>Requires changing application logging configuration; JSON logs are less human-readable when read directly on disk</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Real-life scenario:</strong> A team migrates their highest-volume service from a plain-text log format parsed with an increasingly complex, slow Grok pattern to structured JSON logging (using Logback's <code>logstash-logback-encoder</code>), replacing the fragile <code>grok</code> filter with a trivial <code>json</code> filter and immediately cutting Logstash CPU usage on that pipeline significantly.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What does the syntax <code>%{PATTERN:field_name}</code> mean in a Grok expression?</strong>
+<code>PATTERN</code> refers to a named, predefined (or custom) regular expression bundled with Logstash, and <code>field_name</code> is the key under which the text matched by that pattern is stored in the resulting structured event — e.g. <code>%{LOGLEVEL:level}</code> captures a recognized log level string into a <code>level</code> field.</p>
+<p><strong>Q: Why can Grok patterns become a performance liability, and what's the usual long-term fix?</strong>
+Complex patterns with many named captures, especially greedy ones like <code>%{GREEDYDATA}</code> combined with heavy alternation, rely on regex backtracking that can become slow or even catastrophically so against malformed input. The common long-term fix is switching the application to emit structured JSON logs at the source and replacing the <code>grok</code> filter with Logstash's much simpler and faster <code>json</code> filter.</p>
+<h3 id="reading-events-through-tcp-socket">Reading Events Through TCP Socket</h3>
+<p>Besides tailing files, Logstash can ingest events directly over the network using the <code>tcp</code> input plugin, which opens a TCP port and treats each incoming line (or a configured codec's framing) as one event. This is useful for applications that push logs directly over the network (e.g. via a <code>SocketAppender</code> or a custom log shipper) rather than writing to a local file, and it's also a very convenient way to manually test a Logstash filter chain during development.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="c1"># logstash.conf</span>
+<a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="l l-Scalar l-Scalar-Plain">input {</span>
+<a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">tcp {</span>
+<a href="#__codelineno-5-4" id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">port =&gt; 5000</span>
+<a href="#__codelineno-5-5" id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">codec =&gt; json_lines</span><span class="w">   </span><span class="c1"># each line is a complete JSON document</span>
+<a href="#__codelineno-5-6" id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="w">  </span><span class="err">}</span>
+<a href="#__codelineno-5-7" id="__codelineno-5-7" name="__codelineno-5-7"></a><span class="err">}</span>
+<a href="#__codelineno-5-8" id="__codelineno-5-8" name="__codelineno-5-8"></a>
+<a href="#__codelineno-5-9" id="__codelineno-5-9" name="__codelineno-5-9"></a><span class="l l-Scalar l-Scalar-Plain">filter {</span>
+<a href="#__codelineno-5-10" id="__codelineno-5-10" name="__codelineno-5-10"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain"># events already structured via json_lines; minimal extra filtering needed</span>
+<a href="#__codelineno-5-11" id="__codelineno-5-11" name="__codelineno-5-11"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">mutate {</span>
+<a href="#__codelineno-5-12" id="__codelineno-5-12" name="__codelineno-5-12"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">add_field =&gt; { "ingested_via" =&gt; "tcp-socket" }</span>
+<a href="#__codelineno-5-13" id="__codelineno-5-13" name="__codelineno-5-13"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-5-14" id="__codelineno-5-14" name="__codelineno-5-14"></a><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-5-15" id="__codelineno-5-15" name="__codelineno-5-15"></a>
+<a href="#__codelineno-5-16" id="__codelineno-5-16" name="__codelineno-5-16"></a><span class="l l-Scalar l-Scalar-Plain">output {</span>
+<a href="#__codelineno-5-17" id="__codelineno-5-17" name="__codelineno-5-17"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">elasticsearch {</span>
+<a href="#__codelineno-5-18" id="__codelineno-5-18" name="__codelineno-5-18"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">hosts =&gt; ["http://elasticsearch:9200"]</span>
+<a href="#__codelineno-5-19" id="__codelineno-5-19" name="__codelineno-5-19"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">index =&gt; "app-logs-tcp-%{+YYYY.MM.dd}"</span>
+<a href="#__codelineno-5-20" id="__codelineno-5-20" name="__codelineno-5-20"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-5-21" id="__codelineno-5-21" name="__codelineno-5-21"></a><span class="l l-Scalar l-Scalar-Plain">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="c1"># Manually send a test event to the Logstash TCP input using netcat</span>
+<a href="#__codelineno-6-2" id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">'{"level":"INFO","service":"order-service","message":"Order 4821 created","traceId":"abc123"}'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>nc<span class="w"> </span>localhost<span class="w"> </span><span class="m">5000</span>
+<a href="#__codelineno-6-3" id="__codelineno-6-3" name="__codelineno-6-3"></a>
+<a href="#__codelineno-6-4" id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="c1"># Send several lines from a file, one event per line</span>
+<a href="#__codelineno-6-5" id="__codelineno-6-5" name="__codelineno-6-5"></a>nc<span class="w"> </span>localhost<span class="w"> </span><span class="m">5000</span><span class="w"> </span>&lt;<span class="w"> </span>sample-events.jsonl
+</code></pre></div>
+<pre class="mermaid"><code>sequenceDiagram
+    participant App as Application / nc
+    participant LS as Logstash (tcp input, port 5000)
+    participant ES as Elasticsearch
+
+    App-&gt;&gt;LS: TCP connection + JSON line event
+    Note over LS: codec: json_lines parses each line
+    LS-&gt;&gt;LS: filter stage (mutate, enrich)
+    LS-&gt;&gt;ES: bulk index request
+    ES--&gt;&gt;LS: 200 OK (indexed)
+</code></pre>
+<p><strong>Real-life scenario:</strong> During a live incident, an engineer needs to inject a handful of synthetic log events to verify that a newly deployed Logstash filter chain correctly tags events with a <code>severity</code> field, and does so quickly with <code>echo '{...}' | nc localhost 5000</code> rather than waiting for a real application to produce matching log lines.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: When would you use the <code>tcp</code> input plugin instead of the <code>file</code> input plugin?</strong>
+When an application (or shipper) pushes log events directly over the network — e.g. via a socket appender or a custom log forwarder — rather than writing to a local file that Logstash would otherwise need to tail; it's also convenient for manually injecting test events during pipeline development.</p>
+<p><strong>Q: What does the <code>json_lines</code> codec assume about the incoming data on a TCP input?</strong>
+That each newline-terminated line received on the socket is a complete, valid JSON document representing one event, which Logstash parses directly into structured fields without needing a separate Grok filter.</p>
+<h3 id="configure-microservices-to-log-into-a-file">Configure Microservices to Log into a File</h3>
+<p>Before Logstash (or Filebeat) can ingest application logs, the application itself must reliably write logs to a file (or stdout, in containerized deployments where the container runtime captures stdout to a log file automatically). For Spring Boot applications, this is normally configured through Logback (the default logging framework), specifying a <code>FileAppender</code> (or <code>RollingFileAppender</code> for log rotation) alongside the console appender.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="cm">&lt;!-- logback-spring.xml --&gt;</span>
+<a href="#__codelineno-7-2" id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="nt">&lt;configuration&gt;</span>
+<a href="#__codelineno-7-3" id="__codelineno-7-3" name="__codelineno-7-3"></a><span class="w">    </span><span class="nt">&lt;include</span><span class="w"> </span><span class="na">resource=</span><span class="s">"org/springframework/boot/logging/logback/defaults.xml"</span><span class="nt">/&gt;</span>
+<a href="#__codelineno-7-4" id="__codelineno-7-4" name="__codelineno-7-4"></a>
+<a href="#__codelineno-7-5" id="__codelineno-7-5" name="__codelineno-7-5"></a><span class="w">    </span><span class="nt">&lt;property</span><span class="w"> </span><span class="na">name=</span><span class="s">"LOG_FILE"</span><span class="w"> </span><span class="na">value=</span><span class="s">"/var/log/app/order-service.log"</span><span class="nt">/&gt;</span>
+<a href="#__codelineno-7-6" id="__codelineno-7-6" name="__codelineno-7-6"></a>
+<a href="#__codelineno-7-7" id="__codelineno-7-7" name="__codelineno-7-7"></a><span class="w">    </span><span class="nt">&lt;appender</span><span class="w"> </span><span class="na">name=</span><span class="s">"FILE"</span><span class="w"> </span><span class="na">class=</span><span class="s">"ch.qos.logback.core.rolling.RollingFileAppender"</span><span class="nt">&gt;</span>
+<a href="#__codelineno-7-8" id="__codelineno-7-8" name="__codelineno-7-8"></a><span class="w">        </span><span class="nt">&lt;file&gt;</span>${LOG_FILE}<span class="nt">&lt;/file&gt;</span>
+<a href="#__codelineno-7-9" id="__codelineno-7-9" name="__codelineno-7-9"></a><span class="w">        </span><span class="nt">&lt;rollingPolicy</span><span class="w"> </span><span class="na">class=</span><span class="s">"ch.qos.logback.core.rolling.TimeBasedRollingPolicy"</span><span class="nt">&gt;</span>
+<a href="#__codelineno-7-10" id="__codelineno-7-10" name="__codelineno-7-10"></a><span class="w">            </span><span class="nt">&lt;fileNamePattern&gt;</span>${LOG_FILE}.%d{yyyy-MM-dd}.%i.gz<span class="nt">&lt;/fileNamePattern&gt;</span>
+<a href="#__codelineno-7-11" id="__codelineno-7-11" name="__codelineno-7-11"></a><span class="w">            </span><span class="nt">&lt;maxFileSize&gt;</span>100MB<span class="nt">&lt;/maxFileSize&gt;</span>
+<a href="#__codelineno-7-12" id="__codelineno-7-12" name="__codelineno-7-12"></a><span class="w">            </span><span class="nt">&lt;maxHistory&gt;</span>14<span class="nt">&lt;/maxHistory&gt;</span>
+<a href="#__codelineno-7-13" id="__codelineno-7-13" name="__codelineno-7-13"></a><span class="w">        </span><span class="nt">&lt;/rollingPolicy&gt;</span>
+<a href="#__codelineno-7-14" id="__codelineno-7-14" name="__codelineno-7-14"></a><span class="w">        </span><span class="nt">&lt;encoder&gt;</span>
+<a href="#__codelineno-7-15" id="__codelineno-7-15" name="__codelineno-7-15"></a><span class="w">            </span><span class="nt">&lt;pattern&gt;</span>%d{yyyy-MM-dd<span class="w"> </span>HH:mm:ss.SSS}<span class="w"> </span>[%thread]<span class="w"> </span>%-5level<span class="w"> </span>%logger{36}<span class="w"> </span>[traceId=%X{traceId:-},spanId=%X{spanId:-}]<span class="w"> </span>-<span class="w"> </span>%msg%n<span class="nt">&lt;/pattern&gt;</span>
+<a href="#__codelineno-7-16" id="__codelineno-7-16" name="__codelineno-7-16"></a><span class="w">        </span><span class="nt">&lt;/encoder&gt;</span>
+<a href="#__codelineno-7-17" id="__codelineno-7-17" name="__codelineno-7-17"></a><span class="w">    </span><span class="nt">&lt;/appender&gt;</span>
+<a href="#__codelineno-7-18" id="__codelineno-7-18" name="__codelineno-7-18"></a>
+<a href="#__codelineno-7-19" id="__codelineno-7-19" name="__codelineno-7-19"></a><span class="w">    </span><span class="nt">&lt;root</span><span class="w"> </span><span class="na">level=</span><span class="s">"INFO"</span><span class="nt">&gt;</span>
+<a href="#__codelineno-7-20" id="__codelineno-7-20" name="__codelineno-7-20"></a><span class="w">        </span><span class="nt">&lt;appender-ref</span><span class="w"> </span><span class="na">ref=</span><span class="s">"FILE"</span><span class="nt">/&gt;</span>
+<a href="#__codelineno-7-21" id="__codelineno-7-21" name="__codelineno-7-21"></a><span class="w">        </span><span class="nt">&lt;appender-ref</span><span class="w"> </span><span class="na">ref=</span><span class="s">"CONSOLE"</span><span class="nt">/&gt;</span>
+<a href="#__codelineno-7-22" id="__codelineno-7-22" name="__codelineno-7-22"></a><span class="w">    </span><span class="nt">&lt;/root&gt;</span>
+<a href="#__codelineno-7-23" id="__codelineno-7-23" name="__codelineno-7-23"></a><span class="nt">&lt;/configuration&gt;</span>
+</code></pre></div>
+<p>Rolling the file by size and time (as above) prevents any single log file from growing unbounded and gives Logstash's <code>file</code> input predictable file names to watch. In Kubernetes deployments, it's more common to log to stdout only and let the container runtime + a node-level Filebeat DaemonSet handle collection, since writing to an in-container file complicates volume management; the choice between "log to file, Logstash reads it" and "log to stdout, Filebeat/Fluentd reads container logs" is a common real-world architecture decision.</p>
+<p><strong>Real-life scenario:</strong> A team running on Kubernetes initially configures <code>RollingFileAppender</code> writing inside each pod's ephemeral filesystem, then loses all logs whenever a pod is rescheduled; they switch to logging to stdout only, letting a Filebeat DaemonSet collect container log files from the node's Docker/containerd log directory instead, decoupling log retention from pod lifecycle.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why does <code>RollingFileAppender</code> matter for log ingestion, beyond just preventing unbounded disk usage?</strong>
+Rolling by size and time gives Logstash's <code>file</code> input predictable, bounded file names and sizes to watch, and prevents a single ever-growing log file from becoming unwieldy to tail or archive; without rotation, both disk usage and ingestion performance can degrade over time.</p>
+<p><strong>Q: Why is logging to stdout generally preferred over logging to a file inside a Kubernetes pod?</strong>
+A pod's filesystem is typically ephemeral — it's lost when the pod is rescheduled or restarted — so a log file written inside the container disappears along with it. Logging to stdout lets the container runtime persist logs on the node independently of the pod's lifecycle, where a node-level Filebeat DaemonSet can reliably collect them regardless of how often pods are recreated.</p>
+<h3 id="configure-logstash-to-read-log-files">Configure Logstash to Read Log Files</h3>
+<p>Once application log files exist on disk (or are mounted into the Logstash container/host), Logstash's <code>file</code> input plugin needs to be pointed at them, including handling multi-line events (like Java stack traces, which span many physical lines but represent a single logical log event).</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-8-1" id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="c1"># logstash.conf</span>
+<a href="#__codelineno-8-2" id="__codelineno-8-2" name="__codelineno-8-2"></a><span class="l l-Scalar l-Scalar-Plain">input {</span>
+<a href="#__codelineno-8-3" id="__codelineno-8-3" name="__codelineno-8-3"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">file {</span>
+<a href="#__codelineno-8-4" id="__codelineno-8-4" name="__codelineno-8-4"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">path =&gt; "/var/log/app/order-service.log"</span>
+<a href="#__codelineno-8-5" id="__codelineno-8-5" name="__codelineno-8-5"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">start_position =&gt; "beginning"</span>
+<a href="#__codelineno-8-6" id="__codelineno-8-6" name="__codelineno-8-6"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">sincedb_path =&gt; "/usr/share/logstash/data/sincedb-order-service"</span>
+<a href="#__codelineno-8-7" id="__codelineno-8-7" name="__codelineno-8-7"></a>
+<a href="#__codelineno-8-8" id="__codelineno-8-8" name="__codelineno-8-8"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">codec =&gt; multiline {</span>
+<a href="#__codelineno-8-9" id="__codelineno-8-9" name="__codelineno-8-9"></a><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain"># A new event starts only on a line beginning with a timestamp;</span>
+<a href="#__codelineno-8-10" id="__codelineno-8-10" name="__codelineno-8-10"></a><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain"># anything else (like a stack trace continuation) is appended to the previous event.</span>
+<a href="#__codelineno-8-11" id="__codelineno-8-11" name="__codelineno-8-11"></a><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">pattern =&gt; "^%{TIMESTAMP_ISO8601}"</span>
+<a href="#__codelineno-8-12" id="__codelineno-8-12" name="__codelineno-8-12"></a><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">negate =&gt; true</span>
+<a href="#__codelineno-8-13" id="__codelineno-8-13" name="__codelineno-8-13"></a><span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">what =&gt; "previous"</span>
+<a href="#__codelineno-8-14" id="__codelineno-8-14" name="__codelineno-8-14"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-8-15" id="__codelineno-8-15" name="__codelineno-8-15"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-8-16" id="__codelineno-8-16" name="__codelineno-8-16"></a><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-8-17" id="__codelineno-8-17" name="__codelineno-8-17"></a>
+<a href="#__codelineno-8-18" id="__codelineno-8-18" name="__codelineno-8-18"></a><span class="l l-Scalar l-Scalar-Plain">filter {</span>
+<a href="#__codelineno-8-19" id="__codelineno-8-19" name="__codelineno-8-19"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">grok {</span>
+<a href="#__codelineno-8-20" id="__codelineno-8-20" name="__codelineno-8-20"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">match =&gt; { "message" =&gt; "%{TIMESTAMP_ISO8601:log_timestamp} \[%{DATA:thread}\] %{LOGLEVEL:level} %{DATA:logger} \[traceId=%{DATA:traceId},spanId=%{DATA:spanId}\] - %{GREEDYDATA:log_message}" }</span>
+<a href="#__codelineno-8-21" id="__codelineno-8-21" name="__codelineno-8-21"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-8-22" id="__codelineno-8-22" name="__codelineno-8-22"></a><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-8-23" id="__codelineno-8-23" name="__codelineno-8-23"></a>
+<a href="#__codelineno-8-24" id="__codelineno-8-24" name="__codelineno-8-24"></a><span class="l l-Scalar l-Scalar-Plain">output {</span>
+<a href="#__codelineno-8-25" id="__codelineno-8-25" name="__codelineno-8-25"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">elasticsearch {</span>
+<a href="#__codelineno-8-26" id="__codelineno-8-26" name="__codelineno-8-26"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">hosts =&gt; ["http://elasticsearch:9200"]</span>
+<a href="#__codelineno-8-27" id="__codelineno-8-27" name="__codelineno-8-27"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">index =&gt; "app-logs-%{+YYYY.MM.dd}"</span>
+<a href="#__codelineno-8-28" id="__codelineno-8-28" name="__codelineno-8-28"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-8-29" id="__codelineno-8-29" name="__codelineno-8-29"></a><span class="l l-Scalar l-Scalar-Plain">}</span>
+</code></pre></div>
+<p>The <code>sincedb_path</code> file is what allows Logstash to resume reading exactly where it left off after a restart, tracking a byte offset per monitored file — without it (or with it pointed at <code>/dev/null</code>), Logstash would either miss new lines appended between restarts or reprocess entire files, both of which cause real production data-quality problems if not configured deliberately.</p>
+<p><strong>Real-life scenario:</strong> Without the <code>multiline</code> codec configured, a team's Kibana dashboard shows a Java exception stack trace as dozens of separate, out-of-order "log events" — one per line of the stack trace — cluttering search results; adding the multiline codec collapses each exception back into a single coherent event matching what actually happened in the application.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: How does the <code>multiline</code> codec decide where one logical event ends and the next begins?</strong>
+It's configured with a pattern identifying what a <em>new</em> event's first line looks like (e.g. starting with a timestamp) plus a <code>negate</code>/<code>what</code> combination specifying that any line NOT matching that pattern should be appended to the previous event instead of starting a new one — this is exactly how a multi-line Java stack trace gets merged back into the single log event it belongs to.</p>
+<p><strong>Q: What real production problem occurs if <code>sincedb_path</code> is misconfigured or missing for a <code>file</code> input?</strong>
+Without a properly persisted read offset, a Logstash restart either reprocesses the entire file from the start (duplicate ingestion) or, if the offset is somehow lost/reset incorrectly, can miss lines appended to the file between the crash and the restart — both are real data-quality problems in production log pipelines.</p>
+<h3 id="visualizing-log-aggregation-with-kibana">Visualizing Log Aggregation With Kibana</h3>
+<p>Once Elasticsearch holds indexed log documents, Kibana is used to explore and visualize them. The first step is always creating a <strong>data view</strong> (formerly called an "index pattern") that tells Kibana which Elasticsearch indices to query — typically a wildcard like <code>app-logs-*</code> so that new daily indices are automatically included without reconfiguring anything.</p>
+<p>The <strong>Discover</strong> view is the primary tool for ad-hoc log search: a search bar (supporting Kibana Query Language, KQL) lets engineers filter by any indexed field — <code>level: ERROR</code>, <code>service: "payment-service"</code>, <code>traceId: "abc123"</code> — combined with a time range picker, showing matching log documents in a scrollable, expandable list. Beyond ad-hoc search, Kibana's <strong>Visualize</strong> and <strong>Dashboard</strong> features let teams build persistent charts (error count over time, top 10 services by log volume, a pie chart of log levels) and combine them into a single dashboard for at-a-glance system health monitoring, often the "second screen" SREs keep open during on-call rotations.</p>
+<pre class="mermaid"><code>flowchart TD
+    ES[(Elasticsearch: app-logs-* indices)] --&gt; DV[Kibana Data View: app-logs-*]
+    DV --&gt; Disc["Discover: search level:ERROR AND service:payment-service"]
+    DV --&gt; Vis1[Visualization: error count over time]
+    DV --&gt; Vis2[Visualization: log volume by service]
+    Vis1 --&gt; Dash[Kibana Dashboard]
+    Vis2 --&gt; Dash
+    Disc --&gt; Dash
+    Dash --&gt; OnCall[SRE on-call monitoring screen]
+</code></pre>
+<p><strong>Real-life scenario:</strong> An SRE team builds a Kibana dashboard combining a time-series chart of <code>ERROR</code>-level log counts per service with a saved search filtered to <code>level: ERROR AND NOT message: "expected timeout"</code>, giving them an at-a-glance early warning signal for new production issues that they check first thing during every on-call handoff.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What is a Kibana data view (index pattern), and why is a wildcard like <code>app-logs-*</code> typically used?</strong>
+A data view tells Kibana which Elasticsearch indices to query as a single logical dataset. Using a wildcard like <code>app-logs-*</code> automatically includes new time-based daily indices (e.g. <code>app-logs-2026.08.02</code>) as they're created, without requiring the data view to be reconfigured every day.</p>
+<p><strong>Q: What is the difference between Kibana's Discover view and its Dashboard feature?</strong>
+Discover is for ad-hoc, interactive search and exploration of raw log documents using KQL and a time range picker. Dashboards combine persistent, saved visualizations (charts, tables, saved searches) into a single at-a-glance view, typically used for ongoing monitoring rather than one-off investigation.</p>
+<h3 id="download-and-run-elasticsearch-with-security-enabled">Download and Run Elasticsearch with Security Enabled</h3>
+<p>Production Elasticsearch clusters should always run with <strong>security enabled</strong> (<code>xpack.security.enabled=true</code>), which activates authentication (username/password, API keys, or SSO), role-based access control, and TLS encryption for transport and HTTP traffic — all of which are disabled by default in quick local dev setups (as shown earlier with <code>xpack.security.enabled=false</code>) purely for convenience.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-9-1" id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="c1"># Run a security-enabled single-node Elasticsearch (recent Elastic Stack versions</span>
+<a href="#__codelineno-9-2" id="__codelineno-9-2" name="__codelineno-9-2"></a><span class="c1"># enable security by default, but shown explicitly here for clarity)</span>
+<a href="#__codelineno-9-3" id="__codelineno-9-3" name="__codelineno-9-3"></a>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--name<span class="w"> </span>elasticsearch<span class="w"> </span>--net<span class="w"> </span>elastic<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-9-4" id="__codelineno-9-4" name="__codelineno-9-4"></a><span class="w">  </span>-p<span class="w"> </span><span class="m">9200</span>:9200<span class="w"> </span>-p<span class="w"> </span><span class="m">9300</span>:9300<span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-9-5" id="__codelineno-9-5" name="__codelineno-9-5"></a><span class="w">  </span>-e<span class="w"> </span><span class="s2">"discovery.type=single-node"</span><span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-9-6" id="__codelineno-9-6" name="__codelineno-9-6"></a><span class="w">  </span>-e<span class="w"> </span><span class="s2">"xpack.security.enabled=true"</span><span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-9-7" id="__codelineno-9-7" name="__codelineno-9-7"></a><span class="w">  </span>-e<span class="w"> </span><span class="s2">"ELASTIC_PASSWORD=ChangeMe123!"</span><span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-9-8" id="__codelineno-9-8" name="__codelineno-9-8"></a><span class="w">  </span>-e<span class="w"> </span><span class="s2">"ES_JAVA_OPTS=-Xms512m -Xmx512m"</span><span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-9-9" id="__codelineno-9-9" name="__codelineno-9-9"></a><span class="w">  </span>docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+<a href="#__codelineno-9-10" id="__codelineno-9-10" name="__codelineno-9-10"></a>
+<a href="#__codelineno-9-11" id="__codelineno-9-11" name="__codelineno-9-11"></a><span class="c1"># Wait for startup, then authenticate against the secured API</span>
+<a href="#__codelineno-9-12" id="__codelineno-9-12" name="__codelineno-9-12"></a>curl<span class="w"> </span>-s<span class="w"> </span>-u<span class="w"> </span>elastic:ChangeMe123!<span class="w"> </span>https://localhost:9200<span class="w"> </span>--cacert<span class="w"> </span>http_ca.crt
+</code></pre></div>
+<p>With security enabled, every client — Kibana, Logstash, curl, application code — must present valid credentials (or a certificate) to talk to Elasticsearch. Recent Elastic Stack versions (8.x) enable security by default and auto-generate a CA certificate and the <code>elastic</code> superuser password on first startup, printing them to the container logs, which must then be securely stored and distributed to Kibana/Logstash configuration.</p>
+<table>
+<thead>
+<tr>
+<th>Configuration</th>
+<th>Advantages</th>
+<th>Disadvantages</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Security disabled (<code>xpack.security.enabled=false</code>)</td>
+<td>Zero-friction local development; no certificates or credentials to manage; faster to get started</td>
+<td>No authentication or encryption at all; anyone with network access can read/write/delete any data; unacceptable for production or any environment with sensitive data</td>
+</tr>
+<tr>
+<td>Security enabled (<code>xpack.security.enabled=true</code>)</td>
+<td>Authentication, role-based authorization, and TLS encryption in transit; required for compliance and any production deployment</td>
+<td>Additional setup complexity (certificates, credentials must be distributed to every client); slight performance overhead from TLS; misconfiguration can lock out legitimate clients</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Real-life scenario:</strong> A company's initial proof-of-concept Elasticsearch cluster is deployed with security disabled "temporarily" for a demo, then accidentally left reachable from the internet with no authentication — a well-known real-world class of data breach — reinforcing why security-enabled configuration should be the default even for early-stage internal tooling.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What three protections does enabling <code>xpack.security.enabled</code> add to an Elasticsearch cluster?</strong>
+Authentication (requiring valid credentials or certificates), role-based access control (limiting which indices/operations a given user or service account may perform), and TLS encryption for both HTTP client traffic and inter-node transport traffic.</p>
+<p><strong>Q: In recent Elastic Stack versions (8.x), how are the initial <code>elastic</code> superuser password and CA certificate obtained?</strong>
+Security is enabled by default, and on first startup Elasticsearch auto-generates the CA certificate and the <code>elastic</code> superuser password, printing them to the container/process logs — these must then be captured and securely distributed to any client (Kibana, Logstash, application code) that needs to authenticate.</p>
+<h3 id="configure-elasticsearch-security-in-logstash">Configure Elasticsearch Security in Logstash</h3>
+<p>Once Elasticsearch requires authentication, every Logstash output block writing to it must supply valid credentials, and the Elasticsearch output plugin must be configured to trust Elasticsearch's TLS certificate.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-10-1" id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="c1"># logstash.conf</span>
+<a href="#__codelineno-10-2" id="__codelineno-10-2" name="__codelineno-10-2"></a><span class="l l-Scalar l-Scalar-Plain">output {</span>
+<a href="#__codelineno-10-3" id="__codelineno-10-3" name="__codelineno-10-3"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">elasticsearch {</span>
+<a href="#__codelineno-10-4" id="__codelineno-10-4" name="__codelineno-10-4"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">hosts =&gt; ["https://elasticsearch:9200"]</span>
+<a href="#__codelineno-10-5" id="__codelineno-10-5" name="__codelineno-10-5"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">user =&gt; "logstash_writer"</span>
+<a href="#__codelineno-10-6" id="__codelineno-10-6" name="__codelineno-10-6"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">password =&gt; "${LOGSTASH_ES_PASSWORD}"</span><span class="w">   </span><span class="c1"># sourced from Logstash keystore / env var</span>
+<a href="#__codelineno-10-7" id="__codelineno-10-7" name="__codelineno-10-7"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">ssl_enabled =&gt; true</span>
+<a href="#__codelineno-10-8" id="__codelineno-10-8" name="__codelineno-10-8"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">ssl_certificate_authorities =&gt; ["/usr/share/logstash/config/certs/http_ca.crt"]</span>
+<a href="#__codelineno-10-9" id="__codelineno-10-9" name="__codelineno-10-9"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">index =&gt; "app-logs-%{+YYYY.MM.dd}"</span>
+<a href="#__codelineno-10-10" id="__codelineno-10-10" name="__codelineno-10-10"></a><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">}</span>
+<a href="#__codelineno-10-11" id="__codelineno-10-11" name="__codelineno-10-11"></a><span class="l l-Scalar l-Scalar-Plain">}</span>
+</code></pre></div>
+<p>Rather than hardcoding the password in the pipeline file (a plaintext credential checked into config), production deployments store secrets in the <strong>Logstash keystore</strong> (<code>bin/logstash-keystore add LOGSTASH_ES_PASSWORD</code>) and reference them with the <code>${LOGSTASH_ES_PASSWORD}</code> syntax shown above, which Logstash resolves at startup without the secret ever appearing in the pipeline file itself. It's also best practice to create a dedicated, least-privilege Elasticsearch role (e.g. <code>logstash_writer</code>, permitted only to create/write indices matching <code>app-logs-*</code>) rather than using the <code>elastic</code> superuser account from Logstash.</p>
+<p><strong>Real-life scenario:</strong> A security review flags that a Logstash pipeline is authenticating to Elasticsearch using the <code>elastic</code> superuser account with its password committed in plaintext to a config repository; remediation involves creating a scoped <code>logstash_writer</code> role limited to the relevant index pattern and moving the password into the Logstash keystore.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why should a Logstash pipeline avoid using the <code>elastic</code> superuser account to write to Elasticsearch?</strong>
+The superuser account has unrestricted access to every index and operation in the cluster, so if the Logstash configuration or its credentials were ever compromised, the blast radius would be the entire cluster. A dedicated, least-privilege role (e.g. <code>logstash_writer</code>, scoped only to creating/writing <code>app-logs-*</code> indices) limits what an attacker or misconfiguration could do.</p>
+<p><strong>Q: How does the Logstash keystore avoid storing secrets in plaintext inside a pipeline <code>.conf</code> file?</strong>
+Credentials are added to an encrypted keystore file via <code>bin/logstash-keystore add &lt;NAME&gt;</code>, and the pipeline config references them with <code>${NAME}</code> syntax; Logstash resolves the actual secret value from the keystore at startup, so the plaintext credential never needs to appear in the <code>.conf</code> file itself (which is often checked into version control).</p>
+<h3 id="run-search-query-in-elasticsearch">Run Search Query in Elasticsearch</h3>
+<p>Elasticsearch exposes a rich <strong>Query DSL</strong> over its REST API for searching indexed documents. The <code>_search</code> endpoint accepts a JSON body describing the query (full-text match, term filters, ranges, boolean combinations) and returns matching documents ranked by relevance score (or filtered with no scoring, for exact filters).</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-11-1" id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="c1"># Simple full-text search for an error message across all app-logs indices</span>
+<a href="#__codelineno-11-2" id="__codelineno-11-2" name="__codelineno-11-2"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span><span class="s2">"http://localhost:9200/app-logs-*/_search"</span><span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-11-3" id="__codelineno-11-3" name="__codelineno-11-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-11-4" id="__codelineno-11-4" name="__codelineno-11-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<a href="#__codelineno-11-5" id="__codelineno-11-5" name="__codelineno-11-5"></a><span class="s1">    "query": {</span>
+<a href="#__codelineno-11-6" id="__codelineno-11-6" name="__codelineno-11-6"></a><span class="s1">      "match": { "log_message": "payment declined" }</span>
+<a href="#__codelineno-11-7" id="__codelineno-11-7" name="__codelineno-11-7"></a><span class="s1">    },</span>
+<a href="#__codelineno-11-8" id="__codelineno-11-8" name="__codelineno-11-8"></a><span class="s1">    "size": 20,</span>
+<a href="#__codelineno-11-9" id="__codelineno-11-9" name="__codelineno-11-9"></a><span class="s1">    "sort": [ { "@timestamp": "desc" } ]</span>
+<a href="#__codelineno-11-10" id="__codelineno-11-10" name="__codelineno-11-10"></a><span class="s1">  }'</span>
+<a href="#__codelineno-11-11" id="__codelineno-11-11" name="__codelineno-11-11"></a>
+<a href="#__codelineno-11-12" id="__codelineno-11-12" name="__codelineno-11-12"></a><span class="c1"># Combine an exact filter (traceId) with a range filter (last hour) using bool/must</span>
+<a href="#__codelineno-11-13" id="__codelineno-11-13" name="__codelineno-11-13"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span><span class="s2">"http://localhost:9200/app-logs-*/_search"</span><span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-11-14" id="__codelineno-11-14" name="__codelineno-11-14"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-11-15" id="__codelineno-11-15" name="__codelineno-11-15"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<a href="#__codelineno-11-16" id="__codelineno-11-16" name="__codelineno-11-16"></a><span class="s1">    "query": {</span>
+<a href="#__codelineno-11-17" id="__codelineno-11-17" name="__codelineno-11-17"></a><span class="s1">      "bool": {</span>
+<a href="#__codelineno-11-18" id="__codelineno-11-18" name="__codelineno-11-18"></a><span class="s1">        "must": [</span>
+<a href="#__codelineno-11-19" id="__codelineno-11-19" name="__codelineno-11-19"></a><span class="s1">          { "term": { "traceId.keyword": "abc123" } }</span>
+<a href="#__codelineno-11-20" id="__codelineno-11-20" name="__codelineno-11-20"></a><span class="s1">        ],</span>
+<a href="#__codelineno-11-21" id="__codelineno-11-21" name="__codelineno-11-21"></a><span class="s1">        "filter": [</span>
+<a href="#__codelineno-11-22" id="__codelineno-11-22" name="__codelineno-11-22"></a><span class="s1">          { "range": { "@timestamp": { "gte": "now-1h" } } }</span>
+<a href="#__codelineno-11-23" id="__codelineno-11-23" name="__codelineno-11-23"></a><span class="s1">        ]</span>
+<a href="#__codelineno-11-24" id="__codelineno-11-24" name="__codelineno-11-24"></a><span class="s1">      }</span>
+<a href="#__codelineno-11-25" id="__codelineno-11-25" name="__codelineno-11-25"></a><span class="s1">    }</span>
+<a href="#__codelineno-11-26" id="__codelineno-11-26" name="__codelineno-11-26"></a><span class="s1">  }'</span>
+</code></pre></div>
+<p>The <code>match</code> query performs analyzed, full-text search (tokenizing and scoring), while <code>term</code> performs an exact, non-analyzed match — a very common Elasticsearch gotcha is using <code>term</code> against a text field expecting an exact string match, when the field was analyzed at index time and no longer exists in its original exact form; this is why fields like <code>traceId</code> and <code>service</code> are usually mapped as <code>keyword</code> (or queried via the automatically-generated <code>.keyword</code> sub-field) specifically to support exact-match filtering and aggregations.</p>
+<pre class="mermaid"><code>sequenceDiagram
+    participant Client as curl / Kibana
+    participant ES as Elasticsearch
+    Client-&gt;&gt;ES: POST /app-logs-*/_search { query: bool/must/filter }
+    ES-&gt;&gt;ES: Query shards, score &amp; rank matching documents
+    ES--&gt;&gt;Client: JSON response: hits[], total, took (ms)
+</code></pre>
+<p><strong>Real-life scenario:</strong> An engineer investigating a spike in failed payments runs a <code>bool</code> query combining a <code>term</code> filter on <code>level.keyword: "ERROR"</code>, a <code>match</code> on <code>log_message</code> for "declined", and a time range filter for the last hour, getting a precise, ranked list of the exact log documents relevant to the incident directly from Elasticsearch — the same query Kibana's Discover view builds automatically behind its search bar.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why does querying a text field with <code>term</code> sometimes return zero results even though the value is visibly present in Kibana?</strong>
+Text fields are analyzed at index time (tokenized, lowercased, etc.), so their raw indexed representation no longer matches the original exact string. <code>term</code> performs an exact, non-analyzed match, so it must be run against a <code>keyword</code> (or <code>.keyword</code> sub-field) mapping rather than the analyzed text field, otherwise it silently matches nothing.</p>
+<p><strong>Q: What Elasticsearch query construct would you use to combine an exact-match filter with a time range filter in one request?</strong>
+A <code>bool</code> query with a <code>must</code> (or <code>filter</code>) clause containing a <code>term</code> query for the exact-match field (e.g. <code>traceId.keyword</code>) and a <code>filter</code> clause containing a <code>range</code> query on <code>@timestamp</code> (e.g. <code>gte: "now-1h"</code>) — filter clauses are also more cache-friendly than <code>must</code> since they don't contribute to relevance scoring.</p>
+<h2 id="interview-questions-answers">Interview Questions &amp; Answers</h2>
+<h3 id="elk-stack-components">ELK Stack Components</h3>
+<p><strong>Q: What are the three core components of the ELK stack, and what does each one do?</strong></p>
+<p>Elasticsearch stores and indexes structured log documents and provides a search/query engine over them; Logstash (or a lightweight Beat) collects raw logs from various sources and transforms them into structured events via an input/filter/output pipeline; Kibana provides the web UI for searching, filtering, and visualizing the data stored in Elasticsearch through dashboards and saved searches.</p>
+<p><strong>Q: What is the difference between Logstash and Filebeat, and when would you use one over the other?</strong></p>
+<p>Filebeat is a lightweight, low-resource log shipper designed to run on every application host (or as a Kubernetes DaemonSet) and simply forward log lines onward, with minimal parsing capability. Logstash is a heavier, JVM-based processing pipeline capable of complex parsing (Grok, multiline handling, enrichment, conditional routing). A common production pattern uses Filebeat on each host to ship raw logs cheaply, forwarding to a smaller, centralized tier of Logstash instances that do the CPU-intensive parsing and enrichment.</p>
+<p><strong>Q: Why is ELK/Elastic Stack useful in a microservices architecture specifically?</strong></p>
+<p>Microservices split what used to be one application's logs across many independently deployed processes and hosts. Centralizing all of those logs into one searchable store (Elasticsearch), tagged with metadata like service name and (when combined with distributed tracing) trace ID, lets engineers search and correlate logs across the entire system from one place, instead of manually inspecting logs host-by-host or container-by-container.</p>
+<p><strong>Q: What is an Elasticsearch index, and how are log indices typically named?</strong></p>
+<p>An index is Elasticsearch's logical grouping of documents, roughly analogous to a database table. Log data is typically indexed into time-based indices (e.g. <code>app-logs-2026.08.02</code>), one per day, using an index naming pattern with a date suffix — this makes it easy to apply retention policies (deleting old daily indices) and keeps individual indices from growing unbounded.</p>
+<h3 id="logstash-filters-grok">Logstash Filters &amp; Grok</h3>
+<p><strong>Q: What are the three stages of a Logstash pipeline, and can any be omitted?</strong></p>
+<p>Input, filter, and output. Input and output are mandatory (a pipeline needs somewhere to read from and write to); filter is technically optional (a pipeline can pass events through unmodified) but is where nearly all the useful parsing and enrichment work happens in practice.</p>
+<p><strong>Q: What does a Grok pattern like <code>%{TIMESTAMP_ISO8601:log_timestamp}</code> actually do?</strong></p>
+<p><code>TIMESTAMP_ISO8601</code> is a named, predefined regular expression bundled with Logstash that matches ISO-8601 formatted timestamps; the <code>:log_timestamp</code> part tells Grok to capture whatever that pattern matches and store it in a new field called <code>log_timestamp</code> on the resulting structured event.</p>
+<p><strong>Q: What is a practical downside of relying heavily on Grok for parsing, and how can it be mitigated?</strong></p>
+<p>Complex Grok patterns (especially ones using greedy captures like <code>%{GREEDYDATA}</code> combined with many alternations) can be slow and are prone to silently breaking if the underlying log format changes even slightly. It can be mitigated by moving to structured logging at the source (e.g. JSON logs via a Logback JSON encoder) and replacing the <code>grok</code> filter with the much simpler, faster <code>json</code> filter.</p>
+<p><strong>Q: Why would you use a <code>date</code> filter in a Logstash pipeline?</strong></p>
+<p>By default, Elasticsearch documents get an <code>@timestamp</code> value equal to when Logstash processed the event, not when the log line was actually generated. The <code>date</code> filter parses a timestamp already present in the log line (e.g. captured by Grok into a <code>log_timestamp</code> field) and overwrites <code>@timestamp</code> with that value, so events are correctly ordered by when they actually happened, which matters especially for delayed or replayed log ingestion.</p>
+<p><strong>Q: What problem does the <code>multiline</code> codec solve?</strong></p>
+<p>Some log events (most notably Java stack traces) span multiple physical lines but represent one logical event. Without a multiline codec, each line would be ingested as a separate, disconnected event. The <code>multiline</code> codec uses a pattern (e.g. "a new event only starts on a line beginning with a timestamp") to merge continuation lines back into the single event they belong to.</p>
+<h3 id="tcp-input-file-based-ingestion">TCP Input &amp; File-Based Ingestion</h3>
+<p><strong>Q: How can Logstash ingest logs without reading them from a file?</strong></p>
+<p>Via the <code>tcp</code> input plugin (or <code>udp</code>, <code>http</code>, and various message-queue inputs like Kafka), which opens a network listener and treats incoming data (e.g. one JSON document per line, using the <code>json_lines</code> codec) as events, without needing an intermediate log file at all.</p>
+<p><strong>Q: What is <code>sincedb_path</code> used for in the Logstash <code>file</code> input, and what happens if it's misconfigured?</strong></p>
+<p>It tracks the read offset (per monitored file) so Logstash can resume exactly where it left off after a restart, instead of either missing newly appended lines or reprocessing a file's entire contents. Pointing it at <code>/dev/null</code> (a common development trick) forces Logstash to reread the whole file from the beginning every restart — fine for development, but would cause massive duplicate ingestion in production.</p>
+<p><strong>Q: What is a quick way to manually test a Logstash pipeline's TCP input without writing a full test application?</strong></p>
+<p>Piping a manually crafted JSON line into <code>nc</code> (netcat) pointed at the configured TCP port, e.g. <code>echo '{"level":"INFO","message":"test"}' | nc localhost 5000</code>, lets you send a synthetic event straight into the pipeline to verify filters and outputs behave as expected.</p>
+<p><strong>Q: Why might an application log to stdout rather than to a file, and how does that affect log aggregation architecture?</strong></p>
+<p>In containerized (especially Kubernetes) deployments, writing to stdout lets the container runtime handle log file management on the node, decoupling log persistence from the container/pod's own (often ephemeral) filesystem. A node-level Filebeat DaemonSet then reads the container runtime's log files directly, rather than Logstash needing to read a file from inside each individual container.</p>
+<h3 id="elasticsearch-security-queries">Elasticsearch Security &amp; Queries</h3>
+<p><strong>Q: What does enabling <code>xpack.security.enabled</code> actually add to an Elasticsearch cluster?</strong></p>
+<p>Authentication (requiring valid credentials or certificates for every request), role-based access control (limiting which indices/operations a given user or service account can perform), and TLS encryption for both HTTP and inter-node transport traffic — none of which exist by default when security is disabled.</p>
+<p><strong>Q: How should a Logstash pipeline authenticate to a security-enabled Elasticsearch cluster without hardcoding a plaintext password in the config file?</strong></p>
+<p>By storing the credential in the Logstash keystore (via <code>bin/logstash-keystore add</code>) and referencing it in the pipeline config with <code>${VARIABLE_NAME}</code> syntax, which Logstash resolves securely at startup, rather than writing the password directly into the <code>.conf</code> file.</p>
+<p><strong>Q: What is the difference between a <code>match</code> query and a <code>term</code> query in Elasticsearch, and why does it matter?</strong></p>
+<p><code>match</code> performs full-text, analyzed search — tokenizing the query and the field's indexed content and scoring by relevance — appropriate for free-text fields like a log message. <code>term</code> performs an exact, non-analyzed match against the field's raw indexed value, appropriate for fields like <code>traceId</code> or <code>service</code> that must match exactly; using <code>term</code> against an analyzed text field (rather than its <code>keyword</code> sub-field) is a very common source of "my exact-match query returns nothing" bugs.</p>
+<p><strong>Q: How would you find all log events for a specific trace ID within the last hour using Elasticsearch's Query DSL?</strong></p>
+<p>With a <code>bool</code> query combining a <code>term</code> filter on the <code>traceId.keyword</code> field for the exact trace ID and a <code>range</code> filter on <code>@timestamp</code> with <code>gte: "now-1h"</code>, submitted to the relevant index's <code>_search</code> endpoint — exactly the kind of query Kibana's Discover view constructs automatically from its search bar and time picker.</p></div>
+</article>
+</div>
+<script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+</div>
+<button class="md-top md-icon" data-md-component="top" hidden="" type="button">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  Back to top
+</button>
+</main>
+<footer class="md-footer">
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-copyright">
+<div class="md-copyright__highlight">
+      © 2025 <a href="https://github.com/abhishekghoshh" rel="noopener" target="_blank">Abhishek Ghosh</a>
+</div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+      Material for MkDocs
+    </a>
+</div>
+<div class="md-social">
+<a class="md-social__link" href="https://github.com/abhishekghoshh" rel="noopener" target="_blank" title="github.com">
+<svg viewbox="0 0 480 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M186.1 328.7c0 20.9-10.9 55.1-36.7 55.1s-36.7-34.2-36.7-55.1 10.9-55.1 36.7-55.1 36.7 34.2 36.7 55.1M480 278.2c0 31.9-3.2 65.7-17.5 95-37.9 76.6-142.1 74.8-216.7 74.8-75.8 0-186.2 2.7-225.6-74.8-14.6-29-20.2-63.1-20.2-95 0-41.9 13.9-81.5 41.5-113.6-5.2-15.8-7.7-32.4-7.7-48.8 0-21.5 4.9-32.3 14.6-51.8 45.3 0 74.3 9 108.8 36 29-6.9 58.8-10 88.7-10 27 0 54.2 2.9 80.4 9.2 34-26.7 63-35.2 107.8-35.2 9.8 19.5 14.6 30.3 14.6 51.8 0 16.4-2.6 32.7-7.7 48.2 27.5 32.4 39 72.3 39 114.2m-64.3 50.5c0-43.9-26.7-82.6-73.5-82.6-18.9 0-37 3.4-56 6-14.9 2.3-29.8 3.2-45.1 3.2-15.2 0-30.1-.9-45.1-3.2-18.7-2.6-37-6-56-6-46.8 0-73.5 38.7-73.5 82.6 0 87.8 80.4 101.3 150.4 101.3h48.2c70.3 0 150.6-13.4 150.6-101.3m-82.6-55.1c-25.8 0-36.7 34.2-36.7 55.1s10.9 55.1 36.7 55.1 36.7-34.2 36.7-55.1-10.9-55.1-36.7-55.1"></path></svg>
+</a>
+<a class="md-social__link" href="https://x.com/abhishek_ghoshh" rel="noopener" target="_blank" title="x.com">
+<svg viewbox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253"></path></svg>
+</a>
+<a class="md-social__link" href="https://www.linkedin.com/in/abhishek-ghosh-220679132/" rel="noopener" target="_blank" title="www.linkedin.com">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5m282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"></path></svg>
+</a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<div class="md-dialog" data-md-component="dialog">
+<div class="md-dialog__inner md-typeset"></div>
+</div>
+<script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+<script src="../../assets/javascripts/bundle.60a45f97.min.js"></script>
+<script type="module">import mermaid from "https://unpkg.com/mermaid@10.4.0/dist/mermaid.esm.min.mjs";
+window.mermaidConfig = {default: {
+    startOnLoad: false
+}};</script></body>
+</html>

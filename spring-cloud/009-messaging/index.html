@@ -1,0 +1,2049 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<link href="https://abhishekghoshh.github.io/spring-boot-helper/spring-cloud/009-messaging/" rel="canonical"/>
+<link href="../008-circuit-breakers-and-resilience4j/" rel="prev"/>
+<link href="../010-distributed-tracing/" rel="next"/>
+<link href="../../assets/images/favicon.png" rel="icon"/>
+<meta content="mkdocs-1.6.1, mkdocs-material-9.5.50" name="generator"/>
+<title>Spring Messaging - spring-boot-helper</title>
+<link href="../../assets/stylesheets/main.a40c8224.min.css" rel="stylesheet"/>
+<link href="../../assets/stylesheets/palette.06af60db.min.css" rel="stylesheet"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
+<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+<meta content="website" property="og:type"/>
+<meta content="Spring Messaging - spring-boot-helper" property="og:title"/>
+<meta content="None" property="og:description"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/assets/images/social/spring-cloud/009-messaging.png" property="og:image"/>
+<meta content="image/png" property="og:image:type"/>
+<meta content="1200" property="og:image:width"/>
+<meta content="630" property="og:image:height"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/spring-cloud/009-messaging/" property="og:url"/>
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="Spring Messaging - spring-boot-helper" name="twitter:title"/>
+<meta content="None" name="twitter:description"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/assets/images/social/spring-cloud/009-messaging.png" name="twitter:image"/>
+</head>
+<body data-md-color-accent="purple" data-md-color-primary="teal" data-md-color-scheme="default" dir="ltr">
+<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
+<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
+<label class="md-overlay" for="__drawer"></label>
+<div data-md-component="skip">
+<a class="md-skip" href="#spring-cloud-messaging">
+          Skip to content
+        </a>
+</div>
+<div data-md-component="announce">
+</div>
+<header class="md-header" data-md-component="header">
+<nav aria-label="Header" class="md-header__inner md-grid">
+<a aria-label="spring-boot-helper" class="md-header__button md-logo" data-md-component="logo" href="../.." title="spring-boot-helper">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+<label class="md-header__button md-icon" for="__drawer">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+</label>
+<div class="md-header__title" data-md-component="header-title">
+<div class="md-header__ellipsis">
+<div class="md-header__topic">
+<span class="md-ellipsis">
+            spring-boot-helper
+          </span>
+</div>
+<div class="md-header__topic" data-md-component="header-topic">
+<span class="md-ellipsis">
+            
+              Spring Messaging
+            
+          </span>
+</div>
+</div>
+</div>
+<form class="md-header__option" data-md-component="palette">
+<input aria-label="Switch to dark mode" class="md-option" data-md-color-accent="purple" data-md-color-media="" data-md-color-primary="teal" data-md-color-scheme="default" id="__palette_0" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_1" hidden="" title="Switch to dark mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"></path></svg>
+</label>
+<input aria-label="Switch to light mode" class="md-option" data-md-color-accent="lime" data-md-color-media="" data-md-color-primary="teal" data-md-color-scheme="slate" id="__palette_1" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_0" hidden="" title="Switch to light mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"></path></svg>
+</label>
+</form>
+<script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+<label class="md-header__button md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+</label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input aria-label="Search" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="Search" required="" spellcheck="false" type="text"/>
+<label class="md-search__icon md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+</label>
+<nav aria-label="Search" class="md-search__options">
+<button aria-label="Clear" class="md-search__icon md-icon" tabindex="-1" title="Clear" type="reset">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+</button>
+</nav>
+<div class="md-search__suggest" data-md-component="search-suggest"></div>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix="" tabindex="0">
+<div class="md-search-result" data-md-component="search-result">
+<div class="md-search-result__meta">
+            Initializing search
+          </div>
+<ol class="md-search-result__list" role="presentation"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+</nav>
+</header>
+<div class="md-container" data-md-component="container">
+<nav aria-label="Tabs" class="md-tabs" data-md-component="tabs">
+<div class="md-grid">
+<ul class="md-tabs__list">
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../..">
+        
+  
+    
+  
+  Home
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-introduction/">
+          
+  
+  Introduction
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-aop/">
+          
+  
+  Spring AOP
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-transactions/">
+          
+  
+  Spring Transaction
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-jpa/">
+          
+  
+  Spring JPA
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-security/">
+          
+  
+  Spring Security
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-testing/">
+          
+  
+  Spring Testing
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-kafka/">
+          
+  
+  Spring Kafka
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-redis/">
+          
+  
+  Spring Redis
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-mongo/">
+          
+  
+  Spring Mongo
+
+        </a>
+</li>
+<li class="md-tabs__item md-tabs__item--active">
+<a class="md-tabs__link" href="../">
+          
+  
+  Spring Cloud
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../others/">
+          
+  
+  Others
+
+        </a>
+</li>
+</ul>
+</div>
+</nav>
+<main class="md-main" data-md-component="main">
+<div class="md-main__inner md-grid">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="Navigation" class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" data-md-level="0">
+<label class="md-nav__title" for="__drawer">
+<a aria-label="spring-boot-helper" class="md-nav__button md-logo" data-md-component="logo" href="../.." title="spring-boot-helper">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+    spring-boot-helper
+  </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../..">
+<span class="md-ellipsis">
+    Home
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_2" type="checkbox"/>
+<label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+<span class="md-ellipsis">
+    Introduction
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_2_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_2">
+<span class="md-nav__icon md-icon"></span>
+            Introduction
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/interview-helper/">
+<span class="md-ellipsis">
+    Interview Helper
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/001-history/">
+<span class="md-ellipsis">
+    001 - History
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/002-spring-mvc/">
+<span class="md-ellipsis">
+    002 - Spring MVC
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/003-spring-boot/">
+<span class="md-ellipsis">
+    003 - Spring Boot
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/004-maven-and-gradle/">
+<span class="md-ellipsis">
+    004 - Maven and Gradle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/005-annotations/">
+<span class="md-ellipsis">
+    005 - Spring Annotations
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/006-bean-management/">
+<span class="md-ellipsis">
+    006 - Spring Bean Management
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/007-config/">
+<span class="md-ellipsis">
+    007 - Spring Boot Config Management
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/008-async/">
+<span class="md-ellipsis">
+    008 - Async with Spring Boot
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/009-spring-with-virtual-thread/">
+<span class="md-ellipsis">
+    009 - Spring with Virtual Thread
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/010-intercepter-and-filter/">
+<span class="md-ellipsis">
+    010 - Interceptor and Filter
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/011-spring-hateos/">
+<span class="md-ellipsis">
+    011 - Spring HATEOS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/012-exception-handling/">
+<span class="md-ellipsis">
+    012 - Exception Handling
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/013-spring-actuator/">
+<span class="md-ellipsis">
+    013 - Spring Boot Actuator
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_3" type="checkbox"/>
+<label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring AOP
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_3_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_3">
+<span class="md-nav__icon md-icon"></span>
+            Spring AOP
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/001-what-is-aop/">
+<span class="md-ellipsis">
+    001 - What is AOP? Why and How We Use It?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/002-advantages-and-disadvantages/">
+<span class="md-ellipsis">
+    002 - Advantages and Disadvantages of AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/003-real-life-examples/">
+<span class="md-ellipsis">
+    003 - Real-Life Examples and Industry Usages
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/004-aop-annotations/">
+<span class="md-ellipsis">
+    004 - All Spring AOP Annotations Explained
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/005-code-examples/">
+<span class="md-ellipsis">
+    005 - Code Examples with Spring AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/006-summary/">
+<span class="md-ellipsis">
+    006 - Summary
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/007-aop-intercepts-method-invocation/">
+<span class="md-ellipsis">
+    007 - How AOP Intercepts Method Invocation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/008-aop-focus-on-business-logic/">
+<span class="md-ellipsis">
+    008 - How AOP Allows Focus on Business Logic
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/009-aop-reusability-and-maintainability/">
+<span class="md-ellipsis">
+    009 - How AOP Achieves Reusability and Maintainability
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/010-what-is-a-pointcut/">
+<span class="md-ellipsis">
+    010 - What is a Pointcut?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/011-pointcut-expression-structure/">
+<span class="md-ellipsis">
+    011 - Pointcut Expression Structure
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/012-pointcut-designators/">
+<span class="md-ellipsis">
+    012 - Different Types of Pointcut Designators
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/013-combining-pointcut-expressions/">
+<span class="md-ellipsis">
+    013 - Combining Pointcut Expressions (AND, OR, NOT)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/014-named-pointcuts/">
+<span class="md-ellipsis">
+    014 - Named Pointcuts — Reusable Pointcut Definitions
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/015-how-aop-works-internally/">
+<span class="md-ellipsis">
+    015 - How AOP Works Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/016-what-is-advice/">
+<span class="md-ellipsis">
+    016 - What is Advice? How It Works
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/017-what-is-joinpoint/">
+<span class="md-ellipsis">
+    017 - What is JoinPoint? How It Works
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/018-before-after-around-internals/">
+<span class="md-ellipsis">
+    018 - How @Before, @After, and @Around Work Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/019-matching-linking-interception/">
+<span class="md-ellipsis">
+    019 - How Matching, Linking, and Interception Work Together
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/020-performance-and-caching/">
+<span class="md-ellipsis">
+    020 - What If We Have 100s of Pointcuts? — Performance &amp; Caching
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_4" type="checkbox"/>
+<label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Transaction
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_4_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_4">
+<span class="md-nav__icon md-icon"></span>
+            Spring Transaction
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/001-prerequisites/">
+<span class="md-ellipsis">
+    001 - Prerequisites
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/002-critical-section/">
+<span class="md-ellipsis">
+    002 - What is a Critical Section?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/003-transactional-annotation/">
+<span class="md-ellipsis">
+    003 - What is @Transactional? Why and How to Use It?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/004-acid-properties/">
+<span class="md-ellipsis">
+    004 - ACID Properties with @Transactional
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/005-imports-and-yaml-configuration/">
+<span class="md-ellipsis">
+    005 - Imports for RDBMS vs NoSQL and YAML Configuration
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/006-enable-transaction-management/">
+<span class="md-ellipsis">
+    006 - What is @EnableTransactionManagement?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/007-method-vs-class-level-transactional/">
+<span class="md-ellipsis">
+    007 - Method-Level vs Class-Level @Transactional
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/008-transactional-internals-spring-aop/">
+<span class="md-ellipsis">
+    008 - How @Transactional Internally Uses Spring AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/009-aop-annotations-pointcut-around/">
+<span class="md-ellipsis">
+    009 - AOP Annotations Used Internally — Pointcut and @Around
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/010-rollback-internals/">
+<span class="md-ellipsis">
+    010 - How Rollback Happens Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/011-transaction-manager-hierarchy/">
+<span class="md-ellipsis">
+    011 - Hierarchy of TransactionManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/012-ways-to-manage-transactions/">
+<span class="md-ellipsis">
+    012 - How Many Ways Can We Manage Transactions?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/013-transaction-propagation/">
+<span class="md-ellipsis">
+    013 - What is Transaction Propagation?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/014-isolation-level/">
+<span class="md-ellipsis">
+    014 - What is Isolation Level?
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5" type="checkbox"/>
+<label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring JPA
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_5_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_5">
+<span class="md-nav__icon md-icon"></span>
+            Spring JPA
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/dbms/">
+<span class="md-ellipsis">
+    Database Management Systems (DBMS)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/sql/">
+<span class="md-ellipsis">
+    Structured Query Language (SQL)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/000-jdbc/">
+<span class="md-ellipsis">
+    JDBC
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/001-architecture/">
+<span class="md-ellipsis">
+    001 - Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/002-entity-lifecycle/">
+<span class="md-ellipsis">
+    002 - Entity Lifecycle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/003-entity-manager-factory-and-entity-manager/">
+<span class="md-ellipsis">
+    003 - EntityManagerFactory and EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/004-persistence-context/">
+<span class="md-ellipsis">
+    004 - Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/005-transaction-manager/">
+<span class="md-ellipsis">
+    005 - Transaction Manager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/006-hibernate-implementation/">
+<span class="md-ellipsis">
+    006 - Hibernate Implementation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/007-how-jpa-repository-uses-entity-manager/">
+<span class="md-ellipsis">
+    007 - How JPA Repository Uses EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/008-persistence-context-annotation-vs-autowired/">
+<span class="md-ellipsis">
+    008 - Why @PersistenceContext Instead of @Autowired
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/009-transactional-with-entity-manager/">
+<span class="md-ellipsis">
+    009 - Why @Transactional is Used for EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/010-entity-manager-creates-persistence-context/">
+<span class="md-ellipsis">
+    010 - How EntityManager Creates Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/011-role-of-persistence-context/">
+<span class="md-ellipsis">
+    011 - Role of Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/012-transaction-bounded-operations/">
+<span class="md-ellipsis">
+    012 - Transaction-Bounded Operations
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/013-first-level-caching/">
+<span class="md-ellipsis">
+    013 - First-Level Caching
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/014-second-level-caching/">
+<span class="md-ellipsis">
+    014 - Second-Level Caching
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/015-ddl-auto/">
+<span class="md-ellipsis">
+    015 - spring.jpa.hibernate.ddl-auto
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/016-table-annotation/">
+<span class="md-ellipsis">
+    016 - "@Table Annotation"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/017-column-annotation/">
+<span class="md-ellipsis">
+    017 - "@Column Annotation"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/018-id-and-composite-ids/">
+<span class="md-ellipsis">
+    018 - "@Id Annotation and Composite IDs"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/019-sequence-generator/">
+<span class="md-ellipsis">
+    019 - "@SequenceGenerator"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/020-generated-value-and-generation-strategies/">
+<span class="md-ellipsis">
+    020 - "@GeneratedValue and Generation Strategies"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/021-one-to-one-unidirectional-mapping/">
+<span class="md-ellipsis">
+    021 - OneToOne Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/022-eager-and-lazy-loading/">
+<span class="md-ellipsis">
+    022 - Eager and Lazy Loading
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/023-one-to-one-bidirectional-mapping/">
+<span class="md-ellipsis">
+    023 - OneToOne Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/024-one-to-many-unidirectional-mapping/">
+<span class="md-ellipsis">
+    024 - OneToMany Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/025-one-to-many-bidirectional-mapping/">
+<span class="md-ellipsis">
+    025 - OneToMany Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/026-many-to-one-bidirectional-mapping/">
+<span class="md-ellipsis">
+    026 - ManyToOne Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/027-many-to-many-unidirectional-mapping/">
+<span class="md-ellipsis">
+    027 - ManyToMany Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/028-many-to-many-bidirectional-mapping/">
+<span class="md-ellipsis">
+    028 - ManyToMany Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/029-derived-query-methods/">
+<span class="md-ellipsis">
+    029 - Derived Query Methods
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/030-jpql/">
+<span class="md-ellipsis">
+    030 - JPQL
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/031-n-plus-1-problem/">
+<span class="md-ellipsis">
+    031 - The N+1 Problem in JPA
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/032-named-query/">
+<span class="md-ellipsis">
+    032 - "@NamedQuery"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/033-native-query/">
+<span class="md-ellipsis">
+    033 - Native Query
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/034-dynamic-native-query/">
+<span class="md-ellipsis">
+    034 - Dynamic Native Query
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/035-criteria-api/">
+<span class="md-ellipsis">
+    035 - Criteria API
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/036-jpa-specification-api/">
+<span class="md-ellipsis">
+    036 - JPA Specification API
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_6" type="checkbox"/>
+<label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Security
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_6_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_6">
+<span class="md-nav__icon md-icon"></span>
+            Spring Security
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/001-different-types-of-attacks/">
+<span class="md-ellipsis">
+    001 - Different Types of Attacks
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/002-authorization-and-authentication/">
+<span class="md-ellipsis">
+    002 - Authentication and Authorization
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/003-request-response-architecture/">
+<span class="md-ellipsis">
+    003 - Request/Response Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/004-spring-security-architecture/">
+<span class="md-ellipsis">
+    004 - Spring Security Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/005-default-user-creation/">
+<span class="md-ellipsis">
+    005 - Default User Creation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/006-password-encoding-delegating-password-encoder/">
+<span class="md-ellipsis">
+    006 - Password Encoding &amp; DelegatingPasswordEncoder
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/007-database-based-authentication/">
+<span class="md-ellipsis">
+    007 - Database-Based Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/008-form-login-stateful-authentication/">
+<span class="md-ellipsis">
+    008 - Form Login Stateful Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/009-form-login-user-flow-session-lifecycle/">
+<span class="md-ellipsis">
+    009 - Form Login User Flow &amp; Session Lifecycle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/010-customizing-form-login/">
+<span class="md-ellipsis">
+    010 - Customizing Form Login
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/011-session-persistence-spring-session-jdbc/">
+<span class="md-ellipsis">
+    011 - Session Persistence (Spring Session JDBC)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/012-distributed-sessions-with-redis/">
+<span class="md-ellipsis">
+    012 - Distributed Sessions with Redis
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/013-dao-authentication-provider/">
+<span class="md-ellipsis">
+    013 - DaoAuthenticationProvider Deep Dive
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/014-authenticated-request-flow/">
+<span class="md-ellipsis">
+    014 - Authenticated Request Flow
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/015-session-management-and-creation-policy/">
+<span class="md-ellipsis">
+    015 - Session Management &amp; Creation Policy
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/016-http-basic-authentication/">
+<span class="md-ellipsis">
+    016 - HTTP Basic Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/017-jwt-json-web-token/">
+<span class="md-ellipsis">
+    017 - JWT (JSON Web Token)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/018-access-token-refresh-token-jwks/">
+<span class="md-ellipsis">
+    018 - Access Token, Refresh Token &amp; JWKS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/019-jwt-authentication-custom-security-filters/">
+<span class="md-ellipsis">
+    019 - JWT Authentication with Custom Filters
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/020-oauth2-and-openid-connect/">
+<span class="md-ellipsis">
+    020 - OAuth 2.0 &amp; OpenID Connect
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/021-role-based-authorization-rbac/">
+<span class="md-ellipsis">
+    021 - Role-Based Authorization (RBAC)
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_7" type="checkbox"/>
+<label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Testing
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_7_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_7">
+<span class="md-nav__icon md-icon"></span>
+            Spring Testing
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-testing/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_8" type="checkbox"/>
+<label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Kafka
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_8_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_8">
+<span class="md-nav__icon md-icon"></span>
+            Spring Kafka
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-kafka/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-kafka/kafka/">
+<span class="md-ellipsis">
+    Kafka Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_9" type="checkbox"/>
+<label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Redis
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_9_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_9">
+<span class="md-nav__icon md-icon"></span>
+            Spring Redis
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-redis/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-redis/redis/">
+<span class="md-ellipsis">
+    Redis Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_10" type="checkbox"/>
+<label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Mongo
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_10_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_10">
+<span class="md-nav__icon md-icon"></span>
+            Spring Mongo
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-mongo/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-mongo/mongodb/">
+<span class="md-ellipsis">
+    MongoDB Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" id="__nav_11" type="checkbox"/>
+<label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+<span class="md-ellipsis">
+    Spring Cloud
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="true" aria-labelledby="__nav_11_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_11">
+<span class="md-nav__icon md-icon"></span>
+            Spring Cloud
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../001-spring-cloud-config/">
+<span class="md-ellipsis">
+    Spring Cloud Config
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../002-spring-cloud-bus/">
+<span class="md-ellipsis">
+    Spring Cloud Bus
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../003-service-discovery/">
+<span class="md-ellipsis">
+    Service Discovery
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../004-spring-cloud-load-balancing/">
+<span class="md-ellipsis">
+    Spring Cloud Load balancing
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../005-rest-client/">
+<span class="md-ellipsis">
+    Rest Client
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../006-spring-cloud-api-gateway/">
+<span class="md-ellipsis">
+    Spring Cloud API Gateway
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../007-spring-cloud-security/">
+<span class="md-ellipsis">
+    Spring Cloud Security
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../008-circuit-breakers-and-resilience4j/">
+<span class="md-ellipsis">
+    Circuit Breaker and Resilience4j
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
+<label class="md-nav__link md-nav__link--active" for="__toc">
+<span class="md-ellipsis">
+    Spring Messaging
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<a class="md-nav__link md-nav__link--active" href="./">
+<span class="md-ellipsis">
+    Spring Messaging
+  </span>
+</a>
+<nav aria-label="Table of contents" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#detailed-guide">
+<span class="md-ellipsis">
+      Detailed Guide
+    </span>
+</a>
+<nav aria-label="Detailed Guide" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#introduction-to-spring-cloud-stream">
+<span class="md-ellipsis">
+      Introduction to Spring Cloud Stream
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#spring-cloud-stream-binders-kafka-and-rabbitmq">
+<span class="md-ellipsis">
+      Spring Cloud Stream Binders (Kafka and RabbitMQ)
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#functional-programming-model-with-supplierfunctionconsumer">
+<span class="md-ellipsis">
+      Functional Programming Model with Supplier/Function/Consumer
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#configuring-bindings-and-destinations">
+<span class="md-ellipsis">
+      Configuring Bindings and Destinations
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#event-driven-microservices-with-spring-cloud-stream-and-kafka">
+<span class="md-ellipsis">
+      Event-Driven Microservices with Spring Cloud Stream and Kafka
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#event-driven-microservices-with-spring-cloud-stream-and-rabbitmq">
+<span class="md-ellipsis">
+      Event-Driven Microservices with Spring Cloud Stream and RabbitMQ
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#consumer-groups-and-partitioning">
+<span class="md-ellipsis">
+      Consumer Groups and Partitioning
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#error-handling-and-dead-letter-queues-in-spring-cloud-stream">
+<span class="md-ellipsis">
+      Error Handling and Dead Letter Queues in Spring Cloud Stream
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#interview-questions-answers">
+<span class="md-ellipsis">
+      Interview Questions &amp; Answers
+    </span>
+</a>
+<nav aria-label="Interview Questions &amp; Answers" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#core-concepts-and-functional-model">
+<span class="md-ellipsis">
+      Core Concepts and Functional Model
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#binders-bindings-and-destinations">
+<span class="md-ellipsis">
+      Binders, Bindings, and Destinations
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#consumer-groups-and-partitioning_1">
+<span class="md-ellipsis">
+      Consumer Groups and Partitioning
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#error-handling-and-dead-letter-queues">
+<span class="md-ellipsis">
+      Error Handling and Dead Letter Queues
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#resources">
+<span class="md-ellipsis">
+      Resources
+    </span>
+</a>
+<nav aria-label="Resources" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#youtube">
+<span class="md-ellipsis">
+      Youtube
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#medium">
+<span class="md-ellipsis">
+      Medium
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../010-distributed-tracing/">
+<span class="md-ellipsis">
+    Distributed Tracing
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../011-log-aggregation-with-elk/">
+<span class="md-ellipsis">
+    Log Aggregation with ELK
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../012-testing/">
+<span class="md-ellipsis">
+    Spring Cloud Testing
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_12" type="checkbox"/>
+<label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+<span class="md-ellipsis">
+    Others
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_12_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_12">
+<span class="md-nav__icon md-icon"></span>
+            Others
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-batch/">
+<span class="md-ellipsis">
+    Spring Batch
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cassandra/">
+<span class="md-ellipsis">
+    Spring Cassandra
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-graphql/">
+<span class="md-ellipsis">
+    Spring GraphQL
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-reactive-programming/">
+<span class="md-ellipsis">
+    Spring Reactive Programming
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cloud-functions/">
+<span class="md-ellipsis">
+    Spring Cloud Functions
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-aws/">
+<span class="md-ellipsis">
+    Spring AWS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-k8s/">
+<span class="md-ellipsis">
+    Spring Kubernetes
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cicd/">
+<span class="md-ellipsis">
+    Spring CI/CD
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-observability/">
+<span class="md-ellipsis">
+    Spring Observability
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-splunk/">
+<span class="md-ellipsis">
+    Spring Splunk
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-docs/">
+<span class="md-ellipsis">
+    Spring Docs
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-content" data-md-component="content">
+<article class="md-content__inner md-typeset">
+<div><h1 id="spring-cloud-messaging">Spring Cloud Messaging</h1>
+<h2 id="detailed-guide">Detailed Guide</h2>
+<h3 id="introduction-to-spring-cloud-stream">Introduction to Spring Cloud Stream</h3>
+<p>Spring Cloud Stream is a framework for building message-driven microservices on top of messaging middleware such as Apache Kafka and RabbitMQ, without requiring application code to depend directly on broker-specific APIs. It provides a thin, consistent abstraction — the "binding" — over the underlying messaging system, so business logic is written purely in terms of standard Java functional interfaces (<code>Supplier</code>, <code>Function</code>, <code>Consumer</code>) and simple POJOs, while the actual wiring to topics/exchanges, partitions, serialization, and consumer groups is handled declaratively through configuration.</p>
+<p>At its core, Spring Cloud Stream separates three concerns: <strong>binders</strong> (broker-specific integration modules, e.g. <code>spring-cloud-stream-binder-kafka</code> or <code>spring-cloud-stream-binder-rabbit</code>), <strong>bindings</strong> (the logical input/output channels your application code interacts with, named <code>&lt;functionName&gt;-in-0</code> / <code>&lt;functionName&gt;-out-0</code> by convention), and <strong>the application's business logic</strong> (plain functional beans that know nothing about Kafka or RabbitMQ). This separation means the same business logic can, in principle, be repointed from Kafka to RabbitMQ (or vice versa) purely through configuration and a dependency swap, without touching application code.</p>
+<p>This design directly addresses a common pain point in message-driven architectures: tightly coupling business logic to a specific broker's client API makes it hard to test in isolation, hard to swap brokers later, and encourages leaking infrastructure concerns (offsets, acknowledgments, connection management) into domain code. Spring Cloud Stream's functional model, introduced as the recommended approach starting with Spring Cloud Stream 3.x, lets you write and unit-test a <code>Function&lt;Order, ShippingRequest&gt;</code> with zero messaging imports, then let the framework's auto-configuration bind it to real infrastructure at runtime.</p>
+<p><strong>Real-life scenario:</strong> A retail company initially builds its order-processing pipeline on RabbitMQ, but as event volume grows into the millions of events per day and they need stronger ordering and replay guarantees, they migrate the messaging backbone to Kafka. Because their business logic was written as plain <code>Function</code> beans against Spring Cloud Stream's abstraction rather than raw RabbitMQ <code>Channel</code>/<code>AmqpTemplate</code> calls, the migration is largely a matter of swapping the binder dependency and updating YAML configuration, not rewriting business logic.</p>
+<pre class="mermaid"><code>flowchart LR
+    subgraph App["Spring Cloud Stream Application"]
+        S[Supplier bean] --&gt;|produces| OUT[output binding]
+        IN[input binding] --&gt;|consumes| F[Function/Consumer bean]
+    end
+    OUT --&gt; B1[(Kafka Topic / RabbitMQ Exchange)]
+    B1 --&gt; IN
+</code></pre>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What are the three concerns Spring Cloud Stream separates?</strong>
+Binders (broker-specific integration), bindings (logical input/output channels), and application business logic (plain functional beans unaware of any messaging system).</p>
+<p><strong>Q: Can the same business logic be repointed from RabbitMQ to Kafka without code changes?</strong>
+Largely yes — since business logic is written as plain <code>Function</code>/<code>Consumer</code>/<code>Supplier</code> beans with no broker-specific imports, switching binders is mostly a dependency swap plus configuration change.</p>
+<h3 id="spring-cloud-stream-binders-kafka-and-rabbitmq">Spring Cloud Stream Binders (Kafka and RabbitMQ)</h3>
+<p>A <strong>binder</strong> is the pluggable integration layer that connects Spring Cloud Stream's abstract bindings to a concrete messaging system. Spring Cloud Stream ships official binder implementations for Apache Kafka (<code>spring-cloud-stream-binder-kafka</code>), Kafka Streams (<code>spring-cloud-stream-binder-kafka-streams</code>), and RabbitMQ (<code>spring-cloud-stream-binder-rabbit</code>), each translating the generic binding model into broker-specific concepts — topics and partitions for Kafka, exchanges and queues for RabbitMQ.</p>
+<p>Adding a binder to the classpath (via its Maven/Gradle dependency) is typically all that's needed for Spring Boot's auto-configuration to activate that binder; if multiple binders are present, you must explicitly specify which binder each binding uses via <code>spring.cloud.stream.bindings.&lt;binding&gt;.binder</code>. Each binder also exposes broker-specific extended configuration properties under <code>spring.cloud.stream.kafka.bindings.*</code> or <code>spring.cloud.stream.rabbit.bindings.*</code> for fine-tuning things like Kafka partition count/replication factor or RabbitMQ exchange type and durability.</p>
+<p>Binders also implement broker-appropriate defaults for reliability semantics — the Kafka binder integrates with consumer group offset commits and supports exactly-once-ish processing patterns via transactional producers, while the RabbitMQ binder integrates with AMQP acknowledgments, retry, and its native dead-letter-exchange mechanism. Understanding these binder-specific behaviors is essential once you move past "hello world" examples into production reliability tuning.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="nt">&lt;dependency&gt;</span>
+<a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="w">    </span><span class="nt">&lt;groupId&gt;</span>org.springframework.cloud<span class="nt">&lt;/groupId&gt;</span>
+<a href="#__codelineno-0-3" id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="w">    </span><span class="nt">&lt;artifactId&gt;</span>spring-cloud-stream-binder-kafka<span class="nt">&lt;/artifactId&gt;</span>
+<a href="#__codelineno-0-4" id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="nt">&lt;/dependency&gt;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="nt">spring</span><span class="p">:</span>
+<a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="w">  </span><span class="nt">cloud</span><span class="p">:</span>
+<a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="w">    </span><span class="nt">stream</span><span class="p">:</span>
+<a href="#__codelineno-1-4" id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="w">      </span><span class="nt">bindings</span><span class="p">:</span>
+<a href="#__codelineno-1-5" id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="w">        </span><span class="nt">processOrder-in-0</span><span class="p">:</span>
+<a href="#__codelineno-1-6" id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="w">          </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">orders</span>
+<a href="#__codelineno-1-7" id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="w">          </span><span class="nt">binder</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kafka</span>
+<a href="#__codelineno-1-8" id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="w">        </span><span class="nt">processOrder-out-0</span><span class="p">:</span>
+<a href="#__codelineno-1-9" id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="w">          </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shipping-requests</span>
+<a href="#__codelineno-1-10" id="__codelineno-1-10" name="__codelineno-1-10"></a><span class="w">          </span><span class="nt">binder</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kafka</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A platform team standardizes on Kafka for high-throughput event streams (clickstream analytics) but keeps RabbitMQ for lower-volume, latency-sensitive command messages (like "cancel order now"); by running both binders side by side in the same Spring Cloud Stream application and assigning each binding to the appropriate binder, they get the right messaging semantics for each use case within a single codebase.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What happens if multiple binders are on the classpath but a binding doesn't specify one?</strong>
+Spring Cloud Stream can't automatically infer which binder to use, so you must explicitly set <code>spring.cloud.stream.bindings.&lt;binding&gt;.binder</code> for each binding.</p>
+<p><strong>Q: Where do broker-specific settings like Kafka partition count or RabbitMQ exchange type live?</strong>
+Under extended, binder-specific configuration namespaces such as <code>spring.cloud.stream.kafka.bindings.*</code> or <code>spring.cloud.stream.rabbit.bindings.*</code>, separate from the generic binding configuration.</p>
+<h3 id="functional-programming-model-with-supplierfunctionconsumer">Functional Programming Model with Supplier/Function/Consumer</h3>
+<p>Since Spring Cloud Stream 3.x, the recommended (and now dominant) programming model is the <strong>functional model</strong>, where business logic is expressed as standard <code>java.util.function</code> beans: a <code>Supplier&lt;T&gt;</code> produces outbound messages (a source, typically polled periodically), a <code>Function&lt;T, R&gt;</code> consumes an inbound message and produces an outbound one (a processor), and a <code>Consumer&lt;T&gt;</code> consumes an inbound message with no output (a sink). Spring Cloud Stream's <code>spring-cloud-function</code> integration automatically detects these beans and binds them to input/output destinations based on naming conventions and the <code>spring.cloud.function.definition</code> property.</p>
+<p>This model replaced the older, now-deprecated <strong>annotation-based model</strong> (<code>@EnableBinding</code>, <code>@StreamListener</code>, <code>@Input</code>/<code>@Output</code>), which required significantly more boilerplate — custom binding interfaces, explicit channel declarations, and imperative <code>@StreamListener</code>-annotated methods. The functional model is preferred because it's simpler, more testable (a <code>Function&lt;Order, ShippingRequest&gt;</code> bean can be unit tested by just calling <code>apply()</code> directly with no Spring context or broker needed), and aligns Spring Cloud Stream with the broader <code>java.util.function</code> ecosystem used elsewhere in Spring (e.g., Spring Cloud Function, AWS Lambda adapters).</p>
+<p>For a single functional bean, Spring Cloud Stream infers the binding names automatically (<code>&lt;beanName&gt;-in-0</code>, <code>&lt;beanName&gt;-out-0</code>); when multiple functional beans are present, <code>spring.cloud.function.definition</code> explicitly lists which ones are active, and composed functions can even be chained together using pipe syntax (e.g., <code>enrichOrder|validateOrder</code>).</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="nd">@Configuration</span>
+<a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">OrderStreamConfig</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a>
+<a href="#__codelineno-2-4" id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-2-5" id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Function</span><span class="o">&lt;</span><span class="n">Order</span><span class="p">,</span><span class="w"> </span><span class="n">ShippingRequest</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">processOrder</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-2-6" id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">order</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ShippingRequest</span><span class="p">(</span><span class="n">order</span><span class="p">.</span><span class="na">getId</span><span class="p">(),</span><span class="w"> </span><span class="n">order</span><span class="p">.</span><span class="na">getAddress</span><span class="p">());</span>
+<a href="#__codelineno-2-7" id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-2-8" id="__codelineno-2-8" name="__codelineno-2-8"></a>
+<a href="#__codelineno-2-9" id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-2-10" id="__codelineno-2-10" name="__codelineno-2-10"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Consumer</span><span class="o">&lt;</span><span class="n">ShippingRequest</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">logShipment</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-2-11" id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">log</span><span class="p">.</span><span class="na">info</span><span class="p">(</span><span class="s">"Shipment requested: {}"</span><span class="p">,</span><span class="w"> </span><span class="n">request</span><span class="p">);</span>
+<a href="#__codelineno-2-12" id="__codelineno-2-12" name="__codelineno-2-12"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-2-13" id="__codelineno-2-13" name="__codelineno-2-13"></a>
+<a href="#__codelineno-2-14" id="__codelineno-2-14" name="__codelineno-2-14"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-2-15" id="__codelineno-2-15" name="__codelineno-2-15"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Supplier</span><span class="o">&lt;</span><span class="n">HeartbeatEvent</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">heartbeat</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-2-16" id="__codelineno-2-16" name="__codelineno-2-16"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">HeartbeatEvent</span><span class="p">(</span><span class="n">Instant</span><span class="p">.</span><span class="na">now</span><span class="p">());</span>
+<a href="#__codelineno-2-17" id="__codelineno-2-17" name="__codelineno-2-17"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-2-18" id="__codelineno-2-18" name="__codelineno-2-18"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="nt">spring</span><span class="p">:</span>
+<a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="w">  </span><span class="nt">cloud</span><span class="p">:</span>
+<a href="#__codelineno-3-3" id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="w">    </span><span class="nt">function</span><span class="p">:</span>
+<a href="#__codelineno-3-4" id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="w">      </span><span class="nt">definition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">processOrder;logShipment;heartbeat</span>
+</code></pre></div>
+<pre class="mermaid"><code>flowchart LR
+    Src[Supplier] --&gt;|periodic poll| Out["output-out-0"]
+    In["input-in-0"] --&gt; Fn[Function]
+    Fn --&gt;|transform| Out2["output-out-0"]
+    In2["input-in-0"] --&gt; Cons[Consumer]
+    Cons --&gt;|side effect, no output| Sink[(Database / External System)]
+</code></pre>
+<p><strong>Real-life scenario:</strong> A team migrating a legacy <code>@StreamListener</code>-based service to modern Spring Cloud Stream rewrites each listener method as a plain <code>Function</code> or <code>Consumer</code> bean, immediately gaining the ability to write fast unit tests (calling <code>.apply()</code>/<code>.accept()</code> directly) that previously required spinning up an embedded Kafka broker just to exercise business logic.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why is the functional model easier to test than the old <code>@StreamListener</code> model?</strong>
+A <code>Function</code>/<code>Consumer</code>/<code>Supplier</code> bean can be tested by directly calling <code>apply()</code>/<code>accept()</code>/<code>get()</code> with plain Java objects, requiring no Spring context or embedded broker.</p>
+<p><strong>Q: How do you activate multiple functional beans in one application?</strong>
+List them in <code>spring.cloud.function.definition</code> (semicolon-separated), optionally composing them with pipe syntax like <code>enrichOrder|validateOrder</code>.</p>
+<h3 id="configuring-bindings-and-destinations">Configuring Bindings and Destinations</h3>
+<p>Every functional bean is exposed through a named <strong>binding</strong> — <code>&lt;functionName&gt;-in-0</code> for the first input argument, <code>&lt;functionName&gt;-out-0</code> for the return value (with <code>-in-1</code>, <code>-out-1</code>, etc. for additional arguments in multi-input/output functions). Configuration under <code>spring.cloud.stream.bindings.&lt;bindingName&gt;</code> maps each logical binding to a physical <strong>destination</strong> — a Kafka topic name or a RabbitMQ exchange name — decoupling the Java-level function name from the actual infrastructure resource name, which can differ per environment (e.g., <code>orders-dev</code> vs <code>orders-prod</code>).</p>
+<p>Beyond the destination, binding configuration controls content-type conversion (<code>content-type: application/json</code> triggers automatic (de)serialization via Spring's message converters), consumer-specific settings (<code>group</code>, <code>concurrency</code>, <code>partitioned</code>), and producer-specific settings (<code>partition-key-expression</code>, <code>partition-count</code>). A <code>group</code> on a consumer binding is what identifies it as part of a Kafka consumer group (or a RabbitMQ competing-consumer queue) — omitting it results in each application instance getting its own anonymous, non-load-balanced subscription (effectively a fan-out rather than a shared work queue).</p>
+<p>Destinations can also be shared across multiple bindings — for instance, two different functions in two different applications can both bind to the same <code>orders</code> destination, one producing and one consuming, without either needing to know about the other's existence, which is the essence of how Spring Cloud Stream decouples producers and consumers into independently deployable services.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="nt">spring</span><span class="p">:</span>
+<a href="#__codelineno-4-2" id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="w">  </span><span class="nt">cloud</span><span class="p">:</span>
+<a href="#__codelineno-4-3" id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="w">    </span><span class="nt">stream</span><span class="p">:</span>
+<a href="#__codelineno-4-4" id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="w">      </span><span class="nt">bindings</span><span class="p">:</span>
+<a href="#__codelineno-4-5" id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="w">        </span><span class="nt">processOrder-in-0</span><span class="p">:</span>
+<a href="#__codelineno-4-6" id="__codelineno-4-6" name="__codelineno-4-6"></a><span class="w">          </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">orders</span>
+<a href="#__codelineno-4-7" id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="w">          </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">order-processing-group</span>
+<a href="#__codelineno-4-8" id="__codelineno-4-8" name="__codelineno-4-8"></a><span class="w">          </span><span class="nt">content-type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">application/json</span>
+<a href="#__codelineno-4-9" id="__codelineno-4-9" name="__codelineno-4-9"></a><span class="w">        </span><span class="nt">processOrder-out-0</span><span class="p">:</span>
+<a href="#__codelineno-4-10" id="__codelineno-4-10" name="__codelineno-4-10"></a><span class="w">          </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shipping-requests</span>
+<a href="#__codelineno-4-11" id="__codelineno-4-11" name="__codelineno-4-11"></a><span class="w">          </span><span class="nt">content-type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">application/json</span>
+<a href="#__codelineno-4-12" id="__codelineno-4-12" name="__codelineno-4-12"></a><span class="w">          </span><span class="nt">producer</span><span class="p">:</span>
+<a href="#__codelineno-4-13" id="__codelineno-4-13" name="__codelineno-4-13"></a><span class="w">            </span><span class="nt">partition-key-expression</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">payload.customerId</span>
+<a href="#__codelineno-4-14" id="__codelineno-4-14" name="__codelineno-4-14"></a><span class="w">            </span><span class="nt">partition-count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A platform runs identical application code across <code>dev</code>, <code>staging</code>, and <code>prod</code> environments but each environment uses differently-named Kafka topics (<code>orders-dev</code>, <code>orders-staging</code>, <code>orders</code>) to avoid cross-environment data leakage; because the destination is externalized to configuration rather than hardcoded in the <code>Function</code> bean, the same JAR is deployed unchanged across all three environments with only environment-specific YAML/properties differing.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What does setting <code>content-type: application/json</code> on a binding do?</strong>
+It triggers Spring's automatic message conversion, serializing/deserializing the payload to/from JSON via configured message converters, instead of requiring manual conversion code.</p>
+<p><strong>Q: Can two unrelated applications share the same destination?</strong>
+Yes — one application's producer binding and another's consumer binding can both point at the same destination name, letting them communicate without any direct coupling or shared code.</p>
+<h3 id="event-driven-microservices-with-spring-cloud-stream-and-kafka">Event-Driven Microservices with Spring Cloud Stream and Kafka</h3>
+<p>Using Kafka as the binder, Spring Cloud Stream builds event-driven microservices around Kafka's core strengths: durable, ordered, partitioned logs that support multiple independent consumer groups replaying the same topic at their own pace. A typical pattern has one service publish domain events (e.g., <code>OrderCreated</code>) to a topic via a <code>Supplier</code> or the output side of a <code>Function</code>, while multiple independent downstream services — each in its own consumer group — subscribe to the same topic to react to that event in their own bounded context (inventory reservation, shipping scheduling, analytics, notifications), without the publisher needing any awareness of its consumers.</p>
+<p>This achieves genuine decoupling: new consumers can be added later by simply subscribing to the existing topic with a new consumer group, without any changes to the publishing service, and because Kafka retains messages for a configurable retention period, new consumers can even replay historical events rather than only seeing messages published after they came online. The Kafka binder also integrates with Spring Cloud Stream's partitioning support, so events with the same partition key (e.g., customer ID or order ID) are guaranteed to land in the same partition and be processed in order by the same consumer instance.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="nd">@Bean</span>
+<a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="kd">public</span><span class="w"> </span><span class="n">Function</span><span class="o">&lt;</span><span class="n">OrderCreatedEvent</span><span class="p">,</span><span class="w"> </span><span class="n">Void</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">handleOrderCreated</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">event</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-5-4" id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="w">        </span><span class="n">inventoryService</span><span class="p">.</span><span class="na">reserveStock</span><span class="p">(</span><span class="n">event</span><span class="p">.</span><span class="na">getOrderId</span><span class="p">(),</span><span class="w"> </span><span class="n">event</span><span class="p">.</span><span class="na">getItems</span><span class="p">());</span>
+<a href="#__codelineno-5-5" id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span>
+<a href="#__codelineno-5-6" id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="w">    </span><span class="p">};</span>
+<a href="#__codelineno-5-7" id="__codelineno-5-7" name="__codelineno-5-7"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="nt">spring</span><span class="p">:</span>
+<a href="#__codelineno-6-2" id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="w">  </span><span class="nt">cloud</span><span class="p">:</span>
+<a href="#__codelineno-6-3" id="__codelineno-6-3" name="__codelineno-6-3"></a><span class="w">    </span><span class="nt">stream</span><span class="p">:</span>
+<a href="#__codelineno-6-4" id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="w">      </span><span class="nt">kafka</span><span class="p">:</span>
+<a href="#__codelineno-6-5" id="__codelineno-6-5" name="__codelineno-6-5"></a><span class="w">        </span><span class="nt">binder</span><span class="p">:</span>
+<a href="#__codelineno-6-6" id="__codelineno-6-6" name="__codelineno-6-6"></a><span class="w">          </span><span class="nt">brokers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">localhost:9092</span>
+<a href="#__codelineno-6-7" id="__codelineno-6-7" name="__codelineno-6-7"></a><span class="w">      </span><span class="nt">bindings</span><span class="p">:</span>
+<a href="#__codelineno-6-8" id="__codelineno-6-8" name="__codelineno-6-8"></a><span class="w">        </span><span class="nt">handleOrderCreated-in-0</span><span class="p">:</span>
+<a href="#__codelineno-6-9" id="__codelineno-6-9" name="__codelineno-6-9"></a><span class="w">          </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">orders</span>
+<a href="#__codelineno-6-10" id="__codelineno-6-10" name="__codelineno-6-10"></a><span class="w">          </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inventory-service</span>
+<a href="#__codelineno-6-11" id="__codelineno-6-11" name="__codelineno-6-11"></a><span class="w">          </span><span class="nt">consumer</span><span class="p">:</span>
+<a href="#__codelineno-6-12" id="__codelineno-6-12" name="__codelineno-6-12"></a><span class="w">            </span><span class="nt">concurrency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+</code></pre></div>
+<pre class="mermaid"><code>sequenceDiagram
+    participant OS as Order Service
+    participant K as Kafka Topic orders
+    participant IS as Inventory Service
+    participant SS as Shipping Service
+    OS-&gt;&gt;K: publish OrderCreated event
+    K--&gt;&gt;IS: deliver to inventory-group
+    K--&gt;&gt;SS: deliver to shipping-group
+    IS-&gt;&gt;IS: reserve stock
+    SS-&gt;&gt;SS: schedule shipment
+</code></pre>
+<p><strong>Real-life scenario:</strong> An e-commerce platform publishes a single <code>OrderCreated</code> event to Kafka, and over time adds a fraud-detection service, a loyalty-points service, and a recommendation-engine service — each simply subscribing to the same topic with its own consumer group — without ever modifying the original order service, demonstrating how Kafka-backed Spring Cloud Stream enables organic growth of an event-driven architecture.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why can new Kafka consumers see historical events that predate them?</strong>
+Because Kafka retains published messages for a configurable retention period; a new consumer group starts reading from the earliest available offset (or a configured reset policy) rather than only seeing future messages.</p>
+<p><strong>Q: What ensures related events (e.g., for the same customer) are processed in order on Kafka?</strong>
+Partitioning — Spring Cloud Stream routes messages sharing a partition key to the same Kafka partition, and a partition is only ever consumed by one instance within a group at a time.</p>
+<h3 id="event-driven-microservices-with-spring-cloud-stream-and-rabbitmq">Event-Driven Microservices with Spring Cloud Stream and RabbitMQ</h3>
+<p>Using RabbitMQ as the binder, Spring Cloud Stream maps its abstractions onto AMQP concepts: a producer binding publishes to an <strong>exchange</strong>, and each consumer binding (identified by a <code>group</code>) causes the binder to declare and bind a dedicated, durable <strong>queue</strong> to that exchange. Unlike Kafka's log-based model where every consumer group independently tracks its own read position over a shared log, RabbitMQ queues hold messages until they are consumed and acknowledged — multiple consumer instances within the same group compete for messages from the same queue (classic point-to-point load balancing), while separate groups each get their own independent queue bound to the same exchange (fan-out to multiple subscribers).</p>
+<p>This makes RabbitMQ a natural fit for event-driven microservices that need lower-latency delivery, flexible routing (via topic/direct/fanout exchanges and routing keys), or per-message acknowledgment semantics with fine-grained retry/redelivery control — at the cost of not natively supporting Kafka-style replay of historical messages once they've been consumed and acknowledged. Spring Cloud Stream's RabbitMQ binder also supports request/reply patterns and exposes AMQP-specific producer/consumer properties (routing key expressions, exchange type, queue TTL, prefetch count) via <code>spring.cloud.stream.rabbit.bindings.*</code>.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="nt">spring</span><span class="p">:</span>
+<a href="#__codelineno-7-2" id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="w">  </span><span class="nt">cloud</span><span class="p">:</span>
+<a href="#__codelineno-7-3" id="__codelineno-7-3" name="__codelineno-7-3"></a><span class="w">    </span><span class="nt">stream</span><span class="p">:</span>
+<a href="#__codelineno-7-4" id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="w">      </span><span class="nt">rabbit</span><span class="p">:</span>
+<a href="#__codelineno-7-5" id="__codelineno-7-5" name="__codelineno-7-5"></a><span class="w">        </span><span class="nt">bindings</span><span class="p">:</span>
+<a href="#__codelineno-7-6" id="__codelineno-7-6" name="__codelineno-7-6"></a><span class="w">          </span><span class="nt">handleOrderCreated-in-0</span><span class="p">:</span>
+<a href="#__codelineno-7-7" id="__codelineno-7-7" name="__codelineno-7-7"></a><span class="w">            </span><span class="nt">consumer</span><span class="p">:</span>
+<a href="#__codelineno-7-8" id="__codelineno-7-8" name="__codelineno-7-8"></a><span class="w">              </span><span class="nt">exchange-type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">topic</span>
+<a href="#__codelineno-7-9" id="__codelineno-7-9" name="__codelineno-7-9"></a><span class="w">              </span><span class="nt">binding-routing-key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">order.created</span>
+<a href="#__codelineno-7-10" id="__codelineno-7-10" name="__codelineno-7-10"></a><span class="w">      </span><span class="nt">bindings</span><span class="p">:</span>
+<a href="#__codelineno-7-11" id="__codelineno-7-11" name="__codelineno-7-11"></a><span class="w">        </span><span class="nt">handleOrderCreated-in-0</span><span class="p">:</span>
+<a href="#__codelineno-7-12" id="__codelineno-7-12" name="__codelineno-7-12"></a><span class="w">          </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">orders-exchange</span>
+<a href="#__codelineno-7-13" id="__codelineno-7-13" name="__codelineno-7-13"></a><span class="w">          </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inventory-service</span>
+<a href="#__codelineno-7-14" id="__codelineno-7-14" name="__codelineno-7-14"></a><span class="w">        </span><span class="nt">handleOrderCreated-out-0</span><span class="p">:</span>
+<a href="#__codelineno-7-15" id="__codelineno-7-15" name="__codelineno-7-15"></a><span class="w">          </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shipping-exchange</span>
+</code></pre></div>
+<pre class="mermaid"><code>sequenceDiagram
+    participant OS as Order Service
+    participant EX as RabbitMQ Exchange
+    participant Q1 as Queue orders.inventory
+    participant Q2 as Queue orders.shipping
+    participant IS as Inventory Service
+    participant SS as Shipping Service
+    OS-&gt;&gt;EX: publish OrderCreated event
+    EX-&gt;&gt;Q1: route (fanout/topic binding)
+    EX-&gt;&gt;Q2: route (fanout/topic binding)
+    Q1--&gt;&gt;IS: deliver message
+    Q2--&gt;&gt;SS: deliver message
+</code></pre>
+<p><strong>Real-life scenario:</strong> A ride-hailing platform uses RabbitMQ for driver-dispatch events because it needs sub-second delivery latency and flexible topic-based routing keys (<code>ride.requested.city.nyc</code>) to route requests to region-specific dispatcher services, prioritizing low-latency point-to-point delivery over Kafka's replay/retention capabilities which aren't needed for this ephemeral, real-time workload.</p>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Kafka</th>
+<th>RabbitMQ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model</td>
+<td>Durable, partitioned log</td>
+<td>Queue-based message broker (AMQP)</td>
+</tr>
+<tr>
+<td>Message replay</td>
+<td>Yes, by resetting consumer offsets within retention</td>
+<td>No, once acknowledged and consumed</td>
+</tr>
+<tr>
+<td>Ordering guarantee</td>
+<td>Per-partition ordering</td>
+<td>Per-queue ordering (single consumer)</td>
+</tr>
+<tr>
+<td>Routing flexibility</td>
+<td>Simple (topic + partition)</td>
+<td>Rich (direct/topic/fanout/headers exchanges, routing keys)</td>
+</tr>
+<tr>
+<td>Fan-out to many independent consumers</td>
+<td>Native via consumer groups on shared log</td>
+<td>Requires separate queue per consumer group bound to exchange</td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>High-throughput event streaming, replay, analytics</td>
+<td>Low-latency commands, flexible routing, RPC-style messaging</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: How does RabbitMQ achieve fan-out to multiple independent consumer groups?</strong>
+Each consumer group gets its own dedicated, durable queue bound to the shared exchange, so every group receives its own copy of each published message.</p>
+<p><strong>Q: Why is RabbitMQ generally not suited for replaying historical events?</strong>
+Because messages are removed from a queue once consumed and acknowledged, unlike Kafka's log-based retention which keeps messages available for replay within a retention window.</p>
+<h3 id="consumer-groups-and-partitioning">Consumer Groups and Partitioning</h3>
+<p>A <strong>consumer group</strong> identifies a logical set of application instances that jointly and competitively process messages from a destination, so that each message is delivered to exactly one instance within the group (not to every instance). This is what enables horizontal scaling of a stateless consumer: run 3 instances of the same service, all in the same <code>group</code>, and Spring Cloud Stream (via the underlying binder) ensures work is spread across them rather than each instance redundantly processing every message. Instances in <em>different</em> groups, by contrast, each receive their own independent copy of every message — this is the mechanism that enables the fan-out patterns described earlier.</p>
+<p><strong>Partitioning</strong> works alongside consumer groups to provide ordered, sticky processing: messages are assigned to a partition based on a partition key (via <code>partitionKeyExpression</code> or a custom <code>PartitionKeyExtractorStrategy</code>), and Spring Cloud Stream guarantees that all messages with the same key always land in the same partition, and that a given partition is only ever consumed by one instance within a consumer group at a time. This is essential when processing order matters — e.g., all events for a given customer ID must be processed in the order they were published, which requires them to always route to the same partition and hence the same consumer instance.</p>
+<p>On Kafka, partitioning maps directly onto native Kafka topic partitions and consumer group rebalancing. On RabbitMQ, which has no native partition concept, Spring Cloud Stream simulates partitioning by creating multiple physical queues (one per partition) and using a routing key derived from the partition index to ensure a message with a given key always reaches the same queue.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-8-1" id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="nt">spring</span><span class="p">:</span>
+<a href="#__codelineno-8-2" id="__codelineno-8-2" name="__codelineno-8-2"></a><span class="w">  </span><span class="nt">cloud</span><span class="p">:</span>
+<a href="#__codelineno-8-3" id="__codelineno-8-3" name="__codelineno-8-3"></a><span class="w">    </span><span class="nt">stream</span><span class="p">:</span>
+<a href="#__codelineno-8-4" id="__codelineno-8-4" name="__codelineno-8-4"></a><span class="w">      </span><span class="nt">bindings</span><span class="p">:</span>
+<a href="#__codelineno-8-5" id="__codelineno-8-5" name="__codelineno-8-5"></a><span class="w">        </span><span class="nt">processOrder-in-0</span><span class="p">:</span>
+<a href="#__codelineno-8-6" id="__codelineno-8-6" name="__codelineno-8-6"></a><span class="w">          </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">orders</span>
+<a href="#__codelineno-8-7" id="__codelineno-8-7" name="__codelineno-8-7"></a><span class="w">          </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">order-processing-group</span>
+<a href="#__codelineno-8-8" id="__codelineno-8-8" name="__codelineno-8-8"></a><span class="w">          </span><span class="nt">consumer</span><span class="p">:</span>
+<a href="#__codelineno-8-9" id="__codelineno-8-9" name="__codelineno-8-9"></a><span class="w">            </span><span class="nt">partitioned</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a href="#__codelineno-8-10" id="__codelineno-8-10" name="__codelineno-8-10"></a><span class="w">            </span><span class="nt">concurrency</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<a href="#__codelineno-8-11" id="__codelineno-8-11" name="__codelineno-8-11"></a><span class="w">        </span><span class="nt">processOrder-out-0</span><span class="p">:</span>
+<a href="#__codelineno-8-12" id="__codelineno-8-12" name="__codelineno-8-12"></a><span class="w">          </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">orders</span>
+<a href="#__codelineno-8-13" id="__codelineno-8-13" name="__codelineno-8-13"></a><span class="w">          </span><span class="nt">producer</span><span class="p">:</span>
+<a href="#__codelineno-8-14" id="__codelineno-8-14" name="__codelineno-8-14"></a><span class="w">            </span><span class="nt">partition-key-expression</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">payload.customerId</span>
+<a href="#__codelineno-8-15" id="__codelineno-8-15" name="__codelineno-8-15"></a><span class="w">            </span><span class="nt">partition-count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+</code></pre></div>
+<pre class="mermaid"><code>flowchart TD
+    T[Kafka Topic: orders with 4 partitions] --&gt; P0[Partition 0]
+    T --&gt; P1[Partition 1]
+    T --&gt; P2[Partition 2]
+    T --&gt; P3[Partition 3]
+    P0 --&gt; I1[Consumer Instance 1]
+    P1 --&gt; I1
+    P2 --&gt; I2[Consumer Instance 2]
+    P3 --&gt; I2
+</code></pre>
+<p><strong>Real-life scenario:</strong> A payments platform must guarantee that all transactions for a given account are processed strictly in order to avoid balance-calculation race conditions. By partitioning the Kafka topic on <code>accountId</code> and running multiple consumer instances in the same group, the platform scales horizontally to handle high transaction volume while still guaranteeing that any single account's transactions are always handled sequentially by the same consumer instance.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What happens if two application instances use different group names for the same destination?</strong>
+They're treated as independent subscribers, each receiving a full copy of every message (fan-out), rather than sharing the workload as competing consumers.</p>
+<p><strong>Q: On Kafka, what does increasing <code>consumer.concurrency</code> do relative to partitions?</strong>
+It creates additional consumer threads within the same instance to process partitions in parallel, but concurrency beyond the number of assigned partitions has no further effect since a partition can only be consumed by one thread at a time.</p>
+<h3 id="error-handling-and-dead-letter-queues-in-spring-cloud-stream">Error Handling and Dead Letter Queues in Spring Cloud Stream</h3>
+<p>When message processing fails, Spring Cloud Stream provides a layered error-handling strategy. At the innermost layer, a binding can configure retry (<code>consumer.max-attempts</code>, <code>back-off-initial-interval</code>, <code>back-off-multiplier</code>) so transient failures are retried locally before being considered a permanent failure. If retries are exhausted (or disabled), the message is routed to an <strong>error channel</strong> (<code>&lt;destination&gt;.&lt;group&gt;.errors</code>) that application code can subscribe to for custom handling, or — more commonly in production — automatically republished to a <strong>Dead Letter Queue (DLQ)</strong> so it isn't lost and can be inspected or reprocessed later.</p>
+<p>On RabbitMQ, enabling <code>republish-to-dlq: true</code> (alongside <code>auto-bind-dlq: true</code>) causes the binder to automatically declare a <code>&lt;queue&gt;.dlq</code> queue and republish failed messages to it after retries are exhausted, preserving the original message headers plus additional diagnostic headers (<code>x-exception-message</code>, <code>x-exception-stacktrace</code>) describing why it failed. On Kafka, the binder supports a similar <code>enableDlq</code>/<code>dlqName</code> mechanism that republishes failed records to a dedicated Kafka DLQ topic, and Spring Cloud Stream can also integrate with Spring Kafka's <code>DeadLetterPublishingRecoverer</code> for finer control over retry/DLQ behavior at the listener-container level.</p>
+<p>Choosing between relying on automatic DLQ republishing versus writing custom error-channel handling logic is an important design decision: automatic DLQ is simple, requires no code, and is sufficient when failed messages just need to be parked for manual/automated reprocessing later; custom error handling is needed when a failure should trigger an immediate compensating action (e.g., alerting, partial rollback, or routing to a different recovery flow) rather than just being stored for later.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-9-1" id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="nt">spring</span><span class="p">:</span>
+<a href="#__codelineno-9-2" id="__codelineno-9-2" name="__codelineno-9-2"></a><span class="w">  </span><span class="nt">cloud</span><span class="p">:</span>
+<a href="#__codelineno-9-3" id="__codelineno-9-3" name="__codelineno-9-3"></a><span class="w">    </span><span class="nt">stream</span><span class="p">:</span>
+<a href="#__codelineno-9-4" id="__codelineno-9-4" name="__codelineno-9-4"></a><span class="w">      </span><span class="nt">rabbit</span><span class="p">:</span>
+<a href="#__codelineno-9-5" id="__codelineno-9-5" name="__codelineno-9-5"></a><span class="w">        </span><span class="nt">bindings</span><span class="p">:</span>
+<a href="#__codelineno-9-6" id="__codelineno-9-6" name="__codelineno-9-6"></a><span class="w">          </span><span class="nt">processOrder-in-0</span><span class="p">:</span>
+<a href="#__codelineno-9-7" id="__codelineno-9-7" name="__codelineno-9-7"></a><span class="w">            </span><span class="nt">consumer</span><span class="p">:</span>
+<a href="#__codelineno-9-8" id="__codelineno-9-8" name="__codelineno-9-8"></a><span class="w">              </span><span class="nt">auto-bind-dlq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a href="#__codelineno-9-9" id="__codelineno-9-9" name="__codelineno-9-9"></a><span class="w">              </span><span class="nt">republish-to-dlq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a href="#__codelineno-9-10" id="__codelineno-9-10" name="__codelineno-9-10"></a><span class="w">              </span><span class="nt">republish-deliver-mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PERSISTENT</span>
+<a href="#__codelineno-9-11" id="__codelineno-9-11" name="__codelineno-9-11"></a><span class="w">      </span><span class="nt">bindings</span><span class="p">:</span>
+<a href="#__codelineno-9-12" id="__codelineno-9-12" name="__codelineno-9-12"></a><span class="w">        </span><span class="nt">processOrder-in-0</span><span class="p">:</span>
+<a href="#__codelineno-9-13" id="__codelineno-9-13" name="__codelineno-9-13"></a><span class="w">          </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">orders</span>
+<a href="#__codelineno-9-14" id="__codelineno-9-14" name="__codelineno-9-14"></a><span class="w">          </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">order-processing-group</span>
+<a href="#__codelineno-9-15" id="__codelineno-9-15" name="__codelineno-9-15"></a><span class="w">          </span><span class="nt">consumer</span><span class="p">:</span>
+<a href="#__codelineno-9-16" id="__codelineno-9-16" name="__codelineno-9-16"></a><span class="w">            </span><span class="nt">max-attempts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<a href="#__codelineno-9-17" id="__codelineno-9-17" name="__codelineno-9-17"></a><span class="w">            </span><span class="nt">back-off-initial-interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<a href="#__codelineno-9-18" id="__codelineno-9-18" name="__codelineno-9-18"></a><span class="w">            </span><span class="nt">back-off-multiplier</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.0</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-10-1" id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="nt">spring</span><span class="p">:</span>
+<a href="#__codelineno-10-2" id="__codelineno-10-2" name="__codelineno-10-2"></a><span class="w">  </span><span class="nt">cloud</span><span class="p">:</span>
+<a href="#__codelineno-10-3" id="__codelineno-10-3" name="__codelineno-10-3"></a><span class="w">    </span><span class="nt">stream</span><span class="p">:</span>
+<a href="#__codelineno-10-4" id="__codelineno-10-4" name="__codelineno-10-4"></a><span class="w">      </span><span class="nt">kafka</span><span class="p">:</span>
+<a href="#__codelineno-10-5" id="__codelineno-10-5" name="__codelineno-10-5"></a><span class="w">        </span><span class="nt">bindings</span><span class="p">:</span>
+<a href="#__codelineno-10-6" id="__codelineno-10-6" name="__codelineno-10-6"></a><span class="w">          </span><span class="nt">processOrder-in-0</span><span class="p">:</span>
+<a href="#__codelineno-10-7" id="__codelineno-10-7" name="__codelineno-10-7"></a><span class="w">            </span><span class="nt">consumer</span><span class="p">:</span>
+<a href="#__codelineno-10-8" id="__codelineno-10-8" name="__codelineno-10-8"></a><span class="w">              </span><span class="nt">enable-dlq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a href="#__codelineno-10-9" id="__codelineno-10-9" name="__codelineno-10-9"></a><span class="w">              </span><span class="nt">dlq-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">orders.DLQ</span>
+<a href="#__codelineno-10-10" id="__codelineno-10-10" name="__codelineno-10-10"></a><span class="w">              </span><span class="nt">dlq-partitions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-11-1" id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="nd">@Bean</span>
+<a href="#__codelineno-11-2" id="__codelineno-11-2" name="__codelineno-11-2"></a><span class="kd">public</span><span class="w"> </span><span class="n">Function</span><span class="o">&lt;</span><span class="n">Order</span><span class="p">,</span><span class="w"> </span><span class="n">ShippingRequest</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">processOrder</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-11-3" id="__codelineno-11-3" name="__codelineno-11-3"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">order</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-11-4" id="__codelineno-11-4" name="__codelineno-11-4"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">order</span><span class="p">.</span><span class="na">getItems</span><span class="p">().</span><span class="na">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-11-5" id="__codelineno-11-5" name="__codelineno-11-5"></a><span class="w">            </span><span class="k">throw</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">IllegalStateException</span><span class="p">(</span><span class="s">"Order has no items: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">order</span><span class="p">.</span><span class="na">getId</span><span class="p">());</span>
+<a href="#__codelineno-11-6" id="__codelineno-11-6" name="__codelineno-11-6"></a><span class="w">        </span><span class="p">}</span>
+<a href="#__codelineno-11-7" id="__codelineno-11-7" name="__codelineno-11-7"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ShippingRequest</span><span class="p">(</span><span class="n">order</span><span class="p">.</span><span class="na">getId</span><span class="p">(),</span><span class="w"> </span><span class="n">order</span><span class="p">.</span><span class="na">getAddress</span><span class="p">());</span>
+<a href="#__codelineno-11-8" id="__codelineno-11-8" name="__codelineno-11-8"></a><span class="w">    </span><span class="p">};</span>
+<a href="#__codelineno-11-9" id="__codelineno-11-9" name="__codelineno-11-9"></a><span class="p">}</span>
+<a href="#__codelineno-11-10" id="__codelineno-11-10" name="__codelineno-11-10"></a>
+<a href="#__codelineno-11-11" id="__codelineno-11-11" name="__codelineno-11-11"></a><span class="nd">@ServiceActivator</span><span class="p">(</span><span class="n">inputChannel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"processOrder-in-0.order-processing-group.errors"</span><span class="p">)</span>
+<a href="#__codelineno-11-12" id="__codelineno-11-12" name="__codelineno-11-12"></a><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">handleError</span><span class="p">(</span><span class="n">ErrorMessage</span><span class="w"> </span><span class="n">errorMessage</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-11-13" id="__codelineno-11-13" name="__codelineno-11-13"></a><span class="w">    </span><span class="n">log</span><span class="p">.</span><span class="na">error</span><span class="p">(</span><span class="s">"Failed to process message, routing handled by DLQ"</span><span class="p">,</span><span class="w"> </span><span class="n">errorMessage</span><span class="p">.</span><span class="na">getPayload</span><span class="p">());</span>
+<a href="#__codelineno-11-14" id="__codelineno-11-14" name="__codelineno-11-14"></a><span class="p">}</span>
+</code></pre></div>
+<pre class="mermaid"><code>flowchart TD
+    A[Message consumed] --&gt; B{Processing succeeds?}
+    B -- Yes --&gt; C[Acknowledge / commit offset]
+    B -- No --&gt; D{Retries exhausted?}
+    D -- No --&gt; E[Retry with backoff]
+    E --&gt; A
+    D -- Yes --&gt; F["Publish to Dead Letter Queue/Topic"]
+    F --&gt; G[Original message acknowledged]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Advantages</th>
+<th>Disadvantages</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Automatic DLQ republish (<code>republishToDlq</code> / <code>enableDlq</code>)</td>
+<td>Zero code, consistent behavior, preserves original message + diagnostic headers</td>
+<td>No immediate compensating action; failures only surface when someone inspects the DLQ</td>
+</tr>
+<tr>
+<td>Custom error-channel handling</td>
+<td>Enables immediate alerting, compensation logic, or conditional routing</td>
+<td>Requires custom code per binding; risk of inconsistent handling across teams/services</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Real-life scenario:</strong> An order-processing service occasionally receives malformed order payloads from an upstream system due to a schema mismatch. Rather than losing these messages or blocking the whole consumer group on a poison-pill message, the team enables <code>auto-bind-dlq</code>/<code>enable-dlq</code> so malformed messages are automatically diverted to a DLQ after 3 retry attempts, allowing the main pipeline to keep flowing while an on-call engineer periodically reviews and reprocesses the DLQ's contents once the upstream schema issue is fixed.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What's the difference between the error channel and a DLQ?</strong>
+The error channel is an in-process Spring Integration channel your application code can subscribe to for custom handling; a DLQ is a separate broker-level destination where failed messages are durably republished for external inspection or reprocessing — the two can also be combined.</p>
+<p><strong>Q: What happens to a message if retries are exhausted and no DLQ or error handling is configured?</strong>
+The outcome depends on the binder's defaults, but it typically risks message loss, an endlessly retried poison message, or a stalled consumer — which is why production configurations should always define a DLQ or explicit error handling.</p>
+<h2 id="interview-questions-answers">Interview Questions &amp; Answers</h2>
+<h3 id="core-concepts-and-functional-model">Core Concepts and Functional Model</h3>
+<p><strong>Q: What problem does Spring Cloud Stream solve?</strong></p>
+<p>It lets developers build message-driven microservices using a consistent, broker-agnostic programming model (functional beans: <code>Supplier</code>, <code>Function</code>, <code>Consumer</code>), while the framework handles the actual integration with a specific messaging middleware (Kafka, RabbitMQ) through a pluggable "binder." This avoids tightly coupling business logic to a specific broker's client API and makes messaging code far easier to unit test.</p>
+<p><strong>Q: What are the three core <code>java.util.function</code> interfaces used in Spring Cloud Stream's functional model, and what does each represent?</strong></p>
+<p><code>Supplier&lt;T&gt;</code> represents a source that produces outbound messages (e.g., periodically polled). <code>Function&lt;T, R&gt;</code> represents a processor that consumes an inbound message and produces a transformed outbound message. <code>Consumer&lt;T&gt;</code> represents a sink that consumes an inbound message with no further output, typically performing a side effect like persisting to a database.</p>
+<p><strong>Q: How does Spring Cloud Stream know which binding names to use for a functional bean?</strong></p>
+<p>By convention: for a bean named <code>processOrder</code>, the input binding is <code>processOrder-in-0</code> and the output binding is <code>processOrder-out-0</code> (with additional numeric suffixes for multi-arg functions). When multiple functional beans exist in the same application, <code>spring.cloud.function.definition</code> explicitly declares which ones are active bindings.</p>
+<p><strong>Q: What replaced the older <code>@EnableBinding</code>/<code>@StreamListener</code> annotation-based model, and why?</strong></p>
+<p>The functional programming model (plain <code>Supplier</code>/<code>Function</code>/<code>Consumer</code> beans) replaced it starting with Spring Cloud Stream 3.x, because it requires less boilerplate (no custom binding interfaces or explicit channel declarations) and is significantly easier to unit test — a <code>Function</code> bean can be tested by simply calling <code>.apply()</code> without any Spring context or embedded broker.</p>
+<p><strong>Q: What is a "binder" in Spring Cloud Stream?</strong></p>
+<p>A binder is the pluggable integration module that connects Spring Cloud Stream's abstract input/output bindings to a specific messaging middleware, translating generic concepts into broker-specific ones (e.g., Kafka topics/partitions or RabbitMQ exchanges/queues). Official binders exist for Kafka, Kafka Streams, and RabbitMQ.</p>
+<h3 id="binders-bindings-and-destinations">Binders, Bindings, and Destinations</h3>
+<p><strong>Q: What's the difference between a "binding" and a "destination" in Spring Cloud Stream?</strong></p>
+<p>A binding is the logical, application-level input/output channel tied to a functional bean (e.g., <code>processOrder-in-0</code>). A destination is the actual physical resource in the broker (a Kafka topic name or RabbitMQ exchange name) that the binding is mapped to via configuration. This indirection lets the same code point at differently-named infrastructure per environment.</p>
+<p><strong>Q: How would you run both a Kafka binder and a RabbitMQ binder in the same application?</strong></p>
+<p>Add both binder dependencies to the classpath, then explicitly specify which binder each binding should use via <code>spring.cloud.stream.bindings.&lt;bindingName&gt;.binder</code>, since Spring Cloud Stream can't infer the correct binder automatically when more than one is present.</p>
+<p><strong>Q: What happens if you don't set a <code>group</code> on a consumer binding?</strong></p>
+<p>Without a <code>group</code>, the binding is treated as an anonymous, non-durable subscription — each application instance gets its own independent view of the destination (effectively fan-out), rather than participating in load-balanced, competing consumption alongside other instances. This means scaling out instances without a group results in duplicate processing rather than shared work.</p>
+<p><strong>Q: Why might you choose Kafka over RabbitMQ (or vice versa) as your Spring Cloud Stream binder?</strong></p>
+<p>Kafka is preferred for high-throughput event streaming, when message replay/reprocessing from history is needed, and when strict per-partition ordering at scale matters (e.g., analytics, event sourcing). RabbitMQ is preferred for lower-latency command-style messaging, flexible routing via exchanges/routing keys, and scenarios needing fine-grained per-message acknowledgment without needing durable replay of already-consumed messages.</p>
+<h3 id="consumer-groups-and-partitioning_1">Consumer Groups and Partitioning</h3>
+<p><strong>Q: What is the purpose of a consumer group in Spring Cloud Stream?</strong></p>
+<p>It identifies a set of application instances that should share the work of consuming a destination — Spring Cloud Stream (via the binder) ensures each message is delivered to only one instance within the group, enabling horizontal scaling of stateless consumers without duplicate processing.</p>
+<p><strong>Q: How does partitioning interact with consumer groups to guarantee ordering?</strong></p>
+<p>Partitioning assigns messages to a specific partition based on a key (e.g., customer ID), and guarantees all messages with the same key always land in the same partition; within a consumer group, a given partition is only ever consumed by one instance at a time. Together, this ensures all messages for a given key are processed in order by a single, consistent consumer instance, even as the group scales horizontally.</p>
+<p><strong>Q: How does Spring Cloud Stream simulate partitioning on RabbitMQ, which has no native partition concept?</strong></p>
+<p>It creates multiple physical queues — one per partition — and uses a routing key derived from the computed partition index to ensure messages with the same partition key always route to the same queue, effectively emulating Kafka-style sticky partition assignment on top of AMQP.</p>
+<p><strong>Q: What configuration property determines which partition a message is routed to on the producer side?</strong></p>
+<p><code>spring.cloud.stream.bindings.&lt;binding&gt;.producer.partition-key-expression</code> (a SpEL expression evaluated against the outbound message, e.g. <code>payload.customerId</code>), combined with <code>partition-count</code> specifying how many partitions/queues exist.</p>
+<h3 id="error-handling-and-dead-letter-queues">Error Handling and Dead Letter Queues</h3>
+<p><strong>Q: What is a Dead Letter Queue (DLQ) and why is it useful in Spring Cloud Stream?</strong></p>
+<p>A DLQ is a separate destination where messages that repeatedly fail processing are routed after retries are exhausted, rather than being silently dropped or endlessly blocking the consumer. It preserves failed messages (often with diagnostic headers explaining the failure) for later manual inspection, reprocessing, or alerting, without stalling the main processing pipeline.</p>
+<p><strong>Q: How do you enable automatic DLQ routing on the RabbitMQ binder?</strong></p>
+<p>By setting <code>spring.cloud.stream.rabbit.bindings.&lt;binding&gt;.consumer.auto-bind-dlq: true</code> (to have the binder declare the DLQ infrastructure) together with <code>republish-to-dlq: true</code> (to actually republish failed messages there after retries are exhausted).</p>
+<p><strong>Q: How do you enable a Dead Letter Queue with the Kafka binder?</strong></p>
+<p>By setting <code>spring.cloud.stream.kafka.bindings.&lt;binding&gt;.consumer.enable-dlq: true</code>, optionally specifying <code>dlq-name</code> to control the target topic name; failed records (after local retry attempts are exhausted) are republished to that dedicated Kafka DLQ topic.</p>
+<p><strong>Q: What configuration properties control local retry behavior before a message is considered permanently failed?</strong></p>
+<p><code>spring.cloud.stream.bindings.&lt;binding&gt;.consumer.max-attempts</code> (total attempts), <code>back-off-initial-interval</code> (initial delay), and <code>back-off-multiplier</code> (how the delay grows between attempts) — these apply local, in-process retries before the message is escalated to the error channel / DLQ.</p>
+<p><strong>Q: When would you prefer custom error-channel handling over automatic DLQ republishing?</strong></p>
+<p>When a failure needs to trigger an immediate compensating action — such as alerting an on-call engineer, rolling back a partially-completed transaction, or routing the message to an alternate recovery flow — rather than simply parking the message for later manual reprocessing, which is all automatic DLQ republishing provides on its own.</p>
+<p><strong>Q: What additional information does RabbitMQ's <code>republishToDlq</code> mechanism attach to a dead-lettered message?</strong></p>
+<p>It preserves the original message headers and adds diagnostic headers such as <code>x-exception-message</code> and <code>x-exception-stacktrace</code>, describing exactly why the message failed processing — useful for triaging DLQ contents without needing to correlate against application logs separately.</p>
+<h2 id="resources">Resources</h2>
+<h3 id="youtube">Youtube</h3>
+<ul>
+<li><a href="https://www.youtube.com/watch?v=vNFgsHjA504">Spring Cloud Stream with RabbitMQ | Message-Driven Microservices</a></li>
+<li><a href="https://www.youtube.com/watch?v=_gQaygjm_hg">Spring Cloud Stream with Apache Kafka | Event-Driven Microservices</a></li>
+<li><a href="https://www.youtube.com/watch?v=o4qCdBR4gUM">Spring Boot Microservices – Event-Driven Architecture with RabbitMQ | JavaTechie</a></li>
+</ul>
+<h3 id="medium">Medium</h3>
+<ul>
+<li><a href="https://docs.spring.io/spring-cloud-stream/docs/current/reference/html/">Spring Cloud Stream – Reference Documentation</a></li>
+<li><a href="https://www.baeldung.com/spring-cloud-stream">Event-Driven Microservices with Spring Cloud Stream and Kafka</a></li>
+<li><a href="https://medium.com/@ankithahjprakash/spring-cloud-stream-with-rabbitmq-3b2b8b2b8b2b">Spring Cloud Stream with RabbitMQ</a></li>
+</ul></div>
+</article>
+</div>
+<script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+</div>
+<button class="md-top md-icon" data-md-component="top" hidden="" type="button">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  Back to top
+</button>
+</main>
+<footer class="md-footer">
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-copyright">
+<div class="md-copyright__highlight">
+      © 2025 <a href="https://github.com/abhishekghoshh" rel="noopener" target="_blank">Abhishek Ghosh</a>
+</div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+      Material for MkDocs
+    </a>
+</div>
+<div class="md-social">
+<a class="md-social__link" href="https://github.com/abhishekghoshh" rel="noopener" target="_blank" title="github.com">
+<svg viewbox="0 0 480 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M186.1 328.7c0 20.9-10.9 55.1-36.7 55.1s-36.7-34.2-36.7-55.1 10.9-55.1 36.7-55.1 36.7 34.2 36.7 55.1M480 278.2c0 31.9-3.2 65.7-17.5 95-37.9 76.6-142.1 74.8-216.7 74.8-75.8 0-186.2 2.7-225.6-74.8-14.6-29-20.2-63.1-20.2-95 0-41.9 13.9-81.5 41.5-113.6-5.2-15.8-7.7-32.4-7.7-48.8 0-21.5 4.9-32.3 14.6-51.8 45.3 0 74.3 9 108.8 36 29-6.9 58.8-10 88.7-10 27 0 54.2 2.9 80.4 9.2 34-26.7 63-35.2 107.8-35.2 9.8 19.5 14.6 30.3 14.6 51.8 0 16.4-2.6 32.7-7.7 48.2 27.5 32.4 39 72.3 39 114.2m-64.3 50.5c0-43.9-26.7-82.6-73.5-82.6-18.9 0-37 3.4-56 6-14.9 2.3-29.8 3.2-45.1 3.2-15.2 0-30.1-.9-45.1-3.2-18.7-2.6-37-6-56-6-46.8 0-73.5 38.7-73.5 82.6 0 87.8 80.4 101.3 150.4 101.3h48.2c70.3 0 150.6-13.4 150.6-101.3m-82.6-55.1c-25.8 0-36.7 34.2-36.7 55.1s10.9 55.1 36.7 55.1 36.7-34.2 36.7-55.1-10.9-55.1-36.7-55.1"></path></svg>
+</a>
+<a class="md-social__link" href="https://x.com/abhishek_ghoshh" rel="noopener" target="_blank" title="x.com">
+<svg viewbox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253"></path></svg>
+</a>
+<a class="md-social__link" href="https://www.linkedin.com/in/abhishek-ghosh-220679132/" rel="noopener" target="_blank" title="www.linkedin.com">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5m282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"></path></svg>
+</a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<div class="md-dialog" data-md-component="dialog">
+<div class="md-dialog__inner md-typeset"></div>
+</div>
+<script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+<script src="../../assets/javascripts/bundle.60a45f97.min.js"></script>
+<script type="module">import mermaid from "https://unpkg.com/mermaid@10.4.0/dist/mermaid.esm.min.mjs";
+window.mermaidConfig = {default: {
+    startOnLoad: false
+}};</script></body>
+</html>

@@ -1,0 +1,2272 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<link href="https://abhishekghoshh.github.io/spring-boot-helper/spring-cloud/005-rest-client/" rel="canonical"/>
+<link href="../004-spring-cloud-load-balancing/" rel="prev"/>
+<link href="../006-spring-cloud-api-gateway/" rel="next"/>
+<link href="../../assets/images/favicon.png" rel="icon"/>
+<meta content="mkdocs-1.6.1, mkdocs-material-9.5.50" name="generator"/>
+<title>Rest Client - spring-boot-helper</title>
+<link href="../../assets/stylesheets/main.a40c8224.min.css" rel="stylesheet"/>
+<link href="../../assets/stylesheets/palette.06af60db.min.css" rel="stylesheet"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
+<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+<meta content="website" property="og:type"/>
+<meta content="Rest Client - spring-boot-helper" property="og:title"/>
+<meta content="None" property="og:description"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/assets/images/social/spring-cloud/005-rest-client.png" property="og:image"/>
+<meta content="image/png" property="og:image:type"/>
+<meta content="1200" property="og:image:width"/>
+<meta content="630" property="og:image:height"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/spring-cloud/005-rest-client/" property="og:url"/>
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="Rest Client - spring-boot-helper" name="twitter:title"/>
+<meta content="None" name="twitter:description"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/assets/images/social/spring-cloud/005-rest-client.png" name="twitter:image"/>
+</head>
+<body data-md-color-accent="purple" data-md-color-primary="teal" data-md-color-scheme="default" dir="ltr">
+<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
+<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
+<label class="md-overlay" for="__drawer"></label>
+<div data-md-component="skip">
+<a class="md-skip" href="#rest-client">
+          Skip to content
+        </a>
+</div>
+<div data-md-component="announce">
+</div>
+<header class="md-header" data-md-component="header">
+<nav aria-label="Header" class="md-header__inner md-grid">
+<a aria-label="spring-boot-helper" class="md-header__button md-logo" data-md-component="logo" href="../.." title="spring-boot-helper">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+<label class="md-header__button md-icon" for="__drawer">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+</label>
+<div class="md-header__title" data-md-component="header-title">
+<div class="md-header__ellipsis">
+<div class="md-header__topic">
+<span class="md-ellipsis">
+            spring-boot-helper
+          </span>
+</div>
+<div class="md-header__topic" data-md-component="header-topic">
+<span class="md-ellipsis">
+            
+              Rest Client
+            
+          </span>
+</div>
+</div>
+</div>
+<form class="md-header__option" data-md-component="palette">
+<input aria-label="Switch to dark mode" class="md-option" data-md-color-accent="purple" data-md-color-media="" data-md-color-primary="teal" data-md-color-scheme="default" id="__palette_0" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_1" hidden="" title="Switch to dark mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"></path></svg>
+</label>
+<input aria-label="Switch to light mode" class="md-option" data-md-color-accent="lime" data-md-color-media="" data-md-color-primary="teal" data-md-color-scheme="slate" id="__palette_1" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_0" hidden="" title="Switch to light mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"></path></svg>
+</label>
+</form>
+<script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+<label class="md-header__button md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+</label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input aria-label="Search" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="Search" required="" spellcheck="false" type="text"/>
+<label class="md-search__icon md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+</label>
+<nav aria-label="Search" class="md-search__options">
+<button aria-label="Clear" class="md-search__icon md-icon" tabindex="-1" title="Clear" type="reset">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+</button>
+</nav>
+<div class="md-search__suggest" data-md-component="search-suggest"></div>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix="" tabindex="0">
+<div class="md-search-result" data-md-component="search-result">
+<div class="md-search-result__meta">
+            Initializing search
+          </div>
+<ol class="md-search-result__list" role="presentation"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+</nav>
+</header>
+<div class="md-container" data-md-component="container">
+<nav aria-label="Tabs" class="md-tabs" data-md-component="tabs">
+<div class="md-grid">
+<ul class="md-tabs__list">
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../..">
+        
+  
+    
+  
+  Home
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-introduction/">
+          
+  
+  Introduction
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-aop/">
+          
+  
+  Spring AOP
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-transactions/">
+          
+  
+  Spring Transaction
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-jpa/">
+          
+  
+  Spring JPA
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-security/">
+          
+  
+  Spring Security
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-testing/">
+          
+  
+  Spring Testing
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-kafka/">
+          
+  
+  Spring Kafka
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-redis/">
+          
+  
+  Spring Redis
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-mongo/">
+          
+  
+  Spring Mongo
+
+        </a>
+</li>
+<li class="md-tabs__item md-tabs__item--active">
+<a class="md-tabs__link" href="../">
+          
+  
+  Spring Cloud
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../others/">
+          
+  
+  Others
+
+        </a>
+</li>
+</ul>
+</div>
+</nav>
+<main class="md-main" data-md-component="main">
+<div class="md-main__inner md-grid">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="Navigation" class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" data-md-level="0">
+<label class="md-nav__title" for="__drawer">
+<a aria-label="spring-boot-helper" class="md-nav__button md-logo" data-md-component="logo" href="../.." title="spring-boot-helper">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+    spring-boot-helper
+  </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../..">
+<span class="md-ellipsis">
+    Home
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_2" type="checkbox"/>
+<label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+<span class="md-ellipsis">
+    Introduction
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_2_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_2">
+<span class="md-nav__icon md-icon"></span>
+            Introduction
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/interview-helper/">
+<span class="md-ellipsis">
+    Interview Helper
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/001-history/">
+<span class="md-ellipsis">
+    001 - History
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/002-spring-mvc/">
+<span class="md-ellipsis">
+    002 - Spring MVC
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/003-spring-boot/">
+<span class="md-ellipsis">
+    003 - Spring Boot
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/004-maven-and-gradle/">
+<span class="md-ellipsis">
+    004 - Maven and Gradle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/005-annotations/">
+<span class="md-ellipsis">
+    005 - Spring Annotations
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/006-bean-management/">
+<span class="md-ellipsis">
+    006 - Spring Bean Management
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/007-config/">
+<span class="md-ellipsis">
+    007 - Spring Boot Config Management
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/008-async/">
+<span class="md-ellipsis">
+    008 - Async with Spring Boot
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/009-spring-with-virtual-thread/">
+<span class="md-ellipsis">
+    009 - Spring with Virtual Thread
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/010-intercepter-and-filter/">
+<span class="md-ellipsis">
+    010 - Interceptor and Filter
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/011-spring-hateos/">
+<span class="md-ellipsis">
+    011 - Spring HATEOS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/012-exception-handling/">
+<span class="md-ellipsis">
+    012 - Exception Handling
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/013-spring-actuator/">
+<span class="md-ellipsis">
+    013 - Spring Boot Actuator
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_3" type="checkbox"/>
+<label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring AOP
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_3_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_3">
+<span class="md-nav__icon md-icon"></span>
+            Spring AOP
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/001-what-is-aop/">
+<span class="md-ellipsis">
+    001 - What is AOP? Why and How We Use It?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/002-advantages-and-disadvantages/">
+<span class="md-ellipsis">
+    002 - Advantages and Disadvantages of AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/003-real-life-examples/">
+<span class="md-ellipsis">
+    003 - Real-Life Examples and Industry Usages
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/004-aop-annotations/">
+<span class="md-ellipsis">
+    004 - All Spring AOP Annotations Explained
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/005-code-examples/">
+<span class="md-ellipsis">
+    005 - Code Examples with Spring AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/006-summary/">
+<span class="md-ellipsis">
+    006 - Summary
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/007-aop-intercepts-method-invocation/">
+<span class="md-ellipsis">
+    007 - How AOP Intercepts Method Invocation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/008-aop-focus-on-business-logic/">
+<span class="md-ellipsis">
+    008 - How AOP Allows Focus on Business Logic
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/009-aop-reusability-and-maintainability/">
+<span class="md-ellipsis">
+    009 - How AOP Achieves Reusability and Maintainability
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/010-what-is-a-pointcut/">
+<span class="md-ellipsis">
+    010 - What is a Pointcut?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/011-pointcut-expression-structure/">
+<span class="md-ellipsis">
+    011 - Pointcut Expression Structure
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/012-pointcut-designators/">
+<span class="md-ellipsis">
+    012 - Different Types of Pointcut Designators
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/013-combining-pointcut-expressions/">
+<span class="md-ellipsis">
+    013 - Combining Pointcut Expressions (AND, OR, NOT)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/014-named-pointcuts/">
+<span class="md-ellipsis">
+    014 - Named Pointcuts — Reusable Pointcut Definitions
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/015-how-aop-works-internally/">
+<span class="md-ellipsis">
+    015 - How AOP Works Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/016-what-is-advice/">
+<span class="md-ellipsis">
+    016 - What is Advice? How It Works
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/017-what-is-joinpoint/">
+<span class="md-ellipsis">
+    017 - What is JoinPoint? How It Works
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/018-before-after-around-internals/">
+<span class="md-ellipsis">
+    018 - How @Before, @After, and @Around Work Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/019-matching-linking-interception/">
+<span class="md-ellipsis">
+    019 - How Matching, Linking, and Interception Work Together
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/020-performance-and-caching/">
+<span class="md-ellipsis">
+    020 - What If We Have 100s of Pointcuts? — Performance &amp; Caching
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_4" type="checkbox"/>
+<label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Transaction
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_4_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_4">
+<span class="md-nav__icon md-icon"></span>
+            Spring Transaction
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/001-prerequisites/">
+<span class="md-ellipsis">
+    001 - Prerequisites
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/002-critical-section/">
+<span class="md-ellipsis">
+    002 - What is a Critical Section?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/003-transactional-annotation/">
+<span class="md-ellipsis">
+    003 - What is @Transactional? Why and How to Use It?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/004-acid-properties/">
+<span class="md-ellipsis">
+    004 - ACID Properties with @Transactional
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/005-imports-and-yaml-configuration/">
+<span class="md-ellipsis">
+    005 - Imports for RDBMS vs NoSQL and YAML Configuration
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/006-enable-transaction-management/">
+<span class="md-ellipsis">
+    006 - What is @EnableTransactionManagement?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/007-method-vs-class-level-transactional/">
+<span class="md-ellipsis">
+    007 - Method-Level vs Class-Level @Transactional
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/008-transactional-internals-spring-aop/">
+<span class="md-ellipsis">
+    008 - How @Transactional Internally Uses Spring AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/009-aop-annotations-pointcut-around/">
+<span class="md-ellipsis">
+    009 - AOP Annotations Used Internally — Pointcut and @Around
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/010-rollback-internals/">
+<span class="md-ellipsis">
+    010 - How Rollback Happens Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/011-transaction-manager-hierarchy/">
+<span class="md-ellipsis">
+    011 - Hierarchy of TransactionManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/012-ways-to-manage-transactions/">
+<span class="md-ellipsis">
+    012 - How Many Ways Can We Manage Transactions?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/013-transaction-propagation/">
+<span class="md-ellipsis">
+    013 - What is Transaction Propagation?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/014-isolation-level/">
+<span class="md-ellipsis">
+    014 - What is Isolation Level?
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5" type="checkbox"/>
+<label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring JPA
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_5_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_5">
+<span class="md-nav__icon md-icon"></span>
+            Spring JPA
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/dbms/">
+<span class="md-ellipsis">
+    Database Management Systems (DBMS)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/sql/">
+<span class="md-ellipsis">
+    Structured Query Language (SQL)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/000-jdbc/">
+<span class="md-ellipsis">
+    JDBC
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/001-architecture/">
+<span class="md-ellipsis">
+    001 - Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/002-entity-lifecycle/">
+<span class="md-ellipsis">
+    002 - Entity Lifecycle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/003-entity-manager-factory-and-entity-manager/">
+<span class="md-ellipsis">
+    003 - EntityManagerFactory and EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/004-persistence-context/">
+<span class="md-ellipsis">
+    004 - Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/005-transaction-manager/">
+<span class="md-ellipsis">
+    005 - Transaction Manager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/006-hibernate-implementation/">
+<span class="md-ellipsis">
+    006 - Hibernate Implementation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/007-how-jpa-repository-uses-entity-manager/">
+<span class="md-ellipsis">
+    007 - How JPA Repository Uses EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/008-persistence-context-annotation-vs-autowired/">
+<span class="md-ellipsis">
+    008 - Why @PersistenceContext Instead of @Autowired
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/009-transactional-with-entity-manager/">
+<span class="md-ellipsis">
+    009 - Why @Transactional is Used for EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/010-entity-manager-creates-persistence-context/">
+<span class="md-ellipsis">
+    010 - How EntityManager Creates Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/011-role-of-persistence-context/">
+<span class="md-ellipsis">
+    011 - Role of Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/012-transaction-bounded-operations/">
+<span class="md-ellipsis">
+    012 - Transaction-Bounded Operations
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/013-first-level-caching/">
+<span class="md-ellipsis">
+    013 - First-Level Caching
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/014-second-level-caching/">
+<span class="md-ellipsis">
+    014 - Second-Level Caching
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/015-ddl-auto/">
+<span class="md-ellipsis">
+    015 - spring.jpa.hibernate.ddl-auto
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/016-table-annotation/">
+<span class="md-ellipsis">
+    016 - "@Table Annotation"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/017-column-annotation/">
+<span class="md-ellipsis">
+    017 - "@Column Annotation"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/018-id-and-composite-ids/">
+<span class="md-ellipsis">
+    018 - "@Id Annotation and Composite IDs"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/019-sequence-generator/">
+<span class="md-ellipsis">
+    019 - "@SequenceGenerator"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/020-generated-value-and-generation-strategies/">
+<span class="md-ellipsis">
+    020 - "@GeneratedValue and Generation Strategies"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/021-one-to-one-unidirectional-mapping/">
+<span class="md-ellipsis">
+    021 - OneToOne Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/022-eager-and-lazy-loading/">
+<span class="md-ellipsis">
+    022 - Eager and Lazy Loading
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/023-one-to-one-bidirectional-mapping/">
+<span class="md-ellipsis">
+    023 - OneToOne Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/024-one-to-many-unidirectional-mapping/">
+<span class="md-ellipsis">
+    024 - OneToMany Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/025-one-to-many-bidirectional-mapping/">
+<span class="md-ellipsis">
+    025 - OneToMany Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/026-many-to-one-bidirectional-mapping/">
+<span class="md-ellipsis">
+    026 - ManyToOne Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/027-many-to-many-unidirectional-mapping/">
+<span class="md-ellipsis">
+    027 - ManyToMany Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/028-many-to-many-bidirectional-mapping/">
+<span class="md-ellipsis">
+    028 - ManyToMany Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/029-derived-query-methods/">
+<span class="md-ellipsis">
+    029 - Derived Query Methods
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/030-jpql/">
+<span class="md-ellipsis">
+    030 - JPQL
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/031-n-plus-1-problem/">
+<span class="md-ellipsis">
+    031 - The N+1 Problem in JPA
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/032-named-query/">
+<span class="md-ellipsis">
+    032 - "@NamedQuery"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/033-native-query/">
+<span class="md-ellipsis">
+    033 - Native Query
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/034-dynamic-native-query/">
+<span class="md-ellipsis">
+    034 - Dynamic Native Query
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/035-criteria-api/">
+<span class="md-ellipsis">
+    035 - Criteria API
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/036-jpa-specification-api/">
+<span class="md-ellipsis">
+    036 - JPA Specification API
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_6" type="checkbox"/>
+<label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Security
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_6_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_6">
+<span class="md-nav__icon md-icon"></span>
+            Spring Security
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/001-different-types-of-attacks/">
+<span class="md-ellipsis">
+    001 - Different Types of Attacks
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/002-authorization-and-authentication/">
+<span class="md-ellipsis">
+    002 - Authentication and Authorization
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/003-request-response-architecture/">
+<span class="md-ellipsis">
+    003 - Request/Response Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/004-spring-security-architecture/">
+<span class="md-ellipsis">
+    004 - Spring Security Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/005-default-user-creation/">
+<span class="md-ellipsis">
+    005 - Default User Creation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/006-password-encoding-delegating-password-encoder/">
+<span class="md-ellipsis">
+    006 - Password Encoding &amp; DelegatingPasswordEncoder
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/007-database-based-authentication/">
+<span class="md-ellipsis">
+    007 - Database-Based Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/008-form-login-stateful-authentication/">
+<span class="md-ellipsis">
+    008 - Form Login Stateful Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/009-form-login-user-flow-session-lifecycle/">
+<span class="md-ellipsis">
+    009 - Form Login User Flow &amp; Session Lifecycle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/010-customizing-form-login/">
+<span class="md-ellipsis">
+    010 - Customizing Form Login
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/011-session-persistence-spring-session-jdbc/">
+<span class="md-ellipsis">
+    011 - Session Persistence (Spring Session JDBC)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/012-distributed-sessions-with-redis/">
+<span class="md-ellipsis">
+    012 - Distributed Sessions with Redis
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/013-dao-authentication-provider/">
+<span class="md-ellipsis">
+    013 - DaoAuthenticationProvider Deep Dive
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/014-authenticated-request-flow/">
+<span class="md-ellipsis">
+    014 - Authenticated Request Flow
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/015-session-management-and-creation-policy/">
+<span class="md-ellipsis">
+    015 - Session Management &amp; Creation Policy
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/016-http-basic-authentication/">
+<span class="md-ellipsis">
+    016 - HTTP Basic Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/017-jwt-json-web-token/">
+<span class="md-ellipsis">
+    017 - JWT (JSON Web Token)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/018-access-token-refresh-token-jwks/">
+<span class="md-ellipsis">
+    018 - Access Token, Refresh Token &amp; JWKS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/019-jwt-authentication-custom-security-filters/">
+<span class="md-ellipsis">
+    019 - JWT Authentication with Custom Filters
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/020-oauth2-and-openid-connect/">
+<span class="md-ellipsis">
+    020 - OAuth 2.0 &amp; OpenID Connect
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/021-role-based-authorization-rbac/">
+<span class="md-ellipsis">
+    021 - Role-Based Authorization (RBAC)
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_7" type="checkbox"/>
+<label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Testing
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_7_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_7">
+<span class="md-nav__icon md-icon"></span>
+            Spring Testing
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-testing/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_8" type="checkbox"/>
+<label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Kafka
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_8_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_8">
+<span class="md-nav__icon md-icon"></span>
+            Spring Kafka
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-kafka/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-kafka/kafka/">
+<span class="md-ellipsis">
+    Kafka Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_9" type="checkbox"/>
+<label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Redis
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_9_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_9">
+<span class="md-nav__icon md-icon"></span>
+            Spring Redis
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-redis/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-redis/redis/">
+<span class="md-ellipsis">
+    Redis Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_10" type="checkbox"/>
+<label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Mongo
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_10_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_10">
+<span class="md-nav__icon md-icon"></span>
+            Spring Mongo
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-mongo/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-mongo/mongodb/">
+<span class="md-ellipsis">
+    MongoDB Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" id="__nav_11" type="checkbox"/>
+<label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+<span class="md-ellipsis">
+    Spring Cloud
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="true" aria-labelledby="__nav_11_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_11">
+<span class="md-nav__icon md-icon"></span>
+            Spring Cloud
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../001-spring-cloud-config/">
+<span class="md-ellipsis">
+    Spring Cloud Config
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../002-spring-cloud-bus/">
+<span class="md-ellipsis">
+    Spring Cloud Bus
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../003-service-discovery/">
+<span class="md-ellipsis">
+    Service Discovery
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../004-spring-cloud-load-balancing/">
+<span class="md-ellipsis">
+    Spring Cloud Load balancing
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
+<label class="md-nav__link md-nav__link--active" for="__toc">
+<span class="md-ellipsis">
+    Rest Client
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<a class="md-nav__link md-nav__link--active" href="./">
+<span class="md-ellipsis">
+    Rest Client
+  </span>
+</a>
+<nav aria-label="Table of contents" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#detailed-guide">
+<span class="md-ellipsis">
+      Detailed Guide
+    </span>
+</a>
+<nav aria-label="Detailed Guide" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#using-rest-template-for-service-invocation">
+<span class="md-ellipsis">
+      Using Rest Template for Service Invocation
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#rest-template-with-load-balanced">
+<span class="md-ellipsis">
+      Rest Template with Load Balanced
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#rest-template-with-service-discovery">
+<span class="md-ellipsis">
+      Rest Template with service discovery
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#using-feign-rest-client-for-service-invocation">
+<span class="md-ellipsis">
+      Using Feign REST Client for Service Invocation
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#feign-rest-client-with-load-balanced">
+<span class="md-ellipsis">
+      Feign REST Client with Load Balanced
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#feign-rest-client-with-service-discovery">
+<span class="md-ellipsis">
+      Feign REST Client with service discovery
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#using-webclient-for-connecting-different-service">
+<span class="md-ellipsis">
+      Using WebClient for connecting different service
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#webclient-with-load-balanced">
+<span class="md-ellipsis">
+      WebClient with Load Balanced
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#webclient-with-service-discovery">
+<span class="md-ellipsis">
+      WebClient with service discovery
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#using-rest-client-for-connecting-different-service">
+<span class="md-ellipsis">
+      Using Rest Client for connecting different service
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#rest-client-with-load-balanced">
+<span class="md-ellipsis">
+      Rest Client with Load Balanced
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#rest-client-with-service-discovery">
+<span class="md-ellipsis">
+      Rest Client with service discovery
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#declarative-http-interface-clients-using-httpexchange">
+<span class="md-ellipsis">
+      Declarative HTTP Interface Clients using @HttpExchange
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#restclient-vs-resttemplate-vs-webclient-when-to-use-what">
+<span class="md-ellipsis">
+      RestClient vs RestTemplate vs WebClient - When to Use What
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#interview-questions-answers">
+<span class="md-ellipsis">
+      Interview Questions &amp; Answers
+    </span>
+</a>
+<nav aria-label="Interview Questions &amp; Answers" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#resttemplate">
+<span class="md-ellipsis">
+      RestTemplate
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#feign">
+<span class="md-ellipsis">
+      Feign
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#webclient">
+<span class="md-ellipsis">
+      WebClient
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#restclient">
+<span class="md-ellipsis">
+      RestClient
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#declarative-http-interfaces-httpexchange">
+<span class="md-ellipsis">
+      Declarative HTTP Interfaces (@HttpExchange)
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#restclient-vs-resttemplate-vs-webclient">
+<span class="md-ellipsis">
+      RestClient vs RestTemplate vs WebClient
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#resources">
+<span class="md-ellipsis">
+      Resources
+    </span>
+</a>
+<nav aria-label="Resources" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#medium">
+<span class="md-ellipsis">
+      Medium
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../006-spring-cloud-api-gateway/">
+<span class="md-ellipsis">
+    Spring Cloud API Gateway
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../007-spring-cloud-security/">
+<span class="md-ellipsis">
+    Spring Cloud Security
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../008-circuit-breakers-and-resilience4j/">
+<span class="md-ellipsis">
+    Circuit Breaker and Resilience4j
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../009-messaging/">
+<span class="md-ellipsis">
+    Spring Messaging
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../010-distributed-tracing/">
+<span class="md-ellipsis">
+    Distributed Tracing
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../011-log-aggregation-with-elk/">
+<span class="md-ellipsis">
+    Log Aggregation with ELK
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../012-testing/">
+<span class="md-ellipsis">
+    Spring Cloud Testing
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_12" type="checkbox"/>
+<label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+<span class="md-ellipsis">
+    Others
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_12_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_12">
+<span class="md-nav__icon md-icon"></span>
+            Others
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-batch/">
+<span class="md-ellipsis">
+    Spring Batch
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cassandra/">
+<span class="md-ellipsis">
+    Spring Cassandra
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-graphql/">
+<span class="md-ellipsis">
+    Spring GraphQL
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-reactive-programming/">
+<span class="md-ellipsis">
+    Spring Reactive Programming
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cloud-functions/">
+<span class="md-ellipsis">
+    Spring Cloud Functions
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-aws/">
+<span class="md-ellipsis">
+    Spring AWS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-k8s/">
+<span class="md-ellipsis">
+    Spring Kubernetes
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cicd/">
+<span class="md-ellipsis">
+    Spring CI/CD
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-observability/">
+<span class="md-ellipsis">
+    Spring Observability
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-splunk/">
+<span class="md-ellipsis">
+    Spring Splunk
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-docs/">
+<span class="md-ellipsis">
+    Spring Docs
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-content" data-md-component="content">
+<article class="md-content__inner md-typeset">
+<div><h1 id="rest-client">Rest Client</h1>
+<h2 id="detailed-guide">Detailed Guide</h2>
+<h3 id="using-rest-template-for-service-invocation">Using Rest Template for Service Invocation</h3>
+<p><code>RestTemplate</code> is Spring's original synchronous, blocking HTTP client, shipped in <code>spring-web</code> since the earliest versions of the framework. It follows the classic template method pattern: you call a high-level method such as <code>getForObject</code>, <code>postForEntity</code>, or <code>exchange</code>, and <code>RestTemplate</code> takes care of connection handling, message conversion (JSON/XML to Java objects via <code>HttpMessageConverter</code>s), and error handling, while you supply the URL, HTTP method, and body.</p>
+<p>Even though <code>RestTemplate</code> has been in maintenance mode since Spring 5.0 (in favor of <code>WebClient</code> and later <code>RestClient</code>), it remains extremely common in existing codebases and is still fully supported. It is straightforward to use for simple request/response invocations between microservices and integrates well with <code>RestTemplateBuilder</code>, which Spring Boot auto-configures with sensible defaults (message converters, error handlers) and allows customizing timeouts, interceptors, and root URIs.</p>
+<p>A typical usage pattern injects a <code>RestTemplate</code> bean into a service class and issues calls with either convenience methods (<code>getForObject</code>, <code>postForObject</code>) or the more flexible <code>exchange</code>/<code>execute</code> methods, which give full control over headers, HTTP method, and response type (including generic types via <code>ParameterizedTypeReference</code>).</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="nd">@Configuration</span>
+<a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">RestClientConfig</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-0-3" id="__codelineno-0-3" name="__codelineno-0-3"></a>
+<a href="#__codelineno-0-4" id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-0-5" id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">RestTemplate</span><span class="w"> </span><span class="nf">restTemplate</span><span class="p">(</span><span class="n">RestTemplateBuilder</span><span class="w"> </span><span class="n">builder</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-0-6" id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">builder</span>
+<a href="#__codelineno-0-7" id="__codelineno-0-7" name="__codelineno-0-7"></a><span class="w">            </span><span class="p">.</span><span class="na">setConnectTimeout</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<a href="#__codelineno-0-8" id="__codelineno-0-8" name="__codelineno-0-8"></a><span class="w">            </span><span class="p">.</span><span class="na">setReadTimeout</span><span class="p">(</span><span class="n">Duration</span><span class="p">.</span><span class="na">ofSeconds</span><span class="p">(</span><span class="mi">5</span><span class="p">))</span>
+<a href="#__codelineno-0-9" id="__codelineno-0-9" name="__codelineno-0-9"></a><span class="w">            </span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+<a href="#__codelineno-0-10" id="__codelineno-0-10" name="__codelineno-0-10"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-0-11" id="__codelineno-0-11" name="__codelineno-0-11"></a><span class="p">}</span>
+<a href="#__codelineno-0-12" id="__codelineno-0-12" name="__codelineno-0-12"></a>
+<a href="#__codelineno-0-13" id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="nd">@Service</span>
+<a href="#__codelineno-0-14" id="__codelineno-0-14" name="__codelineno-0-14"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">OrderClient</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-0-15" id="__codelineno-0-15" name="__codelineno-0-15"></a>
+<a href="#__codelineno-0-16" id="__codelineno-0-16" name="__codelineno-0-16"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">RestTemplate</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">;</span>
+<a href="#__codelineno-0-17" id="__codelineno-0-17" name="__codelineno-0-17"></a>
+<a href="#__codelineno-0-18" id="__codelineno-0-18" name="__codelineno-0-18"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">OrderClient</span><span class="p">(</span><span class="n">RestTemplate</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-0-19" id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">restTemplate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">;</span>
+<a href="#__codelineno-0-20" id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-0-21" id="__codelineno-0-21" name="__codelineno-0-21"></a>
+<a href="#__codelineno-0-22" id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Order</span><span class="w"> </span><span class="nf">getOrder</span><span class="p">(</span><span class="n">Long</span><span class="w"> </span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-0-23" id="__codelineno-0-23" name="__codelineno-0-23"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">.</span><span class="na">getForObject</span><span class="p">(</span><span class="s">"http://localhost:8081/orders/{id}"</span><span class="p">,</span><span class="w"> </span><span class="n">Order</span><span class="p">.</span><span class="na">class</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">);</span>
+<a href="#__codelineno-0-24" id="__codelineno-0-24" name="__codelineno-0-24"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-0-25" id="__codelineno-0-25" name="__codelineno-0-25"></a>
+<a href="#__codelineno-0-26" id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Order</span><span class="w"> </span><span class="nf">createOrder</span><span class="p">(</span><span class="n">Order</span><span class="w"> </span><span class="n">order</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-0-27" id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">.</span><span class="na">postForObject</span><span class="p">(</span><span class="s">"http://localhost:8081/orders"</span><span class="p">,</span><span class="w"> </span><span class="n">order</span><span class="p">,</span><span class="w"> </span><span class="n">Order</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+<a href="#__codelineno-0-28" id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-0-29" id="__codelineno-0-29" name="__codelineno-0-29"></a>
+<a href="#__codelineno-0-30" id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getAllOrders</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-0-31" id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="w">        </span><span class="n">ResponseEntity</span><span class="o">&lt;</span><span class="n">List</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">.</span><span class="na">exchange</span><span class="p">(</span>
+<a href="#__codelineno-0-32" id="__codelineno-0-32" name="__codelineno-0-32"></a><span class="w">            </span><span class="s">"http://localhost:8081/orders"</span><span class="p">,</span>
+<a href="#__codelineno-0-33" id="__codelineno-0-33" name="__codelineno-0-33"></a><span class="w">            </span><span class="n">HttpMethod</span><span class="p">.</span><span class="na">GET</span><span class="p">,</span>
+<a href="#__codelineno-0-34" id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="w">            </span><span class="kc">null</span><span class="p">,</span>
+<a href="#__codelineno-0-35" id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="w">            </span><span class="k">new</span><span class="w"> </span><span class="n">ParameterizedTypeReference</span><span class="o">&lt;</span><span class="n">List</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;&gt;</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
+<a href="#__codelineno-0-36" id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="w">        </span><span class="p">);</span>
+<a href="#__codelineno-0-37" id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">response</span><span class="p">.</span><span class="na">getBody</span><span class="p">();</span>
+<a href="#__codelineno-0-38" id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-0-39" id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A legacy order-management service that has been running for years calls a payment service using a hardcoded URL and <code>RestTemplate</code>. It works fine for low-to-moderate traffic, but because it is blocking, each call ties up a thread for the full duration of the remote call, which becomes a scalability concern once traffic spikes during sales events.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Which method would you use to get full control over headers and HTTP method with <code>RestTemplate</code>?</strong>
+<code>exchange()</code> (or <code>execute()</code>), which lets you specify the <code>HttpMethod</code>, an <code>HttpEntity</code> carrying headers/body, and the response type explicitly, unlike convenience methods such as <code>getForObject</code>.</p>
+<p><strong>Q: What class handles converting Java objects to/from JSON in <code>RestTemplate</code>?</strong>
+<code>HttpMessageConverter</code> implementations (e.g. <code>MappingJackson2HttpMessageConverter</code>), which are auto-configured by <code>RestTemplateBuilder</code> based on the libraries present on the classpath.</p>
+<h3 id="rest-template-with-load-balanced">Rest Template with Load Balanced</h3>
+<p>When multiple instances of a downstream service are registered with a service registry (Eureka, Consul, etc.), you don't want to hardcode a single host and port. Spring Cloud LoadBalancer solves this by letting you annotate a <code>RestTemplate</code> bean with <code>@LoadBalanced</code>. This annotation instructs Spring Cloud to wrap the underlying <code>ClientHttpRequestFactory</code> with an interceptor that resolves a logical service ID (e.g. <code>order-service</code>) into an actual host:port pair chosen by the configured load-balancing algorithm before the request is sent.</p>
+<p>Under the hood, <code>@LoadBalanced</code> triggers Spring Cloud's <code>LoadBalancerInterceptor</code>, which participates in the <code>RestTemplate</code> interceptor chain. Every outgoing request whose URI uses a service name instead of a real host is intercepted, a <code>ServiceInstance</code> is chosen via <code>ReactiveLoadBalancer.Factory</code>, and the request URI is rewritten with the concrete address before continuing down the chain.</p>
+<p>This decouples client code entirely from network topology — the client only ever refers to logical service names, and Spring Cloud LoadBalancer takes care of instance selection, retries, and (optionally) caching of the instance list.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="nd">@Configuration</span>
+<a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">LoadBalancedRestTemplateConfig</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a>
+<a href="#__codelineno-1-4" id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-1-5" id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="w">    </span><span class="nd">@LoadBalanced</span>
+<a href="#__codelineno-1-6" id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">RestTemplate</span><span class="w"> </span><span class="nf">loadBalancedRestTemplate</span><span class="p">(</span><span class="n">RestTemplateBuilder</span><span class="w"> </span><span class="n">builder</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-1-7" id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">builder</span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+<a href="#__codelineno-1-8" id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-1-9" id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="p">}</span>
+<a href="#__codelineno-1-10" id="__codelineno-1-10" name="__codelineno-1-10"></a>
+<a href="#__codelineno-1-11" id="__codelineno-1-11" name="__codelineno-1-11"></a><span class="nd">@Service</span>
+<a href="#__codelineno-1-12" id="__codelineno-1-12" name="__codelineno-1-12"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">InventoryClient</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-1-13" id="__codelineno-1-13" name="__codelineno-1-13"></a>
+<a href="#__codelineno-1-14" id="__codelineno-1-14" name="__codelineno-1-14"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">RestTemplate</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">;</span>
+<a href="#__codelineno-1-15" id="__codelineno-1-15" name="__codelineno-1-15"></a>
+<a href="#__codelineno-1-16" id="__codelineno-1-16" name="__codelineno-1-16"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">InventoryClient</span><span class="p">(</span><span class="nd">@Qualifier</span><span class="p">(</span><span class="s">"loadBalancedRestTemplate"</span><span class="p">)</span><span class="w"> </span><span class="n">RestTemplate</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-1-17" id="__codelineno-1-17" name="__codelineno-1-17"></a><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">restTemplate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">;</span>
+<a href="#__codelineno-1-18" id="__codelineno-1-18" name="__codelineno-1-18"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-1-19" id="__codelineno-1-19" name="__codelineno-1-19"></a>
+<a href="#__codelineno-1-20" id="__codelineno-1-20" name="__codelineno-1-20"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Stock</span><span class="w"> </span><span class="nf">checkStock</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">sku</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-1-21" id="__codelineno-1-21" name="__codelineno-1-21"></a><span class="w">        </span><span class="c1">// "inventory-service" is a logical name resolved by the load balancer</span>
+<a href="#__codelineno-1-22" id="__codelineno-1-22" name="__codelineno-1-22"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">restTemplate</span><span class="p">.</span><span class="na">getForObject</span><span class="p">(</span><span class="s">"http://inventory-service/stock/{sku}"</span><span class="p">,</span><span class="w"> </span><span class="n">Stock</span><span class="p">.</span><span class="na">class</span><span class="p">,</span><span class="w"> </span><span class="n">sku</span><span class="p">);</span>
+<a href="#__codelineno-1-23" id="__codelineno-1-23" name="__codelineno-1-23"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-1-24" id="__codelineno-1-24" name="__codelineno-1-24"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> An e-commerce checkout service needs to call the inventory service, which runs as three replicas behind Eureka for high availability. Instead of pointing at one replica (a single point of failure), the checkout service uses a <code>@LoadBalanced RestTemplate</code> so requests are automatically spread across all healthy instances.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Does <code>@LoadBalanced</code> have any effect if you call a hardcoded IP address instead of a service name?</strong>
+No — the <code>LoadBalancerInterceptor</code> only rewrites URIs whose host matches a registered logical service ID; a literal IP:port is sent through unchanged.</p>
+<p><strong>Q: What happens if the load balancer can't find any healthy instance for the requested service ID?</strong>
+The call fails immediately with an exception (e.g. an <code>IllegalStateException</code>/<code>NotFound</code> style error from the load-balancer layer) before any HTTP request is attempted, since there is no concrete address to send it to.</p>
+<h3 id="rest-template-with-service-discovery">Rest Template with service discovery</h3>
+<p>Service discovery combines a service registry (Eureka, Consul, Zookeeper) with client-side load balancing so that a <code>RestTemplate</code> never needs to know real IP addresses. The service registry maintains a live list of instances per service ID, including health status; the <code>DiscoveryClient</code> abstraction lets any Spring Cloud component query that registry, and <code>@LoadBalanced RestTemplate</code> uses it transparently through the <code>ServiceInstanceListSupplier</code> chain.</p>
+<p>In practice, once <code>spring-cloud-starter-netflix-eureka-client</code> (or the Consul/Zookeeper equivalent) is on the classpath and <code>eureka.client.service-url.defaultZone</code> is configured, each service instance registers itself on startup with a logical application name (<code>spring.application.name</code>). Any other service can then call it by that name, and Spring Cloud LoadBalancer resolves it to one of the currently registered, healthy instances.</p>
+<p>This is the foundation of dynamic microservice topologies: instances can scale up/down, restart, or move hosts, and calling services adapt automatically without redeployment or configuration changes.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="c1"># application.yml (both calling and called service)</span>
+<a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="nt">spring</span><span class="p">:</span>
+<a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="w">  </span><span class="nt">application</span><span class="p">:</span>
+<a href="#__codelineno-2-4" id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">order-service</span>
+<a href="#__codelineno-2-5" id="__codelineno-2-5" name="__codelineno-2-5"></a>
+<a href="#__codelineno-2-6" id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="nt">eureka</span><span class="p">:</span>
+<a href="#__codelineno-2-7" id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="w">  </span><span class="nt">client</span><span class="p">:</span>
+<a href="#__codelineno-2-8" id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="w">    </span><span class="nt">service-url</span><span class="p">:</span>
+<a href="#__codelineno-2-9" id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="w">      </span><span class="nt">defaultZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8761/eureka/</span>
+<a href="#__codelineno-2-10" id="__codelineno-2-10" name="__codelineno-2-10"></a><span class="w">  </span><span class="nt">instance</span><span class="p">:</span>
+<a href="#__codelineno-2-11" id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="w">    </span><span class="nt">prefer-ip-address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<pre class="mermaid"><code>sequenceDiagram
+    participant Client as Order Service<br/>(@LoadBalanced RestTemplate)
+    participant LB as Spring Cloud<br/>LoadBalancer
+    participant Registry as Eureka Server
+    participant I1 as Inventory Instance 1
+    participant I2 as Inventory Instance 2
+
+    Client-&gt;&gt;LB: getForObject("http://inventory-service/stock/123")
+    LB-&gt;&gt;Registry: fetch instances for "inventory-service"
+    Registry--&gt;&gt;LB: [Instance1:8081, Instance2:8082]
+    LB-&gt;&gt;LB: choose instance (Round Robin / Random)
+    LB-&gt;&gt;I2: GET /stock/123
+    I2--&gt;&gt;LB: 200 OK (Stock)
+    LB--&gt;&gt;Client: Stock response
+</code></pre>
+<p><strong>Real-life scenario:</strong> During a Black Friday deployment, the platform team scales the inventory service from 2 to 8 pods using Kubernetes/Eureka registration. No code changes are needed in the calling services — they keep using <code>http://inventory-service/...</code> and the load balancer automatically discovers and includes the new pods.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What Spring Cloud abstraction lets any component query the service registry uniformly?</strong>
+<code>DiscoveryClient</code>, which abstracts over Eureka, Consul, Zookeeper, etc., providing a common API for listing registered instances of a service ID.</p>
+<p><strong>Q: How does a service instance register itself for discovery?</strong>
+On startup it registers under its <code>spring.application.name</code> as the service ID with the configured registry client (e.g. <code>eureka.client.service-url.defaultZone</code>), then sends periodic heartbeats to stay marked as healthy.</p>
+<h3 id="using-feign-rest-client-for-service-invocation">Using Feign REST Client for Service Invocation</h3>
+<p>OpenFeign is a declarative HTTP client: instead of writing imperative code that builds requests and parses responses, you declare a Java interface annotated with <code>@FeignClient</code>, and Spring Cloud OpenFeign generates a dynamic proxy implementation at runtime. Method signatures map to HTTP calls via annotations like <code>@GetMapping</code>/<code>@PostMapping</code> (or Feign's native <code>@RequestLine</code>), making REST calls look like plain method invocations.</p>
+<p>Feign integrates encoders/decoders (Jackson by default), supports custom error decoders, request interceptors (e.g. for propagating auth headers), and retry/circuit-breaker integration (Resilience4j). It significantly reduces boilerplate compared to <code>RestTemplate</code>, since there's no manual URL building, no manual response-type juggling — just an interface and Spring Cloud does the wiring.</p>
+<p>To use it, you add <code>spring-cloud-starter-openfeign</code>, annotate a configuration/main class with <code>@EnableFeignClients</code>, and declare an interface per remote service.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="nd">@EnableFeignClients</span>
+<a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="nd">@SpringBootApplication</span>
+<a href="#__codelineno-3-3" id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">OrderServiceApplication</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span>
+<a href="#__codelineno-3-4" id="__codelineno-3-4" name="__codelineno-3-4"></a>
+<a href="#__codelineno-3-5" id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="nd">@FeignClient</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"payment-service"</span><span class="p">,</span><span class="w"> </span><span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"${payment.service.url}"</span><span class="p">)</span>
+<a href="#__codelineno-3-6" id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">PaymentClient</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-3-7" id="__codelineno-3-7" name="__codelineno-3-7"></a>
+<a href="#__codelineno-3-8" id="__codelineno-3-8" name="__codelineno-3-8"></a><span class="w">    </span><span class="nd">@PostMapping</span><span class="p">(</span><span class="s">"/payments"</span><span class="p">)</span>
+<a href="#__codelineno-3-9" id="__codelineno-3-9" name="__codelineno-3-9"></a><span class="w">    </span><span class="n">PaymentResponse</span><span class="w"> </span><span class="nf">charge</span><span class="p">(</span><span class="nd">@RequestBody</span><span class="w"> </span><span class="n">PaymentRequest</span><span class="w"> </span><span class="n">request</span><span class="p">);</span>
+<a href="#__codelineno-3-10" id="__codelineno-3-10" name="__codelineno-3-10"></a>
+<a href="#__codelineno-3-11" id="__codelineno-3-11" name="__codelineno-3-11"></a><span class="w">    </span><span class="nd">@GetMapping</span><span class="p">(</span><span class="s">"/payments/{id}"</span><span class="p">)</span>
+<a href="#__codelineno-3-12" id="__codelineno-3-12" name="__codelineno-3-12"></a><span class="w">    </span><span class="n">PaymentResponse</span><span class="w"> </span><span class="nf">getPayment</span><span class="p">(</span><span class="nd">@PathVariable</span><span class="p">(</span><span class="s">"id"</span><span class="p">)</span><span class="w"> </span><span class="n">Long</span><span class="w"> </span><span class="n">id</span><span class="p">);</span>
+<a href="#__codelineno-3-13" id="__codelineno-3-13" name="__codelineno-3-13"></a><span class="p">}</span>
+<a href="#__codelineno-3-14" id="__codelineno-3-14" name="__codelineno-3-14"></a>
+<a href="#__codelineno-3-15" id="__codelineno-3-15" name="__codelineno-3-15"></a><span class="nd">@Service</span>
+<a href="#__codelineno-3-16" id="__codelineno-3-16" name="__codelineno-3-16"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">CheckoutService</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-3-17" id="__codelineno-3-17" name="__codelineno-3-17"></a>
+<a href="#__codelineno-3-18" id="__codelineno-3-18" name="__codelineno-3-18"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">PaymentClient</span><span class="w"> </span><span class="n">paymentClient</span><span class="p">;</span>
+<a href="#__codelineno-3-19" id="__codelineno-3-19" name="__codelineno-3-19"></a>
+<a href="#__codelineno-3-20" id="__codelineno-3-20" name="__codelineno-3-20"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">CheckoutService</span><span class="p">(</span><span class="n">PaymentClient</span><span class="w"> </span><span class="n">paymentClient</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-3-21" id="__codelineno-3-21" name="__codelineno-3-21"></a><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">paymentClient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paymentClient</span><span class="p">;</span>
+<a href="#__codelineno-3-22" id="__codelineno-3-22" name="__codelineno-3-22"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-3-23" id="__codelineno-3-23" name="__codelineno-3-23"></a>
+<a href="#__codelineno-3-24" id="__codelineno-3-24" name="__codelineno-3-24"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">PaymentResponse</span><span class="w"> </span><span class="nf">charge</span><span class="p">(</span><span class="n">PaymentRequest</span><span class="w"> </span><span class="n">request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-3-25" id="__codelineno-3-25" name="__codelineno-3-25"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">paymentClient</span><span class="p">.</span><span class="na">charge</span><span class="p">(</span><span class="n">request</span><span class="p">);</span>
+<a href="#__codelineno-3-26" id="__codelineno-3-26" name="__codelineno-3-26"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-3-27" id="__codelineno-3-27" name="__codelineno-3-27"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A checkout service needs to talk to five different downstream services (payment, inventory, shipping, tax, notification). Writing five hand-rolled <code>RestTemplate</code> wrappers is repetitive and error-prone; five small <code>@FeignClient</code> interfaces keep the code declarative, consistent, and easy to test with <code>@MockBean</code>.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What must you add to a Spring Boot application to enable Feign clients?</strong>
+The <code>spring-cloud-starter-openfeign</code> dependency plus an <code>@EnableFeignClients</code> annotation on a configuration or main application class.</p>
+<p><strong>Q: How does Feign map an interface method to an actual HTTP request?</strong>
+Through mapping annotations like <code>@GetMapping</code>/<code>@PostMapping</code> (or Feign-native <code>@RequestLine</code>) on interface methods; Spring Cloud OpenFeign generates a dynamic proxy at runtime that turns each call into the corresponding HTTP request.</p>
+<h3 id="feign-rest-client-with-load-balanced">Feign REST Client with Load Balanced</h3>
+<p>Feign clients are load-balanced by default when you omit the <code>url</code> attribute and instead specify only the logical service <code>name</code> in <code>@FeignClient</code>. Spring Cloud OpenFeign automatically wires in Spring Cloud LoadBalancer as the client-side load balancer, so calls to <code>@FeignClient(name = "inventory-service")</code> are transparently resolved to one of the registered instances — no <code>@LoadBalanced</code> annotation is needed here since it's the Feign client's default behavior when a service name (not a hardcoded URL) is used.</p>
+<p>Internally, Feign's <code>Client</code> implementation is wrapped by a <code>FeignBlockingLoadBalancerClient</code> (for blocking Feign) which delegates instance resolution to the same <code>LoadBalancerClient</code>/<code>ReactiveLoadBalancer</code> infrastructure used by <code>RestTemplate</code> and <code>WebClient</code>. This means all three clients share a single, consistent load-balancing configuration (retry policy, health-check-based filtering, caching).</p>
+<p>Because load balancing is automatic and declarative, teams often prefer Feign specifically to avoid manually configuring <code>@LoadBalanced</code> beans for every client.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="nd">@FeignClient</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"inventory-service"</span><span class="p">)</span>
+<a href="#__codelineno-4-2" id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">InventoryClient</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-4-3" id="__codelineno-4-3" name="__codelineno-4-3"></a>
+<a href="#__codelineno-4-4" id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="w">    </span><span class="nd">@GetMapping</span><span class="p">(</span><span class="s">"/stock/{sku}"</span><span class="p">)</span>
+<a href="#__codelineno-4-5" id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="w">    </span><span class="n">Stock</span><span class="w"> </span><span class="nf">checkStock</span><span class="p">(</span><span class="nd">@PathVariable</span><span class="p">(</span><span class="s">"sku"</span><span class="p">)</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">sku</span><span class="p">);</span>
+<a href="#__codelineno-4-6" id="__codelineno-4-6" name="__codelineno-4-6"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="c1"># application.properties</span>
+<a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="na">spring.cloud.loadbalancer.retry.enabled</span><span class="o">=</span><span class="s">true</span>
+<a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a><span class="na">spring.cloud.loadbalancer.configurations</span><span class="o">=</span><span class="s">health-check</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A shipping-cost calculator service calls <code>inventory-service</code> and <code>warehouse-service</code> via Feign clients declared with just logical names. When the ops team adds two more warehouse-service pods for a regional expansion, the Feign calls automatically start including them — zero code or config change required in the calling service.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What class wraps the Feign HTTP client to add load balancing?</strong>
+<code>FeignBlockingLoadBalancerClient</code>, which delegates instance selection to the same <code>LoadBalancerClient</code>/<code>ReactiveLoadBalancer</code> infrastructure used by <code>RestTemplate</code> and <code>WebClient</code>.</p>
+<p><strong>Q: Do you need to add <code>@LoadBalanced</code> explicitly to a Feign client?</strong>
+No — load balancing is automatic whenever <code>@FeignClient</code> specifies a logical <code>name</code> instead of a hardcoded <code>url</code>; no separate annotation is required.</p>
+<h3 id="feign-rest-client-with-service-discovery">Feign REST Client with service discovery</h3>
+<p>Feign clients rely on the same service discovery abstraction (<code>DiscoveryClient</code>) as <code>RestTemplate</code> and <code>WebClient</code>. When Eureka/Consul/Zookeeper is on the classpath, <code>@FeignClient(name = "service-id")</code> is resolved against the registry: Feign asks the load balancer for a healthy instance of <code>service-id</code>, and the load balancer asks the discovery client for the current instance list.</p>
+<p>This layered design (<code>Feign -&gt; LoadBalancer -&gt; DiscoveryClient -&gt; Registry</code>) is what allows Feign interfaces to remain free of any IP/port/host details. It also means all cross-cutting discovery features — health-check filtering, zone affinity, caching — apply equally to Feign as they do to <code>RestTemplate</code>/<code>WebClient</code>/<code>RestClient</code>.</p>
+<pre class="mermaid"><code>flowchart TD
+    A[Checkout Service<br/>FeignClient: payment-service] --&gt;|1 charge request| B[Spring Cloud LoadBalancer]
+    B --&gt;|2 query instances| C[Eureka / Consul Registry]
+    C --&gt;|3 instance list| B
+    B --&gt;|4 pick instance Round Robin| D[Payment Instance A]
+    B -.-&gt;|alternative pick| E[Payment Instance B]
+    D --&gt;|5 response| A
+</code></pre>
+<p><strong>Real-life scenario:</strong> A payment-service rollout uses a blue/green deployment; the old and new versions both register under the same service name in Consul. Feign clients calling <code>payment-service</code> continue to work uninterrupted as instances are swapped, since discovery re-resolves the instance list on every call (subject to caching TTL).</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What is the resolution chain when a Feign client calls a service by logical name?</strong>
+Feign -&gt; Spring Cloud LoadBalancer -&gt; <code>DiscoveryClient</code> -&gt; service registry, with each layer adding no host/IP knowledge to the calling code.</p>
+<p><strong>Q: Can stale instance data affect Feign calls during a rolling deployment?</strong>
+Yes — depending on the load balancer's instance-list caching TTL, newly registered or just-deregistered instances may take a short time to be reflected in subsequent Feign calls.</p>
+<h3 id="using-webclient-for-connecting-different-service">Using WebClient for connecting different service</h3>
+<p><code>WebClient</code> is Spring WebFlux's non-blocking, reactive HTTP client, introduced in Spring 5 as the long-term replacement for <code>RestTemplate</code>. It returns <code>Mono&lt;T&gt;</code>/<code>Flux&lt;T&gt;</code> publishers instead of blocking on the response, which means the calling thread is freed immediately and the actual I/O completes asynchronously, notifying subscribers via callbacks when data arrives.</p>
+<p><code>WebClient</code> is built with a fluent, chainable API (<code>webClient.get().uri(...).retrieve().bodyToMono(...)</code>), supports streaming responses (<code>Flux</code> for Server-Sent Events or chunked JSON), and integrates cleanly with reactive pipelines (<code>flatMap</code>, <code>zip</code>, <code>retryWhen</code>, etc.). It works fine in traditional Spring MVC applications too (you can just <code>.block()</code> when you need a synchronous result, though that partially defeats its purpose).</p>
+<p>Because it doesn't hold a thread per in-flight request, <code>WebClient</code> scales significantly better than <code>RestTemplate</code> under high concurrency and I/O-bound workloads, at the cost of a steeper learning curve around reactive programming.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="nd">@Configuration</span>
+<a href="#__codelineno-6-2" id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">WebClientConfig</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-6-3" id="__codelineno-6-3" name="__codelineno-6-3"></a>
+<a href="#__codelineno-6-4" id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-6-5" id="__codelineno-6-5" name="__codelineno-6-5"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">WebClient</span><span class="w"> </span><span class="nf">webClient</span><span class="p">(</span><span class="n">WebClient</span><span class="p">.</span><span class="na">Builder</span><span class="w"> </span><span class="n">builder</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-6-6" id="__codelineno-6-6" name="__codelineno-6-6"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">builder</span>
+<a href="#__codelineno-6-7" id="__codelineno-6-7" name="__codelineno-6-7"></a><span class="w">            </span><span class="p">.</span><span class="na">baseUrl</span><span class="p">(</span><span class="s">"http://localhost:8081"</span><span class="p">)</span>
+<a href="#__codelineno-6-8" id="__codelineno-6-8" name="__codelineno-6-8"></a><span class="w">            </span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+<a href="#__codelineno-6-9" id="__codelineno-6-9" name="__codelineno-6-9"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-6-10" id="__codelineno-6-10" name="__codelineno-6-10"></a><span class="p">}</span>
+<a href="#__codelineno-6-11" id="__codelineno-6-11" name="__codelineno-6-11"></a>
+<a href="#__codelineno-6-12" id="__codelineno-6-12" name="__codelineno-6-12"></a><span class="nd">@Service</span>
+<a href="#__codelineno-6-13" id="__codelineno-6-13" name="__codelineno-6-13"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">OrderWebClient</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-6-14" id="__codelineno-6-14" name="__codelineno-6-14"></a>
+<a href="#__codelineno-6-15" id="__codelineno-6-15" name="__codelineno-6-15"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">WebClient</span><span class="w"> </span><span class="n">webClient</span><span class="p">;</span>
+<a href="#__codelineno-6-16" id="__codelineno-6-16" name="__codelineno-6-16"></a>
+<a href="#__codelineno-6-17" id="__codelineno-6-17" name="__codelineno-6-17"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">OrderWebClient</span><span class="p">(</span><span class="n">WebClient</span><span class="w"> </span><span class="n">webClient</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-6-18" id="__codelineno-6-18" name="__codelineno-6-18"></a><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">webClient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">webClient</span><span class="p">;</span>
+<a href="#__codelineno-6-19" id="__codelineno-6-19" name="__codelineno-6-19"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-6-20" id="__codelineno-6-20" name="__codelineno-6-20"></a>
+<a href="#__codelineno-6-21" id="__codelineno-6-21" name="__codelineno-6-21"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Mono</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getOrder</span><span class="p">(</span><span class="n">Long</span><span class="w"> </span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-6-22" id="__codelineno-6-22" name="__codelineno-6-22"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">webClient</span><span class="p">.</span><span class="na">get</span><span class="p">()</span>
+<a href="#__codelineno-6-23" id="__codelineno-6-23" name="__codelineno-6-23"></a><span class="w">            </span><span class="p">.</span><span class="na">uri</span><span class="p">(</span><span class="s">"/orders/{id}"</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">)</span>
+<a href="#__codelineno-6-24" id="__codelineno-6-24" name="__codelineno-6-24"></a><span class="w">            </span><span class="p">.</span><span class="na">retrieve</span><span class="p">()</span>
+<a href="#__codelineno-6-25" id="__codelineno-6-25" name="__codelineno-6-25"></a><span class="w">            </span><span class="p">.</span><span class="na">bodyToMono</span><span class="p">(</span><span class="n">Order</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+<a href="#__codelineno-6-26" id="__codelineno-6-26" name="__codelineno-6-26"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-6-27" id="__codelineno-6-27" name="__codelineno-6-27"></a>
+<a href="#__codelineno-6-28" id="__codelineno-6-28" name="__codelineno-6-28"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Mono</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">createOrder</span><span class="p">(</span><span class="n">Order</span><span class="w"> </span><span class="n">order</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-6-29" id="__codelineno-6-29" name="__codelineno-6-29"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">webClient</span><span class="p">.</span><span class="na">post</span><span class="p">()</span>
+<a href="#__codelineno-6-30" id="__codelineno-6-30" name="__codelineno-6-30"></a><span class="w">            </span><span class="p">.</span><span class="na">uri</span><span class="p">(</span><span class="s">"/orders"</span><span class="p">)</span>
+<a href="#__codelineno-6-31" id="__codelineno-6-31" name="__codelineno-6-31"></a><span class="w">            </span><span class="p">.</span><span class="na">bodyValue</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+<a href="#__codelineno-6-32" id="__codelineno-6-32" name="__codelineno-6-32"></a><span class="w">            </span><span class="p">.</span><span class="na">retrieve</span><span class="p">()</span>
+<a href="#__codelineno-6-33" id="__codelineno-6-33" name="__codelineno-6-33"></a><span class="w">            </span><span class="p">.</span><span class="na">bodyToMono</span><span class="p">(</span><span class="n">Order</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+<a href="#__codelineno-6-34" id="__codelineno-6-34" name="__codelineno-6-34"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-6-35" id="__codelineno-6-35" name="__codelineno-6-35"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A notification service must fan out a single event to email, SMS, and push-notification providers concurrently. Using <code>WebClient</code>, all three calls are fired non-blockingly and combined with <code>Mono.zip</code>, completing in roughly the time of the slowest single call instead of the sum of all three.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What return types does <code>WebClient</code> use instead of blocking values?</strong>
+<code>Mono&lt;T&gt;</code> for a single asynchronous value and <code>Flux&lt;T&gt;</code> for a stream of values, both Project Reactor publishers.</p>
+<p><strong>Q: Can <code>WebClient</code> be used inside a traditional (non-reactive) Spring MVC application?</strong>
+Yes, by calling <code>.block()</code> on the returned <code>Mono</code>/<code>Flux</code> when a synchronous result is needed — the call still executes non-blockingly under the hood, but the calling thread waits for completion.</p>
+<h3 id="webclient-with-load-balanced">WebClient with Load Balanced</h3>
+<p>Just like <code>RestTemplate</code>, a <code>WebClient.Builder</code> bean can be annotated with <code>@LoadBalanced</code> so any <code>WebClient</code> built from it resolves logical service names through Spring Cloud LoadBalancer. Internally, this attaches a <code>ReactorLoadBalancerExchangeFilterFunction</code> as an <code>ExchangeFilterFunction</code> on the <code>WebClient</code>, which intercepts each request, resolves the service ID to a <code>ServiceInstance</code>, and rewrites the URI before the exchange is executed — all without blocking, since the load-balancer lookup itself is reactive (<code>Mono&lt;ServiceInstance&gt;</code>).</p>
+<p>This is the reactive equivalent of the <code>LoadBalancerInterceptor</code> used by <code>RestTemplate</code>, preserving full non-blocking behavior end-to-end, which is important because mixing a blocking load-balancer lookup into a reactive pipeline would defeat the purpose of using <code>WebClient</code> in the first place.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="nd">@Configuration</span>
+<a href="#__codelineno-7-2" id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">LoadBalancedWebClientConfig</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-7-3" id="__codelineno-7-3" name="__codelineno-7-3"></a>
+<a href="#__codelineno-7-4" id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-7-5" id="__codelineno-7-5" name="__codelineno-7-5"></a><span class="w">    </span><span class="nd">@LoadBalanced</span>
+<a href="#__codelineno-7-6" id="__codelineno-7-6" name="__codelineno-7-6"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">WebClient</span><span class="p">.</span><span class="na">Builder</span><span class="w"> </span><span class="nf">loadBalancedWebClientBuilder</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-7-7" id="__codelineno-7-7" name="__codelineno-7-7"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">WebClient</span><span class="p">.</span><span class="na">builder</span><span class="p">();</span>
+<a href="#__codelineno-7-8" id="__codelineno-7-8" name="__codelineno-7-8"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-7-9" id="__codelineno-7-9" name="__codelineno-7-9"></a><span class="p">}</span>
+<a href="#__codelineno-7-10" id="__codelineno-7-10" name="__codelineno-7-10"></a>
+<a href="#__codelineno-7-11" id="__codelineno-7-11" name="__codelineno-7-11"></a><span class="nd">@Service</span>
+<a href="#__codelineno-7-12" id="__codelineno-7-12" name="__codelineno-7-12"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">InventoryReactiveClient</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-7-13" id="__codelineno-7-13" name="__codelineno-7-13"></a>
+<a href="#__codelineno-7-14" id="__codelineno-7-14" name="__codelineno-7-14"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">WebClient</span><span class="w"> </span><span class="n">webClient</span><span class="p">;</span>
+<a href="#__codelineno-7-15" id="__codelineno-7-15" name="__codelineno-7-15"></a>
+<a href="#__codelineno-7-16" id="__codelineno-7-16" name="__codelineno-7-16"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">InventoryReactiveClient</span><span class="p">(</span><span class="nd">@LoadBalanced</span><span class="w"> </span><span class="n">WebClient</span><span class="p">.</span><span class="na">Builder</span><span class="w"> </span><span class="n">builder</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-7-17" id="__codelineno-7-17" name="__codelineno-7-17"></a><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">webClient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">builder</span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+<a href="#__codelineno-7-18" id="__codelineno-7-18" name="__codelineno-7-18"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-7-19" id="__codelineno-7-19" name="__codelineno-7-19"></a>
+<a href="#__codelineno-7-20" id="__codelineno-7-20" name="__codelineno-7-20"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Mono</span><span class="o">&lt;</span><span class="n">Stock</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">checkStock</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">sku</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-7-21" id="__codelineno-7-21" name="__codelineno-7-21"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">webClient</span><span class="p">.</span><span class="na">get</span><span class="p">()</span>
+<a href="#__codelineno-7-22" id="__codelineno-7-22" name="__codelineno-7-22"></a><span class="w">            </span><span class="p">.</span><span class="na">uri</span><span class="p">(</span><span class="s">"http://inventory-service/stock/{sku}"</span><span class="p">,</span><span class="w"> </span><span class="n">sku</span><span class="p">)</span>
+<a href="#__codelineno-7-23" id="__codelineno-7-23" name="__codelineno-7-23"></a><span class="w">            </span><span class="p">.</span><span class="na">retrieve</span><span class="p">()</span>
+<a href="#__codelineno-7-24" id="__codelineno-7-24" name="__codelineno-7-24"></a><span class="w">            </span><span class="p">.</span><span class="na">bodyToMono</span><span class="p">(</span><span class="n">Stock</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+<a href="#__codelineno-7-25" id="__codelineno-7-25" name="__codelineno-7-25"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-7-26" id="__codelineno-7-26" name="__codelineno-7-26"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A reactive recommendation service must call the reactive product-catalog service, which is horizontally scaled to 10 pods. Using a <code>@LoadBalanced WebClient.Builder</code> keeps the entire call chain non-blocking while spreading load evenly across all 10 pods.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What <code>ExchangeFilterFunction</code> enables load balancing on <code>WebClient</code>?</strong>
+<code>ReactorLoadBalancerExchangeFilterFunction</code>, attached automatically when the <code>WebClient.Builder</code> bean is annotated <code>@LoadBalanced</code>.</p>
+<p><strong>Q: Why must the load-balancer lookup itself be reactive for <code>WebClient</code>?</strong>
+Because a blocking lookup inserted into an otherwise non-blocking exchange would tie up a thread and undermine the scalability benefits <code>WebClient</code> is meant to provide.</p>
+<h3 id="webclient-with-service-discovery">WebClient with service discovery</h3>
+<p><code>WebClient</code> participates in service discovery the same way <code>RestTemplate</code> and Feign do: the <code>ReactorLoadBalancerExchangeFilterFunction</code> delegates to <code>ReactiveLoadBalancer.Factory</code>, which in turn queries the configured <code>ReactiveDiscoveryClient</code> (Eureka, Consul) for the live instance list of a logical service name embedded in the request URI (<code>http://service-id/path</code>).</p>
+<p>Because the entire chain — HTTP call, load-balancer resolution, and discovery lookup — is reactive, <code>WebClient</code> with service discovery is well suited to reactive/WebFlux applications where you cannot afford to block a thread anywhere in the pipeline, including during service resolution.</p>
+<pre class="mermaid"><code>flowchart TD
+    A[Recommendation Service<br/>WebClient + LB Filter] --&gt;|GET http://catalog-service/items| B{Load Balancer<br/>Exchange Filter}
+    B --&gt;|resolve| C[Reactive DiscoveryClient]
+    C --&gt;|query registry| D[(Eureka / Consul)]
+    D --&gt;|instances list| C
+    C --&gt;|Mono ServiceInstance| B
+    B --&gt;|rewritten URI| E[Catalog Instance chosen]
+    E --&gt;|Mono response| A
+</code></pre>
+<p><strong>Real-life scenario:</strong> A reactive API gateway built with Spring Cloud Gateway routes traffic to a reactive product service using <code>lb://product-service</code> URIs, relying on exactly this <code>WebClient</code> + discovery + load-balancer chain internally.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What discovery client interface does the reactive load balancer use?</strong>
+<code>ReactiveDiscoveryClient</code>, the reactive counterpart of <code>DiscoveryClient</code>, exposing instance lookups as <code>Flux&lt;ServiceInstance&gt;</code> rather than a blocking list.</p>
+<p><strong>Q: Where in Spring Cloud is the <code>WebClient</code> + load-balancer + discovery pattern most commonly used?</strong>
+In Spring Cloud Gateway, which routes requests using <code>lb://service-id</code> URIs resolved through exactly this reactive chain.</p>
+<h3 id="using-rest-client-for-connecting-different-service">Using Rest Client for connecting different service</h3>
+<p><code>RestClient</code>, introduced in Spring Framework 6.1 (Spring Boot 3.2), is a modern synchronous HTTP client with a fluent, <code>WebClient</code>-style API but blocking execution semantics like <code>RestTemplate</code>. It was created to give teams who don't need reactive programming a clean, chainable API without adopting Project Reactor, while <code>RestTemplate</code> remains in maintenance mode.</p>
+<p><code>RestClient</code> reuses the same underlying HTTP infrastructure as <code>RestTemplate</code> (<code>ClientHttpRequestFactory</code>, message converters, <code>ClientHttpRequestInterceptor</code>), so migrating from <code>RestTemplate</code> to <code>RestClient</code> is straightforward, while offering a nicer, more discoverable fluent API (<code>.get().uri(...).retrieve().body(...)</code>) similar to <code>WebClient</code>'s.</p>
+<p>It is the recommended default for new synchronous HTTP client code in Spring Boot 3.2+, replacing the historical advice to use <code>RestTemplate</code> for blocking calls.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-8-1" id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="nd">@Configuration</span>
+<a href="#__codelineno-8-2" id="__codelineno-8-2" name="__codelineno-8-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">RestClientConfig</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-8-3" id="__codelineno-8-3" name="__codelineno-8-3"></a>
+<a href="#__codelineno-8-4" id="__codelineno-8-4" name="__codelineno-8-4"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-8-5" id="__codelineno-8-5" name="__codelineno-8-5"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">RestClient</span><span class="w"> </span><span class="nf">restClient</span><span class="p">(</span><span class="n">RestClient</span><span class="p">.</span><span class="na">Builder</span><span class="w"> </span><span class="n">builder</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-8-6" id="__codelineno-8-6" name="__codelineno-8-6"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">builder</span>
+<a href="#__codelineno-8-7" id="__codelineno-8-7" name="__codelineno-8-7"></a><span class="w">            </span><span class="p">.</span><span class="na">baseUrl</span><span class="p">(</span><span class="s">"http://localhost:8081"</span><span class="p">)</span>
+<a href="#__codelineno-8-8" id="__codelineno-8-8" name="__codelineno-8-8"></a><span class="w">            </span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+<a href="#__codelineno-8-9" id="__codelineno-8-9" name="__codelineno-8-9"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-8-10" id="__codelineno-8-10" name="__codelineno-8-10"></a><span class="p">}</span>
+<a href="#__codelineno-8-11" id="__codelineno-8-11" name="__codelineno-8-11"></a>
+<a href="#__codelineno-8-12" id="__codelineno-8-12" name="__codelineno-8-12"></a><span class="nd">@Service</span>
+<a href="#__codelineno-8-13" id="__codelineno-8-13" name="__codelineno-8-13"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">OrderRestClient</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-8-14" id="__codelineno-8-14" name="__codelineno-8-14"></a>
+<a href="#__codelineno-8-15" id="__codelineno-8-15" name="__codelineno-8-15"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">RestClient</span><span class="w"> </span><span class="n">restClient</span><span class="p">;</span>
+<a href="#__codelineno-8-16" id="__codelineno-8-16" name="__codelineno-8-16"></a>
+<a href="#__codelineno-8-17" id="__codelineno-8-17" name="__codelineno-8-17"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">OrderRestClient</span><span class="p">(</span><span class="n">RestClient</span><span class="w"> </span><span class="n">restClient</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-8-18" id="__codelineno-8-18" name="__codelineno-8-18"></a><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">restClient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">restClient</span><span class="p">;</span>
+<a href="#__codelineno-8-19" id="__codelineno-8-19" name="__codelineno-8-19"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-8-20" id="__codelineno-8-20" name="__codelineno-8-20"></a>
+<a href="#__codelineno-8-21" id="__codelineno-8-21" name="__codelineno-8-21"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Order</span><span class="w"> </span><span class="nf">getOrder</span><span class="p">(</span><span class="n">Long</span><span class="w"> </span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-8-22" id="__codelineno-8-22" name="__codelineno-8-22"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">restClient</span><span class="p">.</span><span class="na">get</span><span class="p">()</span>
+<a href="#__codelineno-8-23" id="__codelineno-8-23" name="__codelineno-8-23"></a><span class="w">            </span><span class="p">.</span><span class="na">uri</span><span class="p">(</span><span class="s">"/orders/{id}"</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">)</span>
+<a href="#__codelineno-8-24" id="__codelineno-8-24" name="__codelineno-8-24"></a><span class="w">            </span><span class="p">.</span><span class="na">retrieve</span><span class="p">()</span>
+<a href="#__codelineno-8-25" id="__codelineno-8-25" name="__codelineno-8-25"></a><span class="w">            </span><span class="p">.</span><span class="na">body</span><span class="p">(</span><span class="n">Order</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+<a href="#__codelineno-8-26" id="__codelineno-8-26" name="__codelineno-8-26"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-8-27" id="__codelineno-8-27" name="__codelineno-8-27"></a>
+<a href="#__codelineno-8-28" id="__codelineno-8-28" name="__codelineno-8-28"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Order</span><span class="w"> </span><span class="nf">createOrder</span><span class="p">(</span><span class="n">Order</span><span class="w"> </span><span class="n">order</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-8-29" id="__codelineno-8-29" name="__codelineno-8-29"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">restClient</span><span class="p">.</span><span class="na">post</span><span class="p">()</span>
+<a href="#__codelineno-8-30" id="__codelineno-8-30" name="__codelineno-8-30"></a><span class="w">            </span><span class="p">.</span><span class="na">uri</span><span class="p">(</span><span class="s">"/orders"</span><span class="p">)</span>
+<a href="#__codelineno-8-31" id="__codelineno-8-31" name="__codelineno-8-31"></a><span class="w">            </span><span class="p">.</span><span class="na">body</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+<a href="#__codelineno-8-32" id="__codelineno-8-32" name="__codelineno-8-32"></a><span class="w">            </span><span class="p">.</span><span class="na">retrieve</span><span class="p">()</span>
+<a href="#__codelineno-8-33" id="__codelineno-8-33" name="__codelineno-8-33"></a><span class="w">            </span><span class="p">.</span><span class="na">body</span><span class="p">(</span><span class="n">Order</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+<a href="#__codelineno-8-34" id="__codelineno-8-34" name="__codelineno-8-34"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-8-35" id="__codelineno-8-35" name="__codelineno-8-35"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A team migrating a mature Spring Boot 2 application to Spring Boot 3.2 replaces <code>RestTemplate</code> calls with <code>RestClient</code> one service at a time, keeping the same blocking, MVC-friendly programming model while getting a more ergonomic, fluent call syntax and consistent error handling via <code>onStatus</code>.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What Spring version introduced <code>RestClient</code>?</strong>
+Spring Framework 6.1, shipped as part of Spring Boot 3.2.</p>
+<p><strong>Q: Does <code>RestClient</code> share underlying infrastructure with <code>RestTemplate</code>?</strong>
+Yes — it reuses <code>ClientHttpRequestFactory</code>, <code>HttpMessageConverter</code>s, and interceptors, so migrating between the two is mostly a change in call syntax, not underlying behavior.</p>
+<h3 id="rest-client-with-load-balanced">Rest Client with Load Balanced</h3>
+<p>Like <code>RestTemplate</code> and <code>WebClient.Builder</code>, a <code>RestClient.Builder</code> bean can be annotated <code>@LoadBalanced</code> so that <code>RestClient</code> instances built from it resolve logical service names through Spring Cloud LoadBalancer. Because <code>RestClient</code> is blocking, the load-balancer resolution here is synchronous, mirroring <code>RestTemplate</code>'s <code>LoadBalancerInterceptor</code> behavior but wired through <code>RestClient</code>'s interceptor mechanism.</p>
+<p>This gives teams the same "call services by logical name" ergonomics they're used to from <code>RestTemplate</code>, but with <code>RestClient</code>'s more modern, fluent API — useful when migrating away from <code>RestTemplate</code> without introducing reactive types.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-9-1" id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="nd">@Configuration</span>
+<a href="#__codelineno-9-2" id="__codelineno-9-2" name="__codelineno-9-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">LoadBalancedRestClientConfig</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-9-3" id="__codelineno-9-3" name="__codelineno-9-3"></a>
+<a href="#__codelineno-9-4" id="__codelineno-9-4" name="__codelineno-9-4"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-9-5" id="__codelineno-9-5" name="__codelineno-9-5"></a><span class="w">    </span><span class="nd">@LoadBalanced</span>
+<a href="#__codelineno-9-6" id="__codelineno-9-6" name="__codelineno-9-6"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">RestClient</span><span class="p">.</span><span class="na">Builder</span><span class="w"> </span><span class="nf">loadBalancedRestClientBuilder</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-9-7" id="__codelineno-9-7" name="__codelineno-9-7"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">RestClient</span><span class="p">.</span><span class="na">builder</span><span class="p">();</span>
+<a href="#__codelineno-9-8" id="__codelineno-9-8" name="__codelineno-9-8"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-9-9" id="__codelineno-9-9" name="__codelineno-9-9"></a><span class="p">}</span>
+<a href="#__codelineno-9-10" id="__codelineno-9-10" name="__codelineno-9-10"></a>
+<a href="#__codelineno-9-11" id="__codelineno-9-11" name="__codelineno-9-11"></a><span class="nd">@Service</span>
+<a href="#__codelineno-9-12" id="__codelineno-9-12" name="__codelineno-9-12"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">InventoryRestClient</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-9-13" id="__codelineno-9-13" name="__codelineno-9-13"></a>
+<a href="#__codelineno-9-14" id="__codelineno-9-14" name="__codelineno-9-14"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">RestClient</span><span class="w"> </span><span class="n">restClient</span><span class="p">;</span>
+<a href="#__codelineno-9-15" id="__codelineno-9-15" name="__codelineno-9-15"></a>
+<a href="#__codelineno-9-16" id="__codelineno-9-16" name="__codelineno-9-16"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">InventoryRestClient</span><span class="p">(</span><span class="nd">@LoadBalanced</span><span class="w"> </span><span class="n">RestClient</span><span class="p">.</span><span class="na">Builder</span><span class="w"> </span><span class="n">builder</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-9-17" id="__codelineno-9-17" name="__codelineno-9-17"></a><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">restClient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">builder</span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+<a href="#__codelineno-9-18" id="__codelineno-9-18" name="__codelineno-9-18"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-9-19" id="__codelineno-9-19" name="__codelineno-9-19"></a>
+<a href="#__codelineno-9-20" id="__codelineno-9-20" name="__codelineno-9-20"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Stock</span><span class="w"> </span><span class="nf">checkStock</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">sku</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-9-21" id="__codelineno-9-21" name="__codelineno-9-21"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">restClient</span><span class="p">.</span><span class="na">get</span><span class="p">()</span>
+<a href="#__codelineno-9-22" id="__codelineno-9-22" name="__codelineno-9-22"></a><span class="w">            </span><span class="p">.</span><span class="na">uri</span><span class="p">(</span><span class="s">"http://inventory-service/stock/{sku}"</span><span class="p">,</span><span class="w"> </span><span class="n">sku</span><span class="p">)</span>
+<a href="#__codelineno-9-23" id="__codelineno-9-23" name="__codelineno-9-23"></a><span class="w">            </span><span class="p">.</span><span class="na">retrieve</span><span class="p">()</span>
+<a href="#__codelineno-9-24" id="__codelineno-9-24" name="__codelineno-9-24"></a><span class="w">            </span><span class="p">.</span><span class="na">body</span><span class="p">(</span><span class="n">Stock</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+<a href="#__codelineno-9-25" id="__codelineno-9-25" name="__codelineno-9-25"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-9-26" id="__codelineno-9-26" name="__codelineno-9-26"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A recently modernized order service swaps its <code>@LoadBalanced RestTemplate</code> beans for <code>@LoadBalanced RestClient.Builder</code> beans during a Spring Boot 3.2 upgrade, gaining a cleaner call syntax while keeping identical load-balancing behavior in production.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What bean type must be annotated <code>@LoadBalanced</code> to load-balance a <code>RestClient</code>?</strong>
+<code>RestClient.Builder</code>, not the <code>RestClient</code> itself — every <code>RestClient</code> built from that builder inherits the load-balancing behavior.</p>
+<p><strong>Q: Is <code>RestClient</code>'s load-balancer resolution blocking or reactive?</strong>
+Blocking/synchronous, consistent with <code>RestClient</code>'s overall execution model, unlike <code>WebClient</code>'s reactive <code>ExchangeFilterFunction</code>-based resolution.</p>
+<h3 id="rest-client-with-service-discovery">Rest Client with service discovery</h3>
+<p><code>RestClient</code> participates in service discovery exactly like <code>RestTemplate</code>: when <code>@LoadBalanced</code>, its interceptor consults <code>LoadBalancerClient</code>, which in turn queries the <code>DiscoveryClient</code> for the registered instances of the logical service name in the request URI. The resolved concrete host:port replaces the logical name before the request is executed.</p>
+<p>Since <code>RestClient</code> is positioned as <code>RestTemplate</code>'s successor, Spring Cloud's discovery and load-balancing integration was designed to be a drop-in equivalent — application code and YAML configuration for Eureka/Consul do not need to change when migrating from <code>RestTemplate</code> to <code>RestClient</code>.</p>
+<pre class="mermaid"><code>sequenceDiagram
+    participant Client as Order Service<br/>(@LoadBalanced RestClient)
+    participant LB as LoadBalancerClient
+    participant Registry as Eureka/Consul
+    participant Inst as Inventory Instance
+
+    Client-&gt;&gt;LB: GET http://inventory-service/stock/123
+    LB-&gt;&gt;Registry: lookup "inventory-service"
+    Registry--&gt;&gt;LB: [instance list]
+    LB-&gt;&gt;LB: apply strategy (Round Robin/Weighted)
+    LB-&gt;&gt;Inst: GET /stock/123 (resolved host:port)
+    Inst--&gt;&gt;LB: 200 OK
+    LB--&gt;&gt;Client: Stock
+</code></pre>
+<p><strong>Real-life scenario:</strong> A platform standardizes all new microservices on <code>RestClient</code> for synchronous calls; because discovery/load-balancing wiring is identical to <code>RestTemplate</code>, existing Eureka configuration in <code>application.yml</code> needs no changes when new services adopt <code>RestClient</code>.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What changes are needed in Eureka/Consul YAML when migrating from <code>RestTemplate</code> to <code>RestClient</code>?</strong>
+None — both share the same <code>DiscoveryClient</code> and <code>LoadBalancerClient</code> infrastructure, so existing discovery configuration applies unchanged.</p>
+<p><strong>Q: What component actually rewrites the logical service name to a concrete host:port for <code>RestClient</code>?</strong>
+The load-balancer interceptor wired into the <code>RestClient.Builder</code>, using the <code>ServiceInstance</code> resolved by <code>LoadBalancerClient</code>.</p>
+<h3 id="declarative-http-interface-clients-using-httpexchange">Declarative HTTP Interface Clients using @HttpExchange</h3>
+<p>Spring 6 introduced HTTP Interface clients: you declare a plain Java interface with methods annotated <code>@GetExchange</code>, <code>@PostExchange</code>, <code>@PutExchange</code>, <code>@DeleteExchange</code> (all meta-annotated with the general-purpose <code>@HttpExchange</code>), and Spring generates a runtime proxy backed by an actual HTTP client — typically a <code>RestClient</code> or <code>WebClient</code> — via <code>HttpServiceProxyFactory</code>. This gives you Feign-like declarative ergonomics using only core Spring (no OpenFeign dependency required).</p>
+<p>You build the proxy by creating an <code>HttpServiceProxyFactory</code> from an adapter around a configured <code>RestClient</code> (blocking) or <code>WebClient</code> (reactive), then calling <code>.createClient(YourInterface.class)</code>. The resulting proxy can be registered as a Spring bean and injected anywhere, just like a <code>@FeignClient</code>.</p>
+<p>This approach is attractive because it uses first-party Spring infrastructure exclusively, supports both blocking and reactive return types on the same abstraction, and gives fine-grained control since you configure the underlying <code>RestClient</code>/<code>WebClient</code> (timeouts, interceptors, base URL) yourself rather than relying on Feign's separate configuration model.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-10-1" id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">InventoryHttpClient</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-10-2" id="__codelineno-10-2" name="__codelineno-10-2"></a>
+<a href="#__codelineno-10-3" id="__codelineno-10-3" name="__codelineno-10-3"></a><span class="w">    </span><span class="nd">@GetExchange</span><span class="p">(</span><span class="s">"/stock/{sku}"</span><span class="p">)</span>
+<a href="#__codelineno-10-4" id="__codelineno-10-4" name="__codelineno-10-4"></a><span class="w">    </span><span class="n">Stock</span><span class="w"> </span><span class="nf">checkStock</span><span class="p">(</span><span class="nd">@PathVariable</span><span class="p">(</span><span class="s">"sku"</span><span class="p">)</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">sku</span><span class="p">);</span>
+<a href="#__codelineno-10-5" id="__codelineno-10-5" name="__codelineno-10-5"></a>
+<a href="#__codelineno-10-6" id="__codelineno-10-6" name="__codelineno-10-6"></a><span class="w">    </span><span class="nd">@PostExchange</span><span class="p">(</span><span class="s">"/stock"</span><span class="p">)</span>
+<a href="#__codelineno-10-7" id="__codelineno-10-7" name="__codelineno-10-7"></a><span class="w">    </span><span class="n">Stock</span><span class="w"> </span><span class="nf">createStock</span><span class="p">(</span><span class="nd">@RequestBody</span><span class="w"> </span><span class="n">Stock</span><span class="w"> </span><span class="n">stock</span><span class="p">);</span>
+<a href="#__codelineno-10-8" id="__codelineno-10-8" name="__codelineno-10-8"></a><span class="p">}</span>
+<a href="#__codelineno-10-9" id="__codelineno-10-9" name="__codelineno-10-9"></a>
+<a href="#__codelineno-10-10" id="__codelineno-10-10" name="__codelineno-10-10"></a><span class="nd">@Configuration</span>
+<a href="#__codelineno-10-11" id="__codelineno-10-11" name="__codelineno-10-11"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">HttpExchangeConfig</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-10-12" id="__codelineno-10-12" name="__codelineno-10-12"></a>
+<a href="#__codelineno-10-13" id="__codelineno-10-13" name="__codelineno-10-13"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-10-14" id="__codelineno-10-14" name="__codelineno-10-14"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">InventoryHttpClient</span><span class="w"> </span><span class="nf">inventoryHttpClient</span><span class="p">(</span><span class="n">RestClient</span><span class="p">.</span><span class="na">Builder</span><span class="w"> </span><span class="n">builder</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-10-15" id="__codelineno-10-15" name="__codelineno-10-15"></a><span class="w">        </span><span class="n">RestClient</span><span class="w"> </span><span class="n">restClient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">builder</span><span class="p">.</span><span class="na">baseUrl</span><span class="p">(</span><span class="s">"http://inventory-service"</span><span class="p">).</span><span class="na">build</span><span class="p">();</span>
+<a href="#__codelineno-10-16" id="__codelineno-10-16" name="__codelineno-10-16"></a><span class="w">        </span><span class="n">HttpServiceProxyFactory</span><span class="w"> </span><span class="n">factory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">HttpServiceProxyFactory</span>
+<a href="#__codelineno-10-17" id="__codelineno-10-17" name="__codelineno-10-17"></a><span class="w">            </span><span class="p">.</span><span class="na">builderFor</span><span class="p">(</span><span class="n">RestClientAdapter</span><span class="p">.</span><span class="na">create</span><span class="p">(</span><span class="n">restClient</span><span class="p">))</span>
+<a href="#__codelineno-10-18" id="__codelineno-10-18" name="__codelineno-10-18"></a><span class="w">            </span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+<a href="#__codelineno-10-19" id="__codelineno-10-19" name="__codelineno-10-19"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">factory</span><span class="p">.</span><span class="na">createClient</span><span class="p">(</span><span class="n">InventoryHttpClient</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+<a href="#__codelineno-10-20" id="__codelineno-10-20" name="__codelineno-10-20"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-10-21" id="__codelineno-10-21" name="__codelineno-10-21"></a><span class="p">}</span>
+</code></pre></div>
+<pre class="mermaid"><code>flowchart TD
+    A["@GetExchange interface method call"] --&gt; B[HttpServiceProxyFactory proxy]
+    B --&gt; C[RestClientAdapter / WebClientAdapter]
+    C --&gt; D[RestClient or WebClient]
+    D --&gt;|LoadBalanced| E[Spring Cloud LoadBalancer]
+    E --&gt; F[Resolved Service Instance]
+</code></pre>
+<p><strong>Real-life scenario:</strong> A team wants Feign-style declarative clients but is standardizing on core Spring (avoiding extra third-party abstractions); they define <code>@HttpExchange</code> interfaces backed by a <code>@LoadBalanced RestClient.Builder</code>, getting declarative calls plus load balancing without adding <code>spring-cloud-starter-openfeign</code>.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What factory class builds the runtime proxy for an <code>@HttpExchange</code> interface?</strong>
+<code>HttpServiceProxyFactory</code>, created from an adapter (<code>RestClientAdapter</code> or <code>WebClientAdapter</code>) around a configured <code>RestClient</code> or <code>WebClient</code>.</p>
+<p><strong>Q: Do you need OpenFeign on the classpath to use <code>@HttpExchange</code>?</strong>
+No — <code>@HttpExchange</code> is a core Spring Framework 6 feature requiring only <code>spring-web</code> (or <code>spring-webflux</code> for reactive use), with no separate Feign dependency.</p>
+<h3 id="restclient-vs-resttemplate-vs-webclient-when-to-use-what">RestClient vs RestTemplate vs WebClient - When to Use What</h3>
+<p>Choosing between these three clients comes down to three questions: does the application already use reactive programming (Project Reactor/WebFlux)? Is a fluent, modern API desirable? And is this new code or an existing <code>RestTemplate</code> codebase being maintained? <code>RestTemplate</code> is blocking and imperative, still fully functional but in maintenance mode; <code>WebClient</code> is non-blocking/reactive and the right choice inside WebFlux applications or when high concurrency with limited threads matters; <code>RestClient</code> is blocking like <code>RestTemplate</code> but with <code>WebClient</code>'s fluent API, and is Spring's recommended default for new synchronous client code since Spring Boot 3.2.</p>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>RestTemplate</th>
+<th>WebClient</th>
+<th>RestClient</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Execution model</td>
+<td>Blocking / synchronous</td>
+<td>Non-blocking / reactive (<code>Mono</code>/<code>Flux</code>)</td>
+<td>Blocking / synchronous</td>
+</tr>
+<tr>
+<td>API style</td>
+<td>Traditional method calls (<code>getForObject</code>, <code>exchange</code>)</td>
+<td>Fluent, chainable</td>
+<td>Fluent, chainable (like WebClient)</td>
+</tr>
+<tr>
+<td>Spring availability</td>
+<td>Since Spring 3 (maintenance mode since 5.0)</td>
+<td>Since Spring 5 (WebFlux)</td>
+<td>Since Spring Framework 6.1 / Boot 3.2</td>
+</tr>
+<tr>
+<td>Dependency required</td>
+<td><code>spring-web</code></td>
+<td><code>spring-webflux</code></td>
+<td><code>spring-web</code> (no WebFlux needed)</td>
+</tr>
+<tr>
+<td>Thread usage per call</td>
+<td>Holds a thread for call duration</td>
+<td>Frees thread while awaiting I/O</td>
+<td>Holds a thread for call duration</td>
+</tr>
+<tr>
+<td>Best use case</td>
+<td>Legacy MVC apps, simple scripts</td>
+<td>Reactive apps, high-concurrency I/O-bound calls, streaming</td>
+<td>New synchronous MVC apps wanting modern ergonomics</td>
+</tr>
+<tr>
+<td>Streaming support</td>
+<td>No</td>
+<td>Yes (<code>Flux</code>, SSE)</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Load balancing</td>
+<td><code>@LoadBalanced RestTemplate</code></td>
+<td><code>@LoadBalanced WebClient.Builder</code></td>
+<td><code>@LoadBalanced RestClient.Builder</code></td>
+</tr>
+<tr>
+<td>Future direction</td>
+<td>Maintenance mode, not recommended for new code</td>
+<td>Actively developed, required for WebFlux</td>
+<td>Actively developed, recommended default for blocking calls</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Real-life scenario:</strong> A platform team writing a new synchronous Spring MVC microservice in 2025 chooses <code>RestClient</code> over <code>RestTemplate</code> for its modern API while avoiding the complexity of reactive types; a separate high-throughput API gateway component, built on WebFlux, uses <code>WebClient</code> because it must handle tens of thousands of concurrent in-flight calls without exhausting the thread pool.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: If an application is already reactive (WebFlux), which client should it default to?</strong>
+<code>WebClient</code>, since it fits the reactive execution model end-to-end without introducing blocking calls that would exhaust the limited pool of event-loop threads.</p>
+<p><strong>Q: Which client would a team building a brand-new blocking MVC service choose today, and why?</strong>
+<code>RestClient</code>, because it's Spring's recommended default for new synchronous client code, offering a modern fluent API while avoiding <code>RestTemplate</code>'s maintenance-mode status.</p>
+<h2 id="interview-questions-answers">Interview Questions &amp; Answers</h2>
+<h3 id="resttemplate">RestTemplate</h3>
+<p><strong>Q: What is <code>RestTemplate</code> and why is it said to be in "maintenance mode"?</strong></p>
+<p><code>RestTemplate</code> is Spring's original synchronous HTTP client for making REST calls, built around template methods like <code>getForObject</code> and <code>exchange</code>. Since Spring 5.0, the Spring team has stated it will only receive minor changes and bug fixes going forward, with <code>WebClient</code> (and now <code>RestClient</code>) recommended for new code — but it remains fully supported and safe to use in existing applications.</p>
+<p><strong>Q: What is <code>RestTemplateBuilder</code> and why should you prefer it over <code>new RestTemplate()</code>?</strong></p>
+<p><code>RestTemplateBuilder</code> is a Spring Boot auto-configured builder that applies sensible defaults (message converters matching what's on the classpath, error handlers) and provides a fluent way to set timeouts, interceptors, and a root URI. Using it instead of <code>new RestTemplate()</code> ensures Spring Boot's auto-configuration and any customizers registered as <code>RestTemplateCustomizer</code> beans are applied consistently.</p>
+<p><strong>Q: How do you set connection and read timeouts on a <code>RestTemplate</code>?</strong></p>
+<p>Via <code>RestTemplateBuilder.setConnectTimeout(Duration)</code> and <code>.setReadTimeout(Duration)</code> when building the bean, e.g. <code>builder.setConnectTimeout(Duration.ofSeconds(2)).setReadTimeout(Duration.ofSeconds(5)).build()</code>. Without explicit timeouts, <code>RestTemplate</code> may block indefinitely (or use very long platform defaults) waiting on a slow or unresponsive server.</p>
+<p><strong>Q: What does <code>@LoadBalanced</code> do on a <code>RestTemplate</code> bean?</strong></p>
+<p>It marks the bean so Spring Cloud LoadBalancer injects a <code>LoadBalancerInterceptor</code> into its interceptor chain. That interceptor intercepts requests whose host portion is a logical service name (not an IP), resolves it to a concrete <code>ServiceInstance</code> via the load balancer, and rewrites the request URI before it's actually sent.</p>
+<h3 id="feign">Feign</h3>
+<p><strong>Q: How does OpenFeign differ from <code>RestTemplate</code> in how you write client code?</strong></p>
+<p><code>RestTemplate</code> requires imperative code that builds requests and parses responses manually. Feign only requires declaring an interface annotated with <code>@FeignClient</code> and mapping annotations (<code>@GetMapping</code>, <code>@PostMapping</code>); Spring Cloud OpenFeign generates a dynamic proxy at runtime implementing the interface by making the corresponding HTTP calls.</p>
+<p><strong>Q: Is a Feign client load-balanced by default?</strong></p>
+<p>Yes — when a <code>@FeignClient</code> is declared with a logical service <code>name</code> (instead of a hardcoded <code>url</code>), Spring Cloud OpenFeign automatically wraps the underlying HTTP client with <code>FeignBlockingLoadBalancerClient</code>, which uses the same Spring Cloud LoadBalancer infrastructure as <code>RestTemplate</code>/<code>WebClient</code> to resolve and balance across instances.</p>
+<p><strong>Q: How would you add a custom header (e.g. an auth token) to every Feign call?</strong></p>
+<p>By registering a <code>RequestInterceptor</code> bean, e.g. implementing <code>apply(RequestTemplate template)</code> to call <code>template.header("Authorization", "Bearer " + token)</code>. Feign automatically applies all registered <code>RequestInterceptor</code> beans to outgoing requests.</p>
+<p><strong>Q: How do you handle non-2xx responses from a Feign client?</strong></p>
+<p>By implementing a custom <code>ErrorDecoder</code> bean, which inspects the response status/body and can translate it into a domain-specific exception, or by relying on Feign's default <code>FeignException</code> hierarchy which already differentiates by HTTP status code.</p>
+<h3 id="webclient">WebClient</h3>
+<p><strong>Q: Why is <code>WebClient</code> non-blocking, and what does that mean for thread usage?</strong></p>
+<p><code>WebClient</code> is built on Reactor Netty (or another reactive HTTP client) and returns <code>Mono</code>/<code>Flux</code> publishers instead of blocking the calling thread. The calling thread is released immediately after subscribing; when the response arrives, a small number of event-loop threads handle it and notify downstream subscribers, meaning many concurrent requests can be in flight without holding a thread each.</p>
+<p><strong>Q: What happens if you call <code>.block()</code> on a <code>Mono</code> returned by <code>WebClient</code> inside a servlet (MVC) controller thread?</strong></p>
+<p>It converts the call into a blocking one, defeating much of <code>WebClient</code>'s benefit, but it's a legitimate way to use <code>WebClient</code> in traditional (non-reactive) MVC applications when you don't need full reactive composition — the request still executes non-blockingly internally, but the calling thread waits for the result.</p>
+<p><strong>Q: How does <code>@LoadBalanced</code> work with <code>WebClient</code> differently than with <code>RestTemplate</code>?</strong></p>
+<p>You annotate a <code>WebClient.Builder</code> bean (not the <code>WebClient</code> itself) with <code>@LoadBalanced</code>. Spring Cloud attaches a <code>ReactorLoadBalancerExchangeFilterFunction</code> — an <code>ExchangeFilterFunction</code> — that reactively resolves the logical service name to an instance, keeping the entire chain non-blocking, unlike <code>RestTemplate</code>'s synchronous interceptor.</p>
+<p><strong>Q: Give an example of when <code>WebClient</code>'s streaming capability (returning <code>Flux</code>) is useful.</strong></p>
+<p>Consuming Server-Sent Events (SSE) or a large, incrementally-produced JSON array from another service — <code>WebClient</code> can expose it as a <code>Flux&lt;T&gt;</code> that emits items as they arrive, letting the caller process a live/large stream without loading the whole payload into memory first.</p>
+<h3 id="restclient">RestClient</h3>
+<p><strong>Q: What problem does <code>RestClient</code> (Spring Framework 6.1 / Boot 3.2) solve that <code>RestTemplate</code> and <code>WebClient</code> didn't?</strong></p>
+<p>It provides a modern, fluent, <code>WebClient</code>-style API for teams that want ergonomic call syntax but do not need (or want) reactive programming and Project Reactor as a dependency. It reuses <code>RestTemplate</code>'s blocking infrastructure (<code>ClientHttpRequestFactory</code>, message converters) under a nicer API.</p>
+<p><strong>Q: Is <code>RestClient</code> reactive?</strong></p>
+<p>No — despite its fluent API resembling <code>WebClient</code>, <code>RestClient</code> executes calls synchronously/blockingly, the same execution model as <code>RestTemplate</code>.</p>
+<p><strong>Q: How do you migrate a <code>@LoadBalanced RestTemplate</code> bean to <code>RestClient</code>?</strong></p>
+<p>Replace the <code>@LoadBalanced RestTemplate</code> bean with a <code>@LoadBalanced RestClient.Builder</code> bean, then build <code>RestClient</code> instances from it (<code>builder.build()</code>); the discovery/load-balancing configuration (Eureka/Consul YAML) does not need to change, since both use the same underlying <code>LoadBalancerClient</code>.</p>
+<h3 id="declarative-http-interfaces-httpexchange">Declarative HTTP Interfaces (<code>@HttpExchange</code>)</h3>
+<p><strong>Q: What is <code>@HttpExchange</code> and how does it differ from <code>@FeignClient</code>?</strong></p>
+<p><code>@HttpExchange</code> (with its specializations <code>@GetExchange</code>, <code>@PostExchange</code>, etc.) is a core Spring Framework 6 annotation for declaring HTTP interface clients. Unlike <code>@FeignClient</code>, it requires no separate library (no <code>spring-cloud-starter-openfeign</code>) — you build the proxy yourself via <code>HttpServiceProxyFactory</code> backed by a <code>RestClient</code> or <code>WebClient</code>.</p>
+<p><strong>Q: Can an <code>@HttpExchange</code> interface be backed by either a blocking or reactive client?</strong></p>
+<p>Yes — the same interface style works whether the adapter wraps a <code>RestClient</code> (blocking, returns plain objects) or a <code>WebClient</code> (reactive, methods can return <code>Mono</code>/<code>Flux</code>), since <code>HttpServiceProxyFactory</code> abstracts over the underlying <code>HttpExchangeAdapter</code>.</p>
+<p><strong>Q: How do you enable load balancing for an <code>@HttpExchange</code> client?</strong></p>
+<p>By building the <code>HttpServiceProxyFactory</code> from a <code>RestClient</code> or <code>WebClient</code> that itself was built from a <code>@LoadBalanced</code> builder bean — load balancing is a property of the underlying client, not of the <code>@HttpExchange</code> annotation itself.</p>
+<h3 id="restclient-vs-resttemplate-vs-webclient">RestClient vs RestTemplate vs WebClient</h3>
+<p><strong>Q: For a brand-new synchronous Spring Boot 3.2+ microservice, which client should you choose and why?</strong></p>
+<p><code>RestClient</code>, because it offers a modern fluent API without requiring reactive programming, and it's Spring's recommended default for new blocking HTTP client code, whereas <code>RestTemplate</code> is in maintenance mode.</p>
+<p><strong>Q: When would you choose <code>WebClient</code> over <code>RestClient</code> even in a traditionally blocking application?</strong></p>
+<p>When the application needs to make many concurrent outbound calls efficiently (e.g. fanning out to several downstream services) without exhausting a thread pool, or needs streaming support (SSE, chunked responses) — <code>WebClient</code>'s non-blocking model handles high concurrency far better than blocking clients.</p>
+<p><strong>Q: Are <code>RestTemplate</code>, <code>WebClient</code>, and <code>RestClient</code> all compatible with Spring Cloud LoadBalancer and service discovery?</strong></p>
+<p>Yes — all three support <code>@LoadBalanced</code> builder/bean annotations that resolve logical service names via the same <code>LoadBalancerClient</code>/<code>ReactiveLoadBalancer</code> infrastructure backed by <code>DiscoveryClient</code> implementations (Eureka, Consul, Zookeeper), so switching between them doesn't require changing discovery configuration.</p>
+<h2 id="resources">Resources</h2>
+<h3 id="medium">Medium</h3>
+<ul>
+<li><a href="https://medium.com/javaguides/spring-cloud-interview-questions-and-answers-c566883646eb">Spring Cloud Interview Questions and Answers</a></li>
+<li>
+<p><a href="https://medium.com/javarevisited/top-15-spring-cloud-interview-questions-with-answers-619e5e1169e6">Top 15 Spring Cloud Interview Questions with Answers</a></p>
+</li>
+<li>
+<p><a href="https://medium.com/@smita.s.kothari/exploring-the-new-restclient-in-spring-boot-3-2-721e75d64a86">Mastering RestClient in Spring Boot 3.2+: The Modern Way to Call REST APIs</a></p>
+</li>
+<li><a href="https://ibrahimgunduz34.medium.com/how-to-configure-global-settings-for-spring-restclient-620b10772e93">How to Configure Global Settings for Spring RestClient</a></li>
+<li><a href="https://medium.com/@sarveshkhamkar321/spring-boot-restclient-the-simple-guide-every-developer-needs-4285014810bf">Spring Boot RestClient: The Simple Guide Every Developer Needs</a></li>
+<li><a href="https://medium.com/@aniwangeamos/building-a-modern-spring-boot-rest-client-with-http-interface-2ed4b0a0044d">Building a Modern Spring Boot REST Client with HTTP Interface</a></li>
+<li><a href="https://medium.com/@sibinraziya/spring-boot-4-http-interfaces-declarative-rest-clients-with-httpexchange-a-complete-guide-3e4dd2686a1f">Spring Boot 4 HTTP Interfaces &amp; Declarative REST Clients with @HttpExchange — A Complete Guide</a></li>
+<li><a href="https://medium.com/@vinodjagwani/spring-boot-3-how-to-use-restclient-with-httpexchange-annotation-4afc8c99e4b6">Spring Boot 3+: How to Use RestClient with @HttpExchange Annotation</a></li>
+</ul></div>
+</article>
+</div>
+<script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+</div>
+<button class="md-top md-icon" data-md-component="top" hidden="" type="button">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  Back to top
+</button>
+</main>
+<footer class="md-footer">
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-copyright">
+<div class="md-copyright__highlight">
+      © 2025 <a href="https://github.com/abhishekghoshh" rel="noopener" target="_blank">Abhishek Ghosh</a>
+</div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+      Material for MkDocs
+    </a>
+</div>
+<div class="md-social">
+<a class="md-social__link" href="https://github.com/abhishekghoshh" rel="noopener" target="_blank" title="github.com">
+<svg viewbox="0 0 480 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M186.1 328.7c0 20.9-10.9 55.1-36.7 55.1s-36.7-34.2-36.7-55.1 10.9-55.1 36.7-55.1 36.7 34.2 36.7 55.1M480 278.2c0 31.9-3.2 65.7-17.5 95-37.9 76.6-142.1 74.8-216.7 74.8-75.8 0-186.2 2.7-225.6-74.8-14.6-29-20.2-63.1-20.2-95 0-41.9 13.9-81.5 41.5-113.6-5.2-15.8-7.7-32.4-7.7-48.8 0-21.5 4.9-32.3 14.6-51.8 45.3 0 74.3 9 108.8 36 29-6.9 58.8-10 88.7-10 27 0 54.2 2.9 80.4 9.2 34-26.7 63-35.2 107.8-35.2 9.8 19.5 14.6 30.3 14.6 51.8 0 16.4-2.6 32.7-7.7 48.2 27.5 32.4 39 72.3 39 114.2m-64.3 50.5c0-43.9-26.7-82.6-73.5-82.6-18.9 0-37 3.4-56 6-14.9 2.3-29.8 3.2-45.1 3.2-15.2 0-30.1-.9-45.1-3.2-18.7-2.6-37-6-56-6-46.8 0-73.5 38.7-73.5 82.6 0 87.8 80.4 101.3 150.4 101.3h48.2c70.3 0 150.6-13.4 150.6-101.3m-82.6-55.1c-25.8 0-36.7 34.2-36.7 55.1s10.9 55.1 36.7 55.1 36.7-34.2 36.7-55.1-10.9-55.1-36.7-55.1"></path></svg>
+</a>
+<a class="md-social__link" href="https://x.com/abhishek_ghoshh" rel="noopener" target="_blank" title="x.com">
+<svg viewbox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253"></path></svg>
+</a>
+<a class="md-social__link" href="https://www.linkedin.com/in/abhishek-ghosh-220679132/" rel="noopener" target="_blank" title="www.linkedin.com">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5m282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"></path></svg>
+</a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<div class="md-dialog" data-md-component="dialog">
+<div class="md-dialog__inner md-typeset"></div>
+</div>
+<script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+<script src="../../assets/javascripts/bundle.60a45f97.min.js"></script>
+<script type="module">import mermaid from "https://unpkg.com/mermaid@10.4.0/dist/mermaid.esm.min.mjs";
+window.mermaidConfig = {default: {
+    startOnLoad: false
+}};</script></body>
+</html>

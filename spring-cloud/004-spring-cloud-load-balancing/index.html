@@ -1,0 +1,1971 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<link href="https://abhishekghoshh.github.io/spring-boot-helper/spring-cloud/004-spring-cloud-load-balancing/" rel="canonical"/>
+<link href="../003-service-discovery/" rel="prev"/>
+<link href="../005-rest-client/" rel="next"/>
+<link href="../../assets/images/favicon.png" rel="icon"/>
+<meta content="mkdocs-1.6.1, mkdocs-material-9.5.50" name="generator"/>
+<title>Spring Cloud Load balancing - spring-boot-helper</title>
+<link href="../../assets/stylesheets/main.a40c8224.min.css" rel="stylesheet"/>
+<link href="../../assets/stylesheets/palette.06af60db.min.css" rel="stylesheet"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
+<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+<meta content="website" property="og:type"/>
+<meta content="Spring Cloud Load balancing - spring-boot-helper" property="og:title"/>
+<meta content="None" property="og:description"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/assets/images/social/spring-cloud/004-spring-cloud-load-balancing.png" property="og:image"/>
+<meta content="image/png" property="og:image:type"/>
+<meta content="1200" property="og:image:width"/>
+<meta content="630" property="og:image:height"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/spring-cloud/004-spring-cloud-load-balancing/" property="og:url"/>
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="Spring Cloud Load balancing - spring-boot-helper" name="twitter:title"/>
+<meta content="None" name="twitter:description"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/assets/images/social/spring-cloud/004-spring-cloud-load-balancing.png" name="twitter:image"/>
+</head>
+<body data-md-color-accent="purple" data-md-color-primary="teal" data-md-color-scheme="default" dir="ltr">
+<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
+<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
+<label class="md-overlay" for="__drawer"></label>
+<div data-md-component="skip">
+<a class="md-skip" href="#spring-cloud-load-balancing">
+          Skip to content
+        </a>
+</div>
+<div data-md-component="announce">
+</div>
+<header class="md-header" data-md-component="header">
+<nav aria-label="Header" class="md-header__inner md-grid">
+<a aria-label="spring-boot-helper" class="md-header__button md-logo" data-md-component="logo" href="../.." title="spring-boot-helper">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+<label class="md-header__button md-icon" for="__drawer">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+</label>
+<div class="md-header__title" data-md-component="header-title">
+<div class="md-header__ellipsis">
+<div class="md-header__topic">
+<span class="md-ellipsis">
+            spring-boot-helper
+          </span>
+</div>
+<div class="md-header__topic" data-md-component="header-topic">
+<span class="md-ellipsis">
+            
+              Spring Cloud Load balancing
+            
+          </span>
+</div>
+</div>
+</div>
+<form class="md-header__option" data-md-component="palette">
+<input aria-label="Switch to dark mode" class="md-option" data-md-color-accent="purple" data-md-color-media="" data-md-color-primary="teal" data-md-color-scheme="default" id="__palette_0" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_1" hidden="" title="Switch to dark mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"></path></svg>
+</label>
+<input aria-label="Switch to light mode" class="md-option" data-md-color-accent="lime" data-md-color-media="" data-md-color-primary="teal" data-md-color-scheme="slate" id="__palette_1" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_0" hidden="" title="Switch to light mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"></path></svg>
+</label>
+</form>
+<script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+<label class="md-header__button md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+</label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input aria-label="Search" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="Search" required="" spellcheck="false" type="text"/>
+<label class="md-search__icon md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+</label>
+<nav aria-label="Search" class="md-search__options">
+<button aria-label="Clear" class="md-search__icon md-icon" tabindex="-1" title="Clear" type="reset">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+</button>
+</nav>
+<div class="md-search__suggest" data-md-component="search-suggest"></div>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix="" tabindex="0">
+<div class="md-search-result" data-md-component="search-result">
+<div class="md-search-result__meta">
+            Initializing search
+          </div>
+<ol class="md-search-result__list" role="presentation"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+</nav>
+</header>
+<div class="md-container" data-md-component="container">
+<nav aria-label="Tabs" class="md-tabs" data-md-component="tabs">
+<div class="md-grid">
+<ul class="md-tabs__list">
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../..">
+        
+  
+    
+  
+  Home
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-introduction/">
+          
+  
+  Introduction
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-aop/">
+          
+  
+  Spring AOP
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-transactions/">
+          
+  
+  Spring Transaction
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-jpa/">
+          
+  
+  Spring JPA
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-security/">
+          
+  
+  Spring Security
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-testing/">
+          
+  
+  Spring Testing
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-kafka/">
+          
+  
+  Spring Kafka
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-redis/">
+          
+  
+  Spring Redis
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-mongo/">
+          
+  
+  Spring Mongo
+
+        </a>
+</li>
+<li class="md-tabs__item md-tabs__item--active">
+<a class="md-tabs__link" href="../">
+          
+  
+  Spring Cloud
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../others/">
+          
+  
+  Others
+
+        </a>
+</li>
+</ul>
+</div>
+</nav>
+<main class="md-main" data-md-component="main">
+<div class="md-main__inner md-grid">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="Navigation" class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" data-md-level="0">
+<label class="md-nav__title" for="__drawer">
+<a aria-label="spring-boot-helper" class="md-nav__button md-logo" data-md-component="logo" href="../.." title="spring-boot-helper">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+    spring-boot-helper
+  </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../..">
+<span class="md-ellipsis">
+    Home
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_2" type="checkbox"/>
+<label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+<span class="md-ellipsis">
+    Introduction
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_2_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_2">
+<span class="md-nav__icon md-icon"></span>
+            Introduction
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/interview-helper/">
+<span class="md-ellipsis">
+    Interview Helper
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/001-history/">
+<span class="md-ellipsis">
+    001 - History
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/002-spring-mvc/">
+<span class="md-ellipsis">
+    002 - Spring MVC
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/003-spring-boot/">
+<span class="md-ellipsis">
+    003 - Spring Boot
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/004-maven-and-gradle/">
+<span class="md-ellipsis">
+    004 - Maven and Gradle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/005-annotations/">
+<span class="md-ellipsis">
+    005 - Spring Annotations
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/006-bean-management/">
+<span class="md-ellipsis">
+    006 - Spring Bean Management
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/007-config/">
+<span class="md-ellipsis">
+    007 - Spring Boot Config Management
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/008-async/">
+<span class="md-ellipsis">
+    008 - Async with Spring Boot
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/009-spring-with-virtual-thread/">
+<span class="md-ellipsis">
+    009 - Spring with Virtual Thread
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/010-intercepter-and-filter/">
+<span class="md-ellipsis">
+    010 - Interceptor and Filter
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/011-spring-hateos/">
+<span class="md-ellipsis">
+    011 - Spring HATEOS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/012-exception-handling/">
+<span class="md-ellipsis">
+    012 - Exception Handling
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/013-spring-actuator/">
+<span class="md-ellipsis">
+    013 - Spring Boot Actuator
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_3" type="checkbox"/>
+<label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring AOP
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_3_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_3">
+<span class="md-nav__icon md-icon"></span>
+            Spring AOP
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/001-what-is-aop/">
+<span class="md-ellipsis">
+    001 - What is AOP? Why and How We Use It?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/002-advantages-and-disadvantages/">
+<span class="md-ellipsis">
+    002 - Advantages and Disadvantages of AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/003-real-life-examples/">
+<span class="md-ellipsis">
+    003 - Real-Life Examples and Industry Usages
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/004-aop-annotations/">
+<span class="md-ellipsis">
+    004 - All Spring AOP Annotations Explained
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/005-code-examples/">
+<span class="md-ellipsis">
+    005 - Code Examples with Spring AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/006-summary/">
+<span class="md-ellipsis">
+    006 - Summary
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/007-aop-intercepts-method-invocation/">
+<span class="md-ellipsis">
+    007 - How AOP Intercepts Method Invocation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/008-aop-focus-on-business-logic/">
+<span class="md-ellipsis">
+    008 - How AOP Allows Focus on Business Logic
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/009-aop-reusability-and-maintainability/">
+<span class="md-ellipsis">
+    009 - How AOP Achieves Reusability and Maintainability
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/010-what-is-a-pointcut/">
+<span class="md-ellipsis">
+    010 - What is a Pointcut?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/011-pointcut-expression-structure/">
+<span class="md-ellipsis">
+    011 - Pointcut Expression Structure
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/012-pointcut-designators/">
+<span class="md-ellipsis">
+    012 - Different Types of Pointcut Designators
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/013-combining-pointcut-expressions/">
+<span class="md-ellipsis">
+    013 - Combining Pointcut Expressions (AND, OR, NOT)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/014-named-pointcuts/">
+<span class="md-ellipsis">
+    014 - Named Pointcuts — Reusable Pointcut Definitions
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/015-how-aop-works-internally/">
+<span class="md-ellipsis">
+    015 - How AOP Works Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/016-what-is-advice/">
+<span class="md-ellipsis">
+    016 - What is Advice? How It Works
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/017-what-is-joinpoint/">
+<span class="md-ellipsis">
+    017 - What is JoinPoint? How It Works
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/018-before-after-around-internals/">
+<span class="md-ellipsis">
+    018 - How @Before, @After, and @Around Work Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/019-matching-linking-interception/">
+<span class="md-ellipsis">
+    019 - How Matching, Linking, and Interception Work Together
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/020-performance-and-caching/">
+<span class="md-ellipsis">
+    020 - What If We Have 100s of Pointcuts? — Performance &amp; Caching
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_4" type="checkbox"/>
+<label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Transaction
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_4_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_4">
+<span class="md-nav__icon md-icon"></span>
+            Spring Transaction
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/001-prerequisites/">
+<span class="md-ellipsis">
+    001 - Prerequisites
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/002-critical-section/">
+<span class="md-ellipsis">
+    002 - What is a Critical Section?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/003-transactional-annotation/">
+<span class="md-ellipsis">
+    003 - What is @Transactional? Why and How to Use It?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/004-acid-properties/">
+<span class="md-ellipsis">
+    004 - ACID Properties with @Transactional
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/005-imports-and-yaml-configuration/">
+<span class="md-ellipsis">
+    005 - Imports for RDBMS vs NoSQL and YAML Configuration
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/006-enable-transaction-management/">
+<span class="md-ellipsis">
+    006 - What is @EnableTransactionManagement?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/007-method-vs-class-level-transactional/">
+<span class="md-ellipsis">
+    007 - Method-Level vs Class-Level @Transactional
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/008-transactional-internals-spring-aop/">
+<span class="md-ellipsis">
+    008 - How @Transactional Internally Uses Spring AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/009-aop-annotations-pointcut-around/">
+<span class="md-ellipsis">
+    009 - AOP Annotations Used Internally — Pointcut and @Around
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/010-rollback-internals/">
+<span class="md-ellipsis">
+    010 - How Rollback Happens Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/011-transaction-manager-hierarchy/">
+<span class="md-ellipsis">
+    011 - Hierarchy of TransactionManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/012-ways-to-manage-transactions/">
+<span class="md-ellipsis">
+    012 - How Many Ways Can We Manage Transactions?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/013-transaction-propagation/">
+<span class="md-ellipsis">
+    013 - What is Transaction Propagation?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/014-isolation-level/">
+<span class="md-ellipsis">
+    014 - What is Isolation Level?
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5" type="checkbox"/>
+<label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring JPA
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_5_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_5">
+<span class="md-nav__icon md-icon"></span>
+            Spring JPA
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/dbms/">
+<span class="md-ellipsis">
+    Database Management Systems (DBMS)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/sql/">
+<span class="md-ellipsis">
+    Structured Query Language (SQL)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/000-jdbc/">
+<span class="md-ellipsis">
+    JDBC
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/001-architecture/">
+<span class="md-ellipsis">
+    001 - Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/002-entity-lifecycle/">
+<span class="md-ellipsis">
+    002 - Entity Lifecycle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/003-entity-manager-factory-and-entity-manager/">
+<span class="md-ellipsis">
+    003 - EntityManagerFactory and EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/004-persistence-context/">
+<span class="md-ellipsis">
+    004 - Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/005-transaction-manager/">
+<span class="md-ellipsis">
+    005 - Transaction Manager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/006-hibernate-implementation/">
+<span class="md-ellipsis">
+    006 - Hibernate Implementation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/007-how-jpa-repository-uses-entity-manager/">
+<span class="md-ellipsis">
+    007 - How JPA Repository Uses EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/008-persistence-context-annotation-vs-autowired/">
+<span class="md-ellipsis">
+    008 - Why @PersistenceContext Instead of @Autowired
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/009-transactional-with-entity-manager/">
+<span class="md-ellipsis">
+    009 - Why @Transactional is Used for EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/010-entity-manager-creates-persistence-context/">
+<span class="md-ellipsis">
+    010 - How EntityManager Creates Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/011-role-of-persistence-context/">
+<span class="md-ellipsis">
+    011 - Role of Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/012-transaction-bounded-operations/">
+<span class="md-ellipsis">
+    012 - Transaction-Bounded Operations
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/013-first-level-caching/">
+<span class="md-ellipsis">
+    013 - First-Level Caching
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/014-second-level-caching/">
+<span class="md-ellipsis">
+    014 - Second-Level Caching
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/015-ddl-auto/">
+<span class="md-ellipsis">
+    015 - spring.jpa.hibernate.ddl-auto
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/016-table-annotation/">
+<span class="md-ellipsis">
+    016 - "@Table Annotation"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/017-column-annotation/">
+<span class="md-ellipsis">
+    017 - "@Column Annotation"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/018-id-and-composite-ids/">
+<span class="md-ellipsis">
+    018 - "@Id Annotation and Composite IDs"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/019-sequence-generator/">
+<span class="md-ellipsis">
+    019 - "@SequenceGenerator"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/020-generated-value-and-generation-strategies/">
+<span class="md-ellipsis">
+    020 - "@GeneratedValue and Generation Strategies"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/021-one-to-one-unidirectional-mapping/">
+<span class="md-ellipsis">
+    021 - OneToOne Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/022-eager-and-lazy-loading/">
+<span class="md-ellipsis">
+    022 - Eager and Lazy Loading
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/023-one-to-one-bidirectional-mapping/">
+<span class="md-ellipsis">
+    023 - OneToOne Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/024-one-to-many-unidirectional-mapping/">
+<span class="md-ellipsis">
+    024 - OneToMany Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/025-one-to-many-bidirectional-mapping/">
+<span class="md-ellipsis">
+    025 - OneToMany Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/026-many-to-one-bidirectional-mapping/">
+<span class="md-ellipsis">
+    026 - ManyToOne Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/027-many-to-many-unidirectional-mapping/">
+<span class="md-ellipsis">
+    027 - ManyToMany Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/028-many-to-many-bidirectional-mapping/">
+<span class="md-ellipsis">
+    028 - ManyToMany Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/029-derived-query-methods/">
+<span class="md-ellipsis">
+    029 - Derived Query Methods
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/030-jpql/">
+<span class="md-ellipsis">
+    030 - JPQL
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/031-n-plus-1-problem/">
+<span class="md-ellipsis">
+    031 - The N+1 Problem in JPA
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/032-named-query/">
+<span class="md-ellipsis">
+    032 - "@NamedQuery"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/033-native-query/">
+<span class="md-ellipsis">
+    033 - Native Query
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/034-dynamic-native-query/">
+<span class="md-ellipsis">
+    034 - Dynamic Native Query
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/035-criteria-api/">
+<span class="md-ellipsis">
+    035 - Criteria API
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/036-jpa-specification-api/">
+<span class="md-ellipsis">
+    036 - JPA Specification API
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_6" type="checkbox"/>
+<label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Security
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_6_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_6">
+<span class="md-nav__icon md-icon"></span>
+            Spring Security
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/001-different-types-of-attacks/">
+<span class="md-ellipsis">
+    001 - Different Types of Attacks
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/002-authorization-and-authentication/">
+<span class="md-ellipsis">
+    002 - Authentication and Authorization
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/003-request-response-architecture/">
+<span class="md-ellipsis">
+    003 - Request/Response Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/004-spring-security-architecture/">
+<span class="md-ellipsis">
+    004 - Spring Security Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/005-default-user-creation/">
+<span class="md-ellipsis">
+    005 - Default User Creation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/006-password-encoding-delegating-password-encoder/">
+<span class="md-ellipsis">
+    006 - Password Encoding &amp; DelegatingPasswordEncoder
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/007-database-based-authentication/">
+<span class="md-ellipsis">
+    007 - Database-Based Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/008-form-login-stateful-authentication/">
+<span class="md-ellipsis">
+    008 - Form Login Stateful Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/009-form-login-user-flow-session-lifecycle/">
+<span class="md-ellipsis">
+    009 - Form Login User Flow &amp; Session Lifecycle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/010-customizing-form-login/">
+<span class="md-ellipsis">
+    010 - Customizing Form Login
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/011-session-persistence-spring-session-jdbc/">
+<span class="md-ellipsis">
+    011 - Session Persistence (Spring Session JDBC)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/012-distributed-sessions-with-redis/">
+<span class="md-ellipsis">
+    012 - Distributed Sessions with Redis
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/013-dao-authentication-provider/">
+<span class="md-ellipsis">
+    013 - DaoAuthenticationProvider Deep Dive
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/014-authenticated-request-flow/">
+<span class="md-ellipsis">
+    014 - Authenticated Request Flow
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/015-session-management-and-creation-policy/">
+<span class="md-ellipsis">
+    015 - Session Management &amp; Creation Policy
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/016-http-basic-authentication/">
+<span class="md-ellipsis">
+    016 - HTTP Basic Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/017-jwt-json-web-token/">
+<span class="md-ellipsis">
+    017 - JWT (JSON Web Token)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/018-access-token-refresh-token-jwks/">
+<span class="md-ellipsis">
+    018 - Access Token, Refresh Token &amp; JWKS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/019-jwt-authentication-custom-security-filters/">
+<span class="md-ellipsis">
+    019 - JWT Authentication with Custom Filters
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/020-oauth2-and-openid-connect/">
+<span class="md-ellipsis">
+    020 - OAuth 2.0 &amp; OpenID Connect
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/021-role-based-authorization-rbac/">
+<span class="md-ellipsis">
+    021 - Role-Based Authorization (RBAC)
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_7" type="checkbox"/>
+<label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Testing
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_7_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_7">
+<span class="md-nav__icon md-icon"></span>
+            Spring Testing
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-testing/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_8" type="checkbox"/>
+<label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Kafka
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_8_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_8">
+<span class="md-nav__icon md-icon"></span>
+            Spring Kafka
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-kafka/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-kafka/kafka/">
+<span class="md-ellipsis">
+    Kafka Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_9" type="checkbox"/>
+<label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Redis
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_9_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_9">
+<span class="md-nav__icon md-icon"></span>
+            Spring Redis
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-redis/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-redis/redis/">
+<span class="md-ellipsis">
+    Redis Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_10" type="checkbox"/>
+<label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Mongo
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_10_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_10">
+<span class="md-nav__icon md-icon"></span>
+            Spring Mongo
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-mongo/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-mongo/mongodb/">
+<span class="md-ellipsis">
+    MongoDB Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" id="__nav_11" type="checkbox"/>
+<label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+<span class="md-ellipsis">
+    Spring Cloud
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="true" aria-labelledby="__nav_11_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_11">
+<span class="md-nav__icon md-icon"></span>
+            Spring Cloud
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../001-spring-cloud-config/">
+<span class="md-ellipsis">
+    Spring Cloud Config
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../002-spring-cloud-bus/">
+<span class="md-ellipsis">
+    Spring Cloud Bus
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../003-service-discovery/">
+<span class="md-ellipsis">
+    Service Discovery
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
+<label class="md-nav__link md-nav__link--active" for="__toc">
+<span class="md-ellipsis">
+    Spring Cloud Load balancing
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<a class="md-nav__link md-nav__link--active" href="./">
+<span class="md-ellipsis">
+    Spring Cloud Load balancing
+  </span>
+</a>
+<nav aria-label="Table of contents" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#detailed-guide">
+<span class="md-ellipsis">
+      Detailed Guide
+    </span>
+</a>
+<nav aria-label="Detailed Guide" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#what-is-spring-cloud-loadbalancer">
+<span class="md-ellipsis">
+      What is Spring Cloud LoadBalancer
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#why-should-we-use-spring-cloud-loadbalancer-instead-of-netflix-ribbon">
+<span class="md-ellipsis">
+      Why should we use Spring Cloud LoadBalancer instead of Netflix Ribbon
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#custom-load-balancer-strategies-round-robin-random-weighted-response-time">
+<span class="md-ellipsis">
+      Custom Load Balancer Strategies (Round Robin, Random, Weighted Response Time)
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#zone-affinity-and-zone-avoidance">
+<span class="md-ellipsis">
+      Zone Affinity and Zone Avoidance
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#caching-load-balancer-instances-with-spring-cloud-loadbalancer">
+<span class="md-ellipsis">
+      Caching Load Balancer Instances with Spring Cloud LoadBalancer
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#how-spring-cloud-api-gateway-load-balancing-works">
+<span class="md-ellipsis">
+      how Spring Cloud API Gateway Load Balancing works
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#interview-questions-answers">
+<span class="md-ellipsis">
+      Interview Questions &amp; Answers
+    </span>
+</a>
+<nav aria-label="Interview Questions &amp; Answers" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#fundamentals">
+<span class="md-ellipsis">
+      Fundamentals
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#ribbon-vs-spring-cloud-loadbalancer">
+<span class="md-ellipsis">
+      Ribbon vs Spring Cloud LoadBalancer
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#strategies">
+<span class="md-ellipsis">
+      Strategies
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#zone-affinity-caching">
+<span class="md-ellipsis">
+      Zone Affinity &amp; Caching
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#api-gateway-integration">
+<span class="md-ellipsis">
+      API Gateway Integration
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#other-resources">
+<span class="md-ellipsis">
+      Other Resources
+    </span>
+</a>
+<nav aria-label="Other Resources" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#youtube">
+<span class="md-ellipsis">
+      Youtube
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#medium">
+<span class="md-ellipsis">
+      Medium
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../005-rest-client/">
+<span class="md-ellipsis">
+    Rest Client
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../006-spring-cloud-api-gateway/">
+<span class="md-ellipsis">
+    Spring Cloud API Gateway
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../007-spring-cloud-security/">
+<span class="md-ellipsis">
+    Spring Cloud Security
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../008-circuit-breakers-and-resilience4j/">
+<span class="md-ellipsis">
+    Circuit Breaker and Resilience4j
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../009-messaging/">
+<span class="md-ellipsis">
+    Spring Messaging
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../010-distributed-tracing/">
+<span class="md-ellipsis">
+    Distributed Tracing
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../011-log-aggregation-with-elk/">
+<span class="md-ellipsis">
+    Log Aggregation with ELK
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../012-testing/">
+<span class="md-ellipsis">
+    Spring Cloud Testing
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_12" type="checkbox"/>
+<label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+<span class="md-ellipsis">
+    Others
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_12_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_12">
+<span class="md-nav__icon md-icon"></span>
+            Others
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-batch/">
+<span class="md-ellipsis">
+    Spring Batch
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cassandra/">
+<span class="md-ellipsis">
+    Spring Cassandra
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-graphql/">
+<span class="md-ellipsis">
+    Spring GraphQL
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-reactive-programming/">
+<span class="md-ellipsis">
+    Spring Reactive Programming
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cloud-functions/">
+<span class="md-ellipsis">
+    Spring Cloud Functions
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-aws/">
+<span class="md-ellipsis">
+    Spring AWS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-k8s/">
+<span class="md-ellipsis">
+    Spring Kubernetes
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cicd/">
+<span class="md-ellipsis">
+    Spring CI/CD
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-observability/">
+<span class="md-ellipsis">
+    Spring Observability
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-splunk/">
+<span class="md-ellipsis">
+    Spring Splunk
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-docs/">
+<span class="md-ellipsis">
+    Spring Docs
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-content" data-md-component="content">
+<article class="md-content__inner md-typeset">
+<div><h1 id="spring-cloud-load-balancing">Spring cloud Load Balancing</h1>
+<h2 id="detailed-guide">Detailed Guide</h2>
+<h3 id="what-is-spring-cloud-loadbalancer">What is Spring Cloud LoadBalancer</h3>
+<p>Spring Cloud LoadBalancer is Spring Cloud's client-side load-balancing library, providing a pluggable, reactive-friendly abstraction for choosing which instance of a logical service to call when multiple instances are registered (typically via Eureka, Consul, or Zookeeper). It became the default load balancer for Spring Cloud starting with the Spring Cloud release train that deprecated Netflix Ribbon (Greenwich/Hoxton era, fully removed by 2020.0/Ilford), and is what powers <code>@LoadBalanced RestTemplate</code>, <code>WebClient.Builder</code>, <code>RestClient.Builder</code>, and Feign clients under the hood.</p>
+<p>At its core, it exposes a <code>ReactiveLoadBalancer&lt;ServiceInstance&gt;</code> interface, built around a <code>ServiceInstanceListSupplier</code> chain that produces the candidate list of instances for a given service ID, and a load-balancing algorithm (by default, round-robin) that picks one from that list per request. The supplier chain is composable: you can layer health-check filtering, same-zone filtering, and caching on top of the base discovery-client-backed supplier.</p>
+<p>Because it's built reactively (returning <code>Mono&lt;Response&lt;ServiceInstance&gt;&gt;</code>), it integrates cleanly with both blocking clients (<code>RestTemplate</code>, <code>RestClient</code>, via a blocking adapter) and fully reactive clients (<code>WebClient</code>), giving Spring Cloud a single, consistent load-balancing implementation across all supported HTTP clients.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="nd">@Configuration</span>
+<a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">LoadBalancerConfig</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-0-3" id="__codelineno-0-3" name="__codelineno-0-3"></a>
+<a href="#__codelineno-0-4" id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-0-5" id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="w">    </span><span class="nd">@LoadBalanced</span>
+<a href="#__codelineno-0-6" id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">WebClient</span><span class="p">.</span><span class="na">Builder</span><span class="w"> </span><span class="nf">loadBalancedWebClientBuilder</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-0-7" id="__codelineno-0-7" name="__codelineno-0-7"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">WebClient</span><span class="p">.</span><span class="na">builder</span><span class="p">();</span>
+<a href="#__codelineno-0-8" id="__codelineno-0-8" name="__codelineno-0-8"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-0-9" id="__codelineno-0-9" name="__codelineno-0-9"></a><span class="p">}</span>
+</code></pre></div>
+<pre class="mermaid"><code>flowchart TD
+    A[Calling Service] --&gt;|logical name: inventory-service| B[Spring Cloud LoadBalancer]
+    B --&gt; C[ServiceInstanceListSupplier chain]
+    C --&gt; D[DiscoveryClient: Eureka/Consul]
+    D --&gt; E[Instance list]
+    C --&gt; F[Health-check filter]
+    C --&gt; G[Zone filter]
+    C --&gt; H[Caching layer]
+    B --&gt; I[Load-balancing algorithm<br/>Round Robin / Random / Weighted]
+    I --&gt; J[Chosen ServiceInstance]
+</code></pre>
+<p><strong>Real-life scenario:</strong> A team building a new Spring Boot 3 microservice platform in 2024 uses Spring Cloud LoadBalancer by default (via <code>@LoadBalanced</code> builders) without ever needing to add or configure Netflix Ribbon, since it's the built-in, actively maintained option.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What supplier abstraction produces the candidate instance list for a service ID?</strong>
+<code>ServiceInstanceListSupplier</code>, which can be composed with health-check filtering, zone preference, and caching layers on top of the base discovery-backed supplier.</p>
+<p><strong>Q: Which annotation marks a builder bean so it resolves service names through Spring Cloud LoadBalancer?</strong>
+<code>@LoadBalanced</code>, applied to a <code>RestTemplate</code>, <code>RestClient.Builder</code>, or <code>WebClient.Builder</code> bean.</p>
+<h3 id="why-should-we-use-spring-cloud-loadbalancer-instead-of-netflix-ribbon">Why should we use Spring Cloud LoadBalancer instead of Netflix Ribbon</h3>
+<p>Netflix Ribbon was the original client-side load balancer used throughout the Spring Cloud Netflix stack, but Netflix placed the entire Netflix OSS stack (Ribbon, Hystrix, Eureka 1.x server) into maintenance mode years ago, with no active development or new features. Spring Cloud LoadBalancer was created as a lightweight, actively maintained, framework-native replacement that doesn't depend on the legacy Netflix libraries.</p>
+<p>Spring Cloud LoadBalancer is built with a reactive-first design and integrates natively with Spring Cloud's <code>DiscoveryClient</code> abstraction, whereas Ribbon predates reactive programming in Spring and required more configuration glue to integrate with non-Netflix discovery mechanisms. Since the Spring Cloud 2020.0 (Ilford) release train, Ribbon support has been fully removed from Spring Cloud, making Spring Cloud LoadBalancer the only supported option for new applications.</p>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>Netflix Ribbon</th>
+<th>Spring Cloud LoadBalancer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Maintenance status</td>
+<td>Deprecated / maintenance mode (Netflix OSS)</td>
+<td>Actively maintained by Spring Cloud team</td>
+</tr>
+<tr>
+<td>Programming model</td>
+<td>Blocking, imperative</td>
+<td>Reactive-first (<code>Mono</code>), works with both blocking and reactive clients</td>
+</tr>
+<tr>
+<td>Spring Cloud support</td>
+<td>Removed since 2020.0 (Ilford) release train</td>
+<td>Default and only supported load balancer since Greenwich/Hoxton</td>
+</tr>
+<tr>
+<td>Discovery integration</td>
+<td>Netflix-specific integration points</td>
+<td>Native <code>DiscoveryClient</code>/<code>ReactiveDiscoveryClient</code> integration</td>
+</tr>
+<tr>
+<td>Extensibility</td>
+<td>Rule-based (<code>IRule</code> implementations)</td>
+<td>Composable <code>ServiceInstanceListSupplier</code> chain</td>
+</tr>
+<tr>
+<td>Configuration</td>
+<td><code>&lt;service&gt;.ribbon.*</code> properties</td>
+<td><code>spring.cloud.loadbalancer.*</code> properties, <code>LoadBalancerClientConfiguration</code> beans</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Real-life scenario:</strong> A legacy Spring Cloud Greenwich application still using <code>spring-cloud-starter-netflix-ribbon</code> fails to compile after upgrading to Spring Boot 3 / Spring Cloud 2022.x, because Ribbon support was removed entirely — forcing (and validating) a migration to Spring Cloud LoadBalancer.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What programming-model difference distinguishes Spring Cloud LoadBalancer from Ribbon?</strong>
+Spring Cloud LoadBalancer is reactive-first (returning <code>Mono&lt;Response&lt;ServiceInstance&gt;&gt;</code>), while Ribbon was built around blocking, imperative APIs predating Spring's reactive support.</p>
+<p><strong>Q: What configuration prefix replaces Ribbon's <code>&lt;service&gt;.ribbon.*</code> properties?</strong>
+<code>spring.cloud.loadbalancer.*</code>, along with <code>LoadBalancerClientConfiguration</code>/<code>@LoadBalancerClient</code> beans for per-service customization.</p>
+<h3 id="custom-load-balancer-strategies-round-robin-random-weighted-response-time">Custom Load Balancer Strategies (Round Robin, Random, Weighted Response Time)</h3>
+<p>Spring Cloud LoadBalancer ships with a <code>RoundRobinLoadBalancer</code> (the default) and a <code>RandomLoadBalancer</code> out of the box, and supports fully custom strategies by implementing <code>ReactorServiceInstanceLoadBalancer</code>. Round-robin cycles through the available instances in order, giving each an equal share of traffic over time; random selection picks an instance uniformly at random on each call, which avoids round-robin's strict ordering but can still produce uneven short-term distribution.</p>
+<p>A weighted response-time strategy (not built in by default, but a common custom implementation pattern, and available historically in Netflix Ribbon as <code>WeightedResponseTimeRule</code>) favors instances that have recently responded faster, dynamically adjusting selection probability based on observed latency — useful when instances have heterogeneous performance (e.g. mixed instance sizes, or one instance under more load than others).</p>
+<p>To register a custom strategy, you define a <code>@Configuration</code> class (not annotated <code>@Configuration</code> on the main application context — it must be a separate configuration class, per Spring Cloud LoadBalancer's <code>@LoadBalancerClient</code>/<code>@LoadBalancerClients</code> mechanism) and expose your custom <code>ReactorServiceInstanceLoadBalancer</code> bean.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">WeightedResponseTimeLoadBalancer</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">ReactorServiceInstanceLoadBalancer</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a>
+<a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">ObjectProvider</span><span class="o">&lt;</span><span class="n">ServiceInstanceListSupplier</span><span class="o">&gt;</span><span class="w"> </span><span class="n">supplierProvider</span><span class="p">;</span>
+<a href="#__codelineno-1-4" id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">ConcurrentHashMap</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">Double</span><span class="o">&gt;</span><span class="w"> </span><span class="n">avgResponseTimes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ConcurrentHashMap</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<a href="#__codelineno-1-5" id="__codelineno-1-5" name="__codelineno-1-5"></a>
+<a href="#__codelineno-1-6" id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">WeightedResponseTimeLoadBalancer</span><span class="p">(</span><span class="n">ObjectProvider</span><span class="o">&lt;</span><span class="n">ServiceInstanceListSupplier</span><span class="o">&gt;</span><span class="w"> </span><span class="n">supplierProvider</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-1-7" id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">supplierProvider</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">supplierProvider</span><span class="p">;</span>
+<a href="#__codelineno-1-8" id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-1-9" id="__codelineno-1-9" name="__codelineno-1-9"></a>
+<a href="#__codelineno-1-10" id="__codelineno-1-10" name="__codelineno-1-10"></a><span class="w">    </span><span class="nd">@Override</span>
+<a href="#__codelineno-1-11" id="__codelineno-1-11" name="__codelineno-1-11"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">Mono</span><span class="o">&lt;</span><span class="n">Response</span><span class="o">&lt;</span><span class="n">ServiceInstance</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="nf">choose</span><span class="p">(</span><span class="n">Request</span><span class="w"> </span><span class="n">request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-1-12" id="__codelineno-1-12" name="__codelineno-1-12"></a><span class="w">        </span><span class="n">ServiceInstanceListSupplier</span><span class="w"> </span><span class="n">supplier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">supplierProvider</span><span class="p">.</span><span class="na">getIfAvailable</span><span class="p">();</span>
+<a href="#__codelineno-1-13" id="__codelineno-1-13" name="__codelineno-1-13"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">supplier</span><span class="p">.</span><span class="na">get</span><span class="p">().</span><span class="na">next</span><span class="p">().</span><span class="na">map</span><span class="p">(</span><span class="n">instances</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-1-14" id="__codelineno-1-14" name="__codelineno-1-14"></a><span class="w">            </span><span class="n">ServiceInstance</span><span class="w"> </span><span class="n">chosen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">instances</span><span class="p">.</span><span class="na">stream</span><span class="p">()</span>
+<a href="#__codelineno-1-15" id="__codelineno-1-15" name="__codelineno-1-15"></a><span class="w">                </span><span class="p">.</span><span class="na">min</span><span class="p">(</span><span class="n">Comparator</span><span class="p">.</span><span class="na">comparingDouble</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">-&gt;</span>
+<a href="#__codelineno-1-16" id="__codelineno-1-16" name="__codelineno-1-16"></a><span class="w">                    </span><span class="n">avgResponseTimes</span><span class="p">.</span><span class="na">getOrDefault</span><span class="p">(</span><span class="n">i</span><span class="p">.</span><span class="na">getInstanceId</span><span class="p">(),</span><span class="w"> </span><span class="mf">0.0</span><span class="p">)))</span>
+<a href="#__codelineno-1-17" id="__codelineno-1-17" name="__codelineno-1-17"></a><span class="w">                </span><span class="p">.</span><span class="na">orElseThrow</span><span class="p">();</span>
+<a href="#__codelineno-1-18" id="__codelineno-1-18" name="__codelineno-1-18"></a><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DefaultResponse</span><span class="p">(</span><span class="n">chosen</span><span class="p">);</span>
+<a href="#__codelineno-1-19" id="__codelineno-1-19" name="__codelineno-1-19"></a><span class="w">        </span><span class="p">});</span>
+<a href="#__codelineno-1-20" id="__codelineno-1-20" name="__codelineno-1-20"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-1-21" id="__codelineno-1-21" name="__codelineno-1-21"></a><span class="p">}</span>
+<a href="#__codelineno-1-22" id="__codelineno-1-22" name="__codelineno-1-22"></a>
+<a href="#__codelineno-1-23" id="__codelineno-1-23" name="__codelineno-1-23"></a><span class="c1">// Not part of the main @SpringBootApplication component scan</span>
+<a href="#__codelineno-1-24" id="__codelineno-1-24" name="__codelineno-1-24"></a><span class="nd">@Configuration</span>
+<a href="#__codelineno-1-25" id="__codelineno-1-25" name="__codelineno-1-25"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">CustomLoadBalancerConfiguration</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-1-26" id="__codelineno-1-26" name="__codelineno-1-26"></a>
+<a href="#__codelineno-1-27" id="__codelineno-1-27" name="__codelineno-1-27"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-1-28" id="__codelineno-1-28" name="__codelineno-1-28"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">ReactorServiceInstanceLoadBalancer</span><span class="w"> </span><span class="nf">weightedResponseTimeLoadBalancer</span><span class="p">(</span>
+<a href="#__codelineno-1-29" id="__codelineno-1-29" name="__codelineno-1-29"></a><span class="w">            </span><span class="n">Environment</span><span class="w"> </span><span class="n">environment</span><span class="p">,</span>
+<a href="#__codelineno-1-30" id="__codelineno-1-30" name="__codelineno-1-30"></a><span class="w">            </span><span class="n">LoadBalancerClientFactory</span><span class="w"> </span><span class="n">factory</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-1-31" id="__codelineno-1-31" name="__codelineno-1-31"></a><span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">serviceId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factory</span><span class="p">.</span><span class="na">getName</span><span class="p">(</span><span class="n">environment</span><span class="p">);</span>
+<a href="#__codelineno-1-32" id="__codelineno-1-32" name="__codelineno-1-32"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">WeightedResponseTimeLoadBalancer</span><span class="p">(</span>
+<a href="#__codelineno-1-33" id="__codelineno-1-33" name="__codelineno-1-33"></a><span class="w">            </span><span class="n">factory</span><span class="p">.</span><span class="na">getLazyProvider</span><span class="p">(</span><span class="n">serviceId</span><span class="p">,</span><span class="w"> </span><span class="n">ServiceInstanceListSupplier</span><span class="p">.</span><span class="na">class</span><span class="p">));</span>
+<a href="#__codelineno-1-34" id="__codelineno-1-34" name="__codelineno-1-34"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-1-35" id="__codelineno-1-35" name="__codelineno-1-35"></a><span class="p">}</span>
+<a href="#__codelineno-1-36" id="__codelineno-1-36" name="__codelineno-1-36"></a>
+<a href="#__codelineno-1-37" id="__codelineno-1-37" name="__codelineno-1-37"></a><span class="nd">@LoadBalancerClient</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"inventory-service"</span><span class="p">,</span><span class="w"> </span><span class="n">configuration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CustomLoadBalancerConfiguration</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+<a href="#__codelineno-1-38" id="__codelineno-1-38" name="__codelineno-1-38"></a><span class="nd">@Configuration</span>
+<a href="#__codelineno-1-39" id="__codelineno-1-39" name="__codelineno-1-39"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">InventoryClientConfig</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+<pre class="mermaid"><code>flowchart LR
+    R[Incoming Call 1..N] --&gt; Alg{Strategy}
+    Alg --&gt;|Round Robin| RR["I1 -&gt; I2 -&gt; I3 -&gt; I1 -&gt; ..."]
+    Alg --&gt;|Random| RND["uniform random pick each call"]
+    Alg --&gt;|Weighted Response Time| WRT["favor instance with<br/>lowest recent avg latency"]
+    RR --&gt; Out[Selected Instance]
+    RND --&gt; Out
+    WRT --&gt; Out
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Selection logic</th>
+<th>Pros</th>
+<th>Cons</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Round Robin (default)</td>
+<td>Cycles through instances in strict order</td>
+<td>Simple, predictable, even long-run distribution</td>
+<td>Ignores instance load/latency differences</td>
+</tr>
+<tr>
+<td>Random</td>
+<td>Picks uniformly at random each call</td>
+<td>Simple, avoids strict-order bias, good with many instances</td>
+<td>Short-term distribution can be uneven</td>
+</tr>
+<tr>
+<td>Weighted Response Time</td>
+<td>Weights selection by recent observed latency</td>
+<td>Adapts to slow/overloaded instances automatically</td>
+<td>More complex to implement/maintain, needs latency tracking</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Real-life scenario:</strong> A payment-service cluster has a mix of newly added smaller instances and older larger instances; the team implements a custom weighted response-time load balancer so traffic naturally shifts away from the smaller, slower instances without manual intervention.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why must a custom load-balancer bean live in a separate <code>@Configuration</code> class rather than the main auto-scanned application context?</strong>
+Because <code>@LoadBalancerClient</code>-referenced configurations are deliberately excluded from component scanning, preventing the custom bean from unintentionally overriding the default load balancer for every service instead of just the targeted one.</p>
+<p><strong>Q: What is a downside of the weighted response-time strategy compared to round-robin or random?</strong>
+It requires tracking and maintaining recent latency statistics per instance, adding complexity and potential staleness or skew if response times fluctuate quickly.</p>
+<h3 id="zone-affinity-and-zone-avoidance">Zone Affinity and Zone Avoidance</h3>
+<p>Zone affinity is a load-balancing strategy that prefers routing requests to instances running in the same "zone" (e.g. the same availability zone or data center) as the calling instance, reducing cross-zone network latency and, in cloud environments, cross-zone data transfer costs. Spring Cloud LoadBalancer supports this via the <code>ZonePreferenceServiceInstanceListSupplier</code>, which filters the instance list to same-zone instances when available, but falls back to the full instance list if no same-zone instances exist (avoiding total unavailability just because a zone is temporarily empty).</p>
+<p>Zone avoidance is the complementary concept: actively steering traffic away from a zone that is known to be degraded or unhealthy, even if some instances there are technically still reachable, to reduce the blast radius of a zone-level incident. The zone of an instance is typically set via <code>spring.cloud.loadbalancer.zone</code> on the server side (or equivalent metadata from the discovery client, e.g. Eureka's <code>metadata-map.zone</code>).</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="c1"># Instance-side configuration: declares which zone this instance belongs to</span>
+<a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="nt">spring</span><span class="p">:</span>
+<a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="w">  </span><span class="nt">cloud</span><span class="p">:</span>
+<a href="#__codelineno-2-4" id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="w">    </span><span class="nt">loadbalancer</span><span class="p">:</span>
+<a href="#__codelineno-2-5" id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="w">      </span><span class="nt">zone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">us-east-1a</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="nd">@Configuration</span>
+<a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="nd">@LoadBalancerClient</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"inventory-service"</span><span class="p">,</span><span class="w"> </span><span class="n">configuration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ZoneAwareConfig</span><span class="p">.</span><span class="na">class</span><span class="p">)</span>
+<a href="#__codelineno-3-3" id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">ZoneAwareConfig</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-3-4" id="__codelineno-3-4" name="__codelineno-3-4"></a>
+<a href="#__codelineno-3-5" id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-3-6" id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">ServiceInstanceListSupplier</span><span class="w"> </span><span class="nf">discoveryClientServiceInstanceListSupplier</span><span class="p">(</span>
+<a href="#__codelineno-3-7" id="__codelineno-3-7" name="__codelineno-3-7"></a><span class="w">            </span><span class="n">ConfigurableApplicationContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-3-8" id="__codelineno-3-8" name="__codelineno-3-8"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">ServiceInstanceListSupplier</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
+<a href="#__codelineno-3-9" id="__codelineno-3-9" name="__codelineno-3-9"></a><span class="w">            </span><span class="p">.</span><span class="na">withDiscoveryClient</span><span class="p">()</span>
+<a href="#__codelineno-3-10" id="__codelineno-3-10" name="__codelineno-3-10"></a><span class="w">            </span><span class="p">.</span><span class="na">withZonePreference</span><span class="p">()</span>
+<a href="#__codelineno-3-11" id="__codelineno-3-11" name="__codelineno-3-11"></a><span class="w">            </span><span class="p">.</span><span class="na">withHealthChecks</span><span class="p">()</span>
+<a href="#__codelineno-3-12" id="__codelineno-3-12" name="__codelineno-3-12"></a><span class="w">            </span><span class="p">.</span><span class="na">build</span><span class="p">(</span><span class="n">context</span><span class="p">);</span>
+<a href="#__codelineno-3-13" id="__codelineno-3-13" name="__codelineno-3-13"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-3-14" id="__codelineno-3-14" name="__codelineno-3-14"></a><span class="p">}</span>
+</code></pre></div>
+<pre class="mermaid"><code>flowchart TD
+    A[Caller in us-east-1a] --&gt; B{ZonePreferenceServiceInstanceListSupplier}
+    B --&gt;|same-zone instances exist| C[Instance in us-east-1a]
+    B --&gt;|no same-zone instances| D[Fallback: any healthy instance,<br/>e.g. us-east-1b]
+    E[Zone us-east-1b degraded] -.-&gt;|zone avoidance| B
+</code></pre>
+<p><strong>Real-life scenario:</strong> A multi-AZ deployment on AWS uses zone affinity so that most traffic between services stays within the same availability zone, cutting inter-AZ data transfer costs and latency, while still failing over gracefully to another zone if the local zone's instances become unhealthy.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: How is an instance's zone typically declared?</strong>
+Via <code>spring.cloud.loadbalancer.zone</code> on the instance itself, or equivalent discovery-client metadata such as Eureka's <code>metadata-map.zone</code>.</p>
+<p><strong>Q: What supplier implements zone-preference filtering in Spring Cloud LoadBalancer?</strong>
+<code>ZonePreferenceServiceInstanceListSupplier</code>, which prefers same-zone instances but falls back to the complete instance list when none exist locally.</p>
+<h3 id="caching-load-balancer-instances-with-spring-cloud-loadbalancer">Caching Load Balancer Instances with Spring Cloud LoadBalancer</h3>
+<p>Fetching the full instance list from a discovery server (Eureka, Consul) on every single outgoing call would add unnecessary latency and load to the registry, especially at high request volumes. Spring Cloud LoadBalancer addresses this with a <code>CachingServiceInstanceListSupplier</code> decorator, which wraps the base discovery-backed supplier and caches the resolved instance list for a configurable TTL, refreshing it periodically rather than on every call.</p>
+<p>By default, Spring Cloud LoadBalancer's caching support uses a <code>Caffeine</code>-backed cache when <code>spring-cloud-starter-loadbalancer</code> is present with Caffeine on the classpath (falling back to a simple in-memory cache otherwise). Cache TTL and capacity are configurable via <code>spring.cloud.loadbalancer.cache.*</code> properties.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="nt">spring</span><span class="p">:</span>
+<a href="#__codelineno-4-2" id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="w">  </span><span class="nt">cloud</span><span class="p">:</span>
+<a href="#__codelineno-4-3" id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="w">    </span><span class="nt">loadbalancer</span><span class="p">:</span>
+<a href="#__codelineno-4-4" id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="w">      </span><span class="nt">cache</span><span class="p">:</span>
+<a href="#__codelineno-4-5" id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="w">        </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a href="#__codelineno-4-6" id="__codelineno-4-6" name="__codelineno-4-6"></a><span class="w">        </span><span class="nt">ttl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">35s</span>
+<a href="#__codelineno-4-7" id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="w">        </span><span class="nt">capacity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">256</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="nd">@Configuration</span>
+<a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">CachingLoadBalancerConfig</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a>
+<a href="#__codelineno-5-4" id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-5-5" id="__codelineno-5-5" name="__codelineno-5-5"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">ServiceInstanceListSupplier</span><span class="w"> </span><span class="nf">discoveryClientServiceInstanceListSupplier</span><span class="p">(</span>
+<a href="#__codelineno-5-6" id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="w">            </span><span class="n">ConfigurableApplicationContext</span><span class="w"> </span><span class="n">context</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-5-7" id="__codelineno-5-7" name="__codelineno-5-7"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">ServiceInstanceListSupplier</span><span class="p">.</span><span class="na">builder</span><span class="p">()</span>
+<a href="#__codelineno-5-8" id="__codelineno-5-8" name="__codelineno-5-8"></a><span class="w">            </span><span class="p">.</span><span class="na">withDiscoveryClient</span><span class="p">()</span>
+<a href="#__codelineno-5-9" id="__codelineno-5-9" name="__codelineno-5-9"></a><span class="w">            </span><span class="p">.</span><span class="na">withCaching</span><span class="p">()</span>
+<a href="#__codelineno-5-10" id="__codelineno-5-10" name="__codelineno-5-10"></a><span class="w">            </span><span class="p">.</span><span class="na">build</span><span class="p">(</span><span class="n">context</span><span class="p">);</span>
+<a href="#__codelineno-5-11" id="__codelineno-5-11" name="__codelineno-5-11"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-5-12" id="__codelineno-5-12" name="__codelineno-5-12"></a><span class="p">}</span>
+</code></pre></div>
+<pre class="mermaid"><code>sequenceDiagram
+    participant Client as Calling Service
+    participant Cache as CachingServiceInstanceListSupplier
+    participant Base as DiscoveryClient Supplier
+    participant Registry as Eureka/Consul
+
+    Client-&gt;&gt;Cache: request instances for "inventory-service"
+    alt cache hit (within TTL)
+        Cache--&gt;&gt;Client: cached instance list
+    else cache miss / expired
+        Cache-&gt;&gt;Base: delegate lookup
+        Base-&gt;&gt;Registry: query instances
+        Registry--&gt;&gt;Base: instance list
+        Base--&gt;&gt;Cache: instance list
+        Cache-&gt;&gt;Cache: store with TTL
+        Cache--&gt;&gt;Client: instance list
+    end
+</code></pre>
+<p><strong>Real-life scenario:</strong> During a load test simulating thousands of requests per second between two services, the team notices the Eureka server's CPU usage spike; enabling/tuning the load balancer's instance-list cache (<code>ttl</code>) dramatically reduces registry query load without meaningfully affecting how quickly new instances get picked up.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What cache implementation does Spring Cloud LoadBalancer use by default when available on the classpath?</strong>
+A Caffeine-backed cache, falling back to a simple in-memory cache if Caffeine isn't present.</p>
+<p><strong>Q: What two properties primarily control the load balancer's instance-list cache?</strong>
+<code>spring.cloud.loadbalancer.cache.ttl</code> (how long entries stay valid) and <code>spring.cloud.loadbalancer.cache.capacity</code> (maximum cache size).</p>
+<h3 id="how-spring-cloud-api-gateway-load-balancing-works">how Spring Cloud API Gateway Load Balancing works</h3>
+<p>Spring Cloud Gateway integrates directly with Spring Cloud LoadBalancer through the <code>lb://</code> URI scheme in route definitions. When a route's target URI is <code>lb://service-name</code>, the Gateway's <code>LoadBalancerClientFilter</code> (or <code>ReactiveLoadBalancerClientFilter</code>) intercepts the request, resolves <code>service-name</code> via Spring Cloud LoadBalancer/DiscoveryClient into a concrete instance, and forwards the request there — applying the exact same load-balancing algorithm, zone-preference, and caching behavior used by <code>@LoadBalanced WebClient</code>.</p>
+<p>This means the Gateway itself doesn't need any separate load-balancing logic or configuration beyond declaring <code>lb://</code> routes; it reuses the same <code>ReactiveLoadBalancer</code> infrastructure as the rest of the Spring Cloud ecosystem, so global load-balancer settings (custom strategies, zone affinity, caching) automatically apply to gateway-routed traffic too.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="nt">spring</span><span class="p">:</span>
+<a href="#__codelineno-6-2" id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="w">  </span><span class="nt">cloud</span><span class="p">:</span>
+<a href="#__codelineno-6-3" id="__codelineno-6-3" name="__codelineno-6-3"></a><span class="w">    </span><span class="nt">gateway</span><span class="p">:</span>
+<a href="#__codelineno-6-4" id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="w">      </span><span class="nt">routes</span><span class="p">:</span>
+<a href="#__codelineno-6-5" id="__codelineno-6-5" name="__codelineno-6-5"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inventory-route</span>
+<a href="#__codelineno-6-6" id="__codelineno-6-6" name="__codelineno-6-6"></a><span class="w">          </span><span class="nt">uri</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lb://inventory-service</span>
+<a href="#__codelineno-6-7" id="__codelineno-6-7" name="__codelineno-6-7"></a><span class="w">          </span><span class="nt">predicates</span><span class="p">:</span>
+<a href="#__codelineno-6-8" id="__codelineno-6-8" name="__codelineno-6-8"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Path=/api/inventory/**</span>
+<a href="#__codelineno-6-9" id="__codelineno-6-9" name="__codelineno-6-9"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">order-route</span>
+<a href="#__codelineno-6-10" id="__codelineno-6-10" name="__codelineno-6-10"></a><span class="w">          </span><span class="nt">uri</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lb://order-service</span>
+<a href="#__codelineno-6-11" id="__codelineno-6-11" name="__codelineno-6-11"></a><span class="w">          </span><span class="nt">predicates</span><span class="p">:</span>
+<a href="#__codelineno-6-12" id="__codelineno-6-12" name="__codelineno-6-12"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Path=/api/orders/**</span>
+</code></pre></div>
+<pre class="mermaid"><code>sequenceDiagram
+    participant Client as External Client
+    participant GW as Spring Cloud Gateway
+    participant Filter as ReactiveLoadBalancerClientFilter
+    participant LB as Spring Cloud LoadBalancer
+    participant Registry as Eureka/Consul
+    participant Inst as inventory-service instance
+
+    Client-&gt;&gt;GW: GET /api/inventory/42
+    GW-&gt;&gt;Filter: route uri = lb://inventory-service
+    Filter-&gt;&gt;LB: resolve "inventory-service"
+    LB-&gt;&gt;Registry: query instances
+    Registry--&gt;&gt;LB: instance list
+    LB-&gt;&gt;LB: pick instance (Round Robin/Weighted/Zone-aware)
+    LB--&gt;&gt;Filter: chosen instance
+    Filter-&gt;&gt;Inst: forward GET /inventory/42
+    Inst--&gt;&gt;Client: response (via Gateway)
+</code></pre>
+<p><strong>Real-life scenario:</strong> An API gateway fronting 15 microservices uses <code>lb://</code> routes for every service, so when the platform team scales <code>inventory-service</code> from 3 to 6 pods, the Gateway automatically starts routing to all 6 without any route configuration changes.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What URI scheme triggers Spring Cloud LoadBalancer resolution in a Gateway route?</strong>
+The <code>lb://service-name</code> scheme, which the Gateway's load-balancer filter intercepts and resolves to a concrete instance.</p>
+<p><strong>Q: Does the Gateway need its own separate load-balancing configuration distinct from the rest of the application?</strong>
+No — it reuses the same <code>ReactiveLoadBalancer</code>/<code>ServiceInstanceListSupplier</code> infrastructure, so global strategy, zone-affinity, and caching settings apply uniformly to Gateway-routed traffic.</p>
+<h2 id="interview-questions-answers">Interview Questions &amp; Answers</h2>
+<h3 id="fundamentals">Fundamentals</h3>
+<p><strong>Q: What is Spring Cloud LoadBalancer, in one sentence?</strong></p>
+<p>It's Spring Cloud's client-side, reactive-friendly load-balancing library that chooses which registered instance of a service to call, replacing Netflix Ribbon as the default in modern Spring Cloud applications.</p>
+<p><strong>Q: What interface underpins Spring Cloud LoadBalancer's instance selection?</strong></p>
+<p><code>ReactiveLoadBalancer&lt;ServiceInstance&gt;</code>, along with <code>ServiceInstanceListSupplier</code>, which produces the candidate instance list that the chosen algorithm (round-robin, random, or custom) selects from.</p>
+<p><strong>Q: Does Spring Cloud LoadBalancer work with blocking clients like <code>RestTemplate</code>, or only reactive ones?</strong></p>
+<p>Both — while its core is reactive (<code>Mono</code>-based), it's used by blocking clients like <code>RestTemplate</code> and <code>RestClient</code> via an adapter (e.g. <code>BlockingLoadBalancerClient</code>), as well as directly by reactive <code>WebClient</code> calls.</p>
+<h3 id="ribbon-vs-spring-cloud-loadbalancer">Ribbon vs Spring Cloud LoadBalancer</h3>
+<p><strong>Q: Why did Spring Cloud move away from Netflix Ribbon?</strong></p>
+<p>Because Netflix placed Ribbon (along with the rest of Netflix OSS) into maintenance mode with no further active development, and Spring Cloud needed an actively maintained, reactive-friendly load balancer, leading to Spring Cloud LoadBalancer becoming the default and, since the 2020.0 release train, the only supported option.</p>
+<p><strong>Q: If you have a Spring Cloud application still configured for Ribbon, what happens when you upgrade to a modern Spring Cloud release train?</strong></p>
+<p>It will fail to build/run, since Ribbon support (<code>spring-cloud-starter-netflix-ribbon</code> and related auto-configuration) was fully removed starting with the 2020.0 (Ilford) release train — you must migrate to Spring Cloud LoadBalancer.</p>
+<h3 id="strategies">Strategies</h3>
+<p><strong>Q: What is the default load-balancing strategy in Spring Cloud LoadBalancer?</strong></p>
+<p>Round-robin, via <code>RoundRobinLoadBalancer</code>, which cycles through the available instances in order on successive calls.</p>
+<p><strong>Q: How would you implement a custom load-balancing strategy, such as weighted response time?</strong></p>
+<p>By implementing <code>ReactorServiceInstanceLoadBalancer</code> (choosing an instance from the <code>ServiceInstanceListSupplier</code>'s list based on your custom logic, e.g. tracked average response times) and registering it as a bean in a separate <code>@Configuration</code> class referenced via <code>@LoadBalancerClient(name = "...", configuration = ...)</code> — not in the main auto-scanned application configuration.</p>
+<p><strong>Q: What's a key trade-off of random load-balancing compared to round-robin?</strong></p>
+<p>Random selection avoids strict ordering bias and works well with a large number of instances, but can produce uneven short-term distribution (e.g. the same instance being picked several times in a row by chance), whereas round-robin guarantees strictly even distribution over each full cycle.</p>
+<h3 id="zone-affinity-caching">Zone Affinity &amp; Caching</h3>
+<p><strong>Q: What does zone affinity achieve, and what is the fallback behavior if no instances exist in the caller's zone?</strong></p>
+<p>It prefers routing to instances in the same zone as the caller to reduce latency and cross-zone costs, via <code>ZonePreferenceServiceInstanceListSupplier</code>; if no same-zone instances are available, it falls back to the full instance list rather than failing outright.</p>
+<p><strong>Q: Why does Spring Cloud LoadBalancer cache the resolved instance list, and how do you configure it?</strong></p>
+<p>To avoid querying the discovery server (Eureka/Consul) on every single request, which would add latency and load under high traffic; caching is configured via <code>spring.cloud.loadbalancer.cache.*</code> properties (<code>enabled</code>, <code>ttl</code>, <code>capacity</code>) and implemented via <code>CachingServiceInstanceListSupplier</code>.</p>
+<h3 id="api-gateway-integration">API Gateway Integration</h3>
+<p><strong>Q: How does Spring Cloud Gateway use Spring Cloud LoadBalancer for its routes?</strong></p>
+<p>By using the <code>lb://service-name</code> URI scheme in route definitions; the Gateway's load-balancer filter resolves the logical service name into a concrete instance via the same Spring Cloud LoadBalancer infrastructure used elsewhere, applying whatever strategy, zone-affinity, and caching configuration is in effect.</p>
+<p><strong>Q: If you add zone-affinity configuration globally, does it automatically apply to Spring Cloud Gateway's <code>lb://</code> routes?</strong></p>
+<p>Yes — because the Gateway reuses the standard <code>ReactiveLoadBalancer</code>/<code>ServiceInstanceListSupplier</code> chain, any globally configured strategy, zone preference, or caching behavior applies uniformly to Gateway-routed traffic as well as direct <code>WebClient</code>/<code>RestTemplate</code>/Feign calls.</p>
+<h2 id="other-resources">Other Resources</h2>
+<h3 id="youtube">Youtube</h3>
+<ul>
+<li><a href="https://www.youtube.com/watch?v=RuHO3_m6c6E">Client Side Load Balancing with Spring Cloud LoadBalancer | Spring Boot Microservices</a></li>
+<li><a href="https://www.youtube.com/watch?v=fFPEhPp3P4g">Spring Cloud Load Balancer Tutorial | Ribbon Alternative | Microservices</a></li>
+<li><a href="https://www.youtube.com/watch?v=aTPiJZuqlcM">Load Balancing in Microservices | Spring Boot | JavaTechie</a></li>
+</ul>
+<h3 id="medium">Medium</h3>
+<ul>
+<li><a href="https://www.baeldung.com/spring-cloud-load-balancer">Spring Cloud LoadBalancer – Client-Side Load Balancing</a></li>
+<li><a href="https://medium.com/@bubu.tripathy/microservices-load-balancing-with-spring-cloud-b59cd832cd70">Microservices Load Balancing with Spring Cloud</a></li>
+</ul></div>
+</article>
+</div>
+<script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+</div>
+<button class="md-top md-icon" data-md-component="top" hidden="" type="button">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  Back to top
+</button>
+</main>
+<footer class="md-footer">
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-copyright">
+<div class="md-copyright__highlight">
+      © 2025 <a href="https://github.com/abhishekghoshh" rel="noopener" target="_blank">Abhishek Ghosh</a>
+</div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+      Material for MkDocs
+    </a>
+</div>
+<div class="md-social">
+<a class="md-social__link" href="https://github.com/abhishekghoshh" rel="noopener" target="_blank" title="github.com">
+<svg viewbox="0 0 480 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M186.1 328.7c0 20.9-10.9 55.1-36.7 55.1s-36.7-34.2-36.7-55.1 10.9-55.1 36.7-55.1 36.7 34.2 36.7 55.1M480 278.2c0 31.9-3.2 65.7-17.5 95-37.9 76.6-142.1 74.8-216.7 74.8-75.8 0-186.2 2.7-225.6-74.8-14.6-29-20.2-63.1-20.2-95 0-41.9 13.9-81.5 41.5-113.6-5.2-15.8-7.7-32.4-7.7-48.8 0-21.5 4.9-32.3 14.6-51.8 45.3 0 74.3 9 108.8 36 29-6.9 58.8-10 88.7-10 27 0 54.2 2.9 80.4 9.2 34-26.7 63-35.2 107.8-35.2 9.8 19.5 14.6 30.3 14.6 51.8 0 16.4-2.6 32.7-7.7 48.2 27.5 32.4 39 72.3 39 114.2m-64.3 50.5c0-43.9-26.7-82.6-73.5-82.6-18.9 0-37 3.4-56 6-14.9 2.3-29.8 3.2-45.1 3.2-15.2 0-30.1-.9-45.1-3.2-18.7-2.6-37-6-56-6-46.8 0-73.5 38.7-73.5 82.6 0 87.8 80.4 101.3 150.4 101.3h48.2c70.3 0 150.6-13.4 150.6-101.3m-82.6-55.1c-25.8 0-36.7 34.2-36.7 55.1s10.9 55.1 36.7 55.1 36.7-34.2 36.7-55.1-10.9-55.1-36.7-55.1"></path></svg>
+</a>
+<a class="md-social__link" href="https://x.com/abhishek_ghoshh" rel="noopener" target="_blank" title="x.com">
+<svg viewbox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253"></path></svg>
+</a>
+<a class="md-social__link" href="https://www.linkedin.com/in/abhishek-ghosh-220679132/" rel="noopener" target="_blank" title="www.linkedin.com">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5m282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"></path></svg>
+</a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<div class="md-dialog" data-md-component="dialog">
+<div class="md-dialog__inner md-typeset"></div>
+</div>
+<script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+<script src="../../assets/javascripts/bundle.60a45f97.min.js"></script>
+<script type="module">import mermaid from "https://unpkg.com/mermaid@10.4.0/dist/mermaid.esm.min.mjs";
+window.mermaidConfig = {default: {
+    startOnLoad: false
+}};</script></body>
+</html>

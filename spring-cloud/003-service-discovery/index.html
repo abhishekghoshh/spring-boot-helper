@@ -1,0 +1,2405 @@
+
+<!DOCTYPE html>
+
+<html class="no-js" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<link href="https://abhishekghoshh.github.io/spring-boot-helper/spring-cloud/003-service-discovery/" rel="canonical"/>
+<link href="../002-spring-cloud-bus/" rel="prev"/>
+<link href="../004-spring-cloud-load-balancing/" rel="next"/>
+<link href="../../assets/images/favicon.png" rel="icon"/>
+<meta content="mkdocs-1.6.1, mkdocs-material-9.5.50" name="generator"/>
+<title>Service Discovery - spring-boot-helper</title>
+<link href="../../assets/stylesheets/main.a40c8224.min.css" rel="stylesheet"/>
+<link href="../../assets/stylesheets/palette.06af60db.min.css" rel="stylesheet"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback" rel="stylesheet"/>
+<style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+<script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+<meta content="website" property="og:type"/>
+<meta content="Service Discovery - spring-boot-helper" property="og:title"/>
+<meta content="None" property="og:description"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/assets/images/social/spring-cloud/003-service-discovery.png" property="og:image"/>
+<meta content="image/png" property="og:image:type"/>
+<meta content="1200" property="og:image:width"/>
+<meta content="630" property="og:image:height"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/spring-cloud/003-service-discovery/" property="og:url"/>
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="Service Discovery - spring-boot-helper" name="twitter:title"/>
+<meta content="None" name="twitter:description"/>
+<meta content="https://abhishekghoshh.github.io/spring-boot-helper/assets/images/social/spring-cloud/003-service-discovery.png" name="twitter:image"/>
+</head>
+<body data-md-color-accent="purple" data-md-color-primary="teal" data-md-color-scheme="default" dir="ltr">
+<input autocomplete="off" class="md-toggle" data-md-toggle="drawer" id="__drawer" type="checkbox"/>
+<input autocomplete="off" class="md-toggle" data-md-toggle="search" id="__search" type="checkbox"/>
+<label class="md-overlay" for="__drawer"></label>
+<div data-md-component="skip">
+<a class="md-skip" href="#service-discovery">
+          Skip to content
+        </a>
+</div>
+<div data-md-component="announce">
+</div>
+<header class="md-header" data-md-component="header">
+<nav aria-label="Header" class="md-header__inner md-grid">
+<a aria-label="spring-boot-helper" class="md-header__button md-logo" data-md-component="logo" href="../.." title="spring-boot-helper">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+<label class="md-header__button md-icon" for="__drawer">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+</label>
+<div class="md-header__title" data-md-component="header-title">
+<div class="md-header__ellipsis">
+<div class="md-header__topic">
+<span class="md-ellipsis">
+            spring-boot-helper
+          </span>
+</div>
+<div class="md-header__topic" data-md-component="header-topic">
+<span class="md-ellipsis">
+            
+              Service Discovery
+            
+          </span>
+</div>
+</div>
+</div>
+<form class="md-header__option" data-md-component="palette">
+<input aria-label="Switch to dark mode" class="md-option" data-md-color-accent="purple" data-md-color-media="" data-md-color-primary="teal" data-md-color-scheme="default" id="__palette_0" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_1" hidden="" title="Switch to dark mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"></path></svg>
+</label>
+<input aria-label="Switch to light mode" class="md-option" data-md-color-accent="lime" data-md-color-media="" data-md-color-primary="teal" data-md-color-scheme="slate" id="__palette_1" name="__palette" type="radio"/>
+<label class="md-header__button md-icon" for="__palette_0" hidden="" title="Switch to light mode">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"></path></svg>
+</label>
+</form>
+<script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+<label class="md-header__button md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+</label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input aria-label="Search" autocapitalize="off" autocomplete="off" autocorrect="off" class="md-search__input" data-md-component="search-query" name="query" placeholder="Search" required="" spellcheck="false" type="text"/>
+<label class="md-search__icon md-icon" for="__search">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+</label>
+<nav aria-label="Search" class="md-search__options">
+<button aria-label="Clear" class="md-search__icon md-icon" tabindex="-1" title="Clear" type="reset">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+</button>
+</nav>
+<div class="md-search__suggest" data-md-component="search-suggest"></div>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix="" tabindex="0">
+<div class="md-search-result" data-md-component="search-result">
+<div class="md-search-result__meta">
+            Initializing search
+          </div>
+<ol class="md-search-result__list" role="presentation"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+</nav>
+</header>
+<div class="md-container" data-md-component="container">
+<nav aria-label="Tabs" class="md-tabs" data-md-component="tabs">
+<div class="md-grid">
+<ul class="md-tabs__list">
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../..">
+        
+  
+    
+  
+  Home
+
+      </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-introduction/">
+          
+  
+  Introduction
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-aop/">
+          
+  
+  Spring AOP
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-transactions/">
+          
+  
+  Spring Transaction
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-jpa/">
+          
+  
+  Spring JPA
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-security/">
+          
+  
+  Spring Security
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-testing/">
+          
+  
+  Spring Testing
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-kafka/">
+          
+  
+  Spring Kafka
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-redis/">
+          
+  
+  Spring Redis
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../spring-mongo/">
+          
+  
+  Spring Mongo
+
+        </a>
+</li>
+<li class="md-tabs__item md-tabs__item--active">
+<a class="md-tabs__link" href="../">
+          
+  
+  Spring Cloud
+
+        </a>
+</li>
+<li class="md-tabs__item">
+<a class="md-tabs__link" href="../../others/">
+          
+  
+  Others
+
+        </a>
+</li>
+</ul>
+</div>
+</nav>
+<main class="md-main" data-md-component="main">
+<div class="md-main__inner md-grid">
+<div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav aria-label="Navigation" class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" data-md-level="0">
+<label class="md-nav__title" for="__drawer">
+<a aria-label="spring-boot-helper" class="md-nav__button md-logo" data-md-component="logo" href="../.." title="spring-boot-helper">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"></path></svg>
+</a>
+    spring-boot-helper
+  </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../..">
+<span class="md-ellipsis">
+    Home
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_2" type="checkbox"/>
+<label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+<span class="md-ellipsis">
+    Introduction
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_2_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_2">
+<span class="md-nav__icon md-icon"></span>
+            Introduction
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/interview-helper/">
+<span class="md-ellipsis">
+    Interview Helper
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/001-history/">
+<span class="md-ellipsis">
+    001 - History
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/002-spring-mvc/">
+<span class="md-ellipsis">
+    002 - Spring MVC
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/003-spring-boot/">
+<span class="md-ellipsis">
+    003 - Spring Boot
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/004-maven-and-gradle/">
+<span class="md-ellipsis">
+    004 - Maven and Gradle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/005-annotations/">
+<span class="md-ellipsis">
+    005 - Spring Annotations
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/006-bean-management/">
+<span class="md-ellipsis">
+    006 - Spring Bean Management
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/007-config/">
+<span class="md-ellipsis">
+    007 - Spring Boot Config Management
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/008-async/">
+<span class="md-ellipsis">
+    008 - Async with Spring Boot
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/009-spring-with-virtual-thread/">
+<span class="md-ellipsis">
+    009 - Spring with Virtual Thread
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/010-intercepter-and-filter/">
+<span class="md-ellipsis">
+    010 - Interceptor and Filter
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/011-spring-hateos/">
+<span class="md-ellipsis">
+    011 - Spring HATEOS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/012-exception-handling/">
+<span class="md-ellipsis">
+    012 - Exception Handling
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-introduction/013-spring-actuator/">
+<span class="md-ellipsis">
+    013 - Spring Boot Actuator
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_3" type="checkbox"/>
+<label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring AOP
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_3_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_3">
+<span class="md-nav__icon md-icon"></span>
+            Spring AOP
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/001-what-is-aop/">
+<span class="md-ellipsis">
+    001 - What is AOP? Why and How We Use It?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/002-advantages-and-disadvantages/">
+<span class="md-ellipsis">
+    002 - Advantages and Disadvantages of AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/003-real-life-examples/">
+<span class="md-ellipsis">
+    003 - Real-Life Examples and Industry Usages
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/004-aop-annotations/">
+<span class="md-ellipsis">
+    004 - All Spring AOP Annotations Explained
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/005-code-examples/">
+<span class="md-ellipsis">
+    005 - Code Examples with Spring AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/006-summary/">
+<span class="md-ellipsis">
+    006 - Summary
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/007-aop-intercepts-method-invocation/">
+<span class="md-ellipsis">
+    007 - How AOP Intercepts Method Invocation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/008-aop-focus-on-business-logic/">
+<span class="md-ellipsis">
+    008 - How AOP Allows Focus on Business Logic
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/009-aop-reusability-and-maintainability/">
+<span class="md-ellipsis">
+    009 - How AOP Achieves Reusability and Maintainability
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/010-what-is-a-pointcut/">
+<span class="md-ellipsis">
+    010 - What is a Pointcut?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/011-pointcut-expression-structure/">
+<span class="md-ellipsis">
+    011 - Pointcut Expression Structure
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/012-pointcut-designators/">
+<span class="md-ellipsis">
+    012 - Different Types of Pointcut Designators
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/013-combining-pointcut-expressions/">
+<span class="md-ellipsis">
+    013 - Combining Pointcut Expressions (AND, OR, NOT)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/014-named-pointcuts/">
+<span class="md-ellipsis">
+    014 - Named Pointcuts — Reusable Pointcut Definitions
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/015-how-aop-works-internally/">
+<span class="md-ellipsis">
+    015 - How AOP Works Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/016-what-is-advice/">
+<span class="md-ellipsis">
+    016 - What is Advice? How It Works
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/017-what-is-joinpoint/">
+<span class="md-ellipsis">
+    017 - What is JoinPoint? How It Works
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/018-before-after-around-internals/">
+<span class="md-ellipsis">
+    018 - How @Before, @After, and @Around Work Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/019-matching-linking-interception/">
+<span class="md-ellipsis">
+    019 - How Matching, Linking, and Interception Work Together
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-aop/020-performance-and-caching/">
+<span class="md-ellipsis">
+    020 - What If We Have 100s of Pointcuts? — Performance &amp; Caching
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_4" type="checkbox"/>
+<label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Transaction
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_4_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_4">
+<span class="md-nav__icon md-icon"></span>
+            Spring Transaction
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/001-prerequisites/">
+<span class="md-ellipsis">
+    001 - Prerequisites
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/002-critical-section/">
+<span class="md-ellipsis">
+    002 - What is a Critical Section?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/003-transactional-annotation/">
+<span class="md-ellipsis">
+    003 - What is @Transactional? Why and How to Use It?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/004-acid-properties/">
+<span class="md-ellipsis">
+    004 - ACID Properties with @Transactional
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/005-imports-and-yaml-configuration/">
+<span class="md-ellipsis">
+    005 - Imports for RDBMS vs NoSQL and YAML Configuration
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/006-enable-transaction-management/">
+<span class="md-ellipsis">
+    006 - What is @EnableTransactionManagement?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/007-method-vs-class-level-transactional/">
+<span class="md-ellipsis">
+    007 - Method-Level vs Class-Level @Transactional
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/008-transactional-internals-spring-aop/">
+<span class="md-ellipsis">
+    008 - How @Transactional Internally Uses Spring AOP
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/009-aop-annotations-pointcut-around/">
+<span class="md-ellipsis">
+    009 - AOP Annotations Used Internally — Pointcut and @Around
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/010-rollback-internals/">
+<span class="md-ellipsis">
+    010 - How Rollback Happens Internally
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/011-transaction-manager-hierarchy/">
+<span class="md-ellipsis">
+    011 - Hierarchy of TransactionManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/012-ways-to-manage-transactions/">
+<span class="md-ellipsis">
+    012 - How Many Ways Can We Manage Transactions?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/013-transaction-propagation/">
+<span class="md-ellipsis">
+    013 - What is Transaction Propagation?
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-transactions/014-isolation-level/">
+<span class="md-ellipsis">
+    014 - What is Isolation Level?
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_5" type="checkbox"/>
+<label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring JPA
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_5_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_5">
+<span class="md-nav__icon md-icon"></span>
+            Spring JPA
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/dbms/">
+<span class="md-ellipsis">
+    Database Management Systems (DBMS)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/sql/">
+<span class="md-ellipsis">
+    Structured Query Language (SQL)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/000-jdbc/">
+<span class="md-ellipsis">
+    JDBC
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/001-architecture/">
+<span class="md-ellipsis">
+    001 - Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/002-entity-lifecycle/">
+<span class="md-ellipsis">
+    002 - Entity Lifecycle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/003-entity-manager-factory-and-entity-manager/">
+<span class="md-ellipsis">
+    003 - EntityManagerFactory and EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/004-persistence-context/">
+<span class="md-ellipsis">
+    004 - Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/005-transaction-manager/">
+<span class="md-ellipsis">
+    005 - Transaction Manager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/006-hibernate-implementation/">
+<span class="md-ellipsis">
+    006 - Hibernate Implementation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/007-how-jpa-repository-uses-entity-manager/">
+<span class="md-ellipsis">
+    007 - How JPA Repository Uses EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/008-persistence-context-annotation-vs-autowired/">
+<span class="md-ellipsis">
+    008 - Why @PersistenceContext Instead of @Autowired
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/009-transactional-with-entity-manager/">
+<span class="md-ellipsis">
+    009 - Why @Transactional is Used for EntityManager
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/010-entity-manager-creates-persistence-context/">
+<span class="md-ellipsis">
+    010 - How EntityManager Creates Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/011-role-of-persistence-context/">
+<span class="md-ellipsis">
+    011 - Role of Persistence Context
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/012-transaction-bounded-operations/">
+<span class="md-ellipsis">
+    012 - Transaction-Bounded Operations
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/013-first-level-caching/">
+<span class="md-ellipsis">
+    013 - First-Level Caching
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/014-second-level-caching/">
+<span class="md-ellipsis">
+    014 - Second-Level Caching
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/015-ddl-auto/">
+<span class="md-ellipsis">
+    015 - spring.jpa.hibernate.ddl-auto
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/016-table-annotation/">
+<span class="md-ellipsis">
+    016 - "@Table Annotation"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/017-column-annotation/">
+<span class="md-ellipsis">
+    017 - "@Column Annotation"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/018-id-and-composite-ids/">
+<span class="md-ellipsis">
+    018 - "@Id Annotation and Composite IDs"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/019-sequence-generator/">
+<span class="md-ellipsis">
+    019 - "@SequenceGenerator"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/020-generated-value-and-generation-strategies/">
+<span class="md-ellipsis">
+    020 - "@GeneratedValue and Generation Strategies"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/021-one-to-one-unidirectional-mapping/">
+<span class="md-ellipsis">
+    021 - OneToOne Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/022-eager-and-lazy-loading/">
+<span class="md-ellipsis">
+    022 - Eager and Lazy Loading
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/023-one-to-one-bidirectional-mapping/">
+<span class="md-ellipsis">
+    023 - OneToOne Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/024-one-to-many-unidirectional-mapping/">
+<span class="md-ellipsis">
+    024 - OneToMany Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/025-one-to-many-bidirectional-mapping/">
+<span class="md-ellipsis">
+    025 - OneToMany Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/026-many-to-one-bidirectional-mapping/">
+<span class="md-ellipsis">
+    026 - ManyToOne Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/027-many-to-many-unidirectional-mapping/">
+<span class="md-ellipsis">
+    027 - ManyToMany Unidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/028-many-to-many-bidirectional-mapping/">
+<span class="md-ellipsis">
+    028 - ManyToMany Bidirectional Mapping
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/029-derived-query-methods/">
+<span class="md-ellipsis">
+    029 - Derived Query Methods
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/030-jpql/">
+<span class="md-ellipsis">
+    030 - JPQL
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/031-n-plus-1-problem/">
+<span class="md-ellipsis">
+    031 - The N+1 Problem in JPA
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/032-named-query/">
+<span class="md-ellipsis">
+    032 - "@NamedQuery"
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/033-native-query/">
+<span class="md-ellipsis">
+    033 - Native Query
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/034-dynamic-native-query/">
+<span class="md-ellipsis">
+    034 - Dynamic Native Query
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/035-criteria-api/">
+<span class="md-ellipsis">
+    035 - Criteria API
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-jpa/036-jpa-specification-api/">
+<span class="md-ellipsis">
+    036 - JPA Specification API
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_6" type="checkbox"/>
+<label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Security
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_6_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_6">
+<span class="md-nav__icon md-icon"></span>
+            Spring Security
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/001-different-types-of-attacks/">
+<span class="md-ellipsis">
+    001 - Different Types of Attacks
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/002-authorization-and-authentication/">
+<span class="md-ellipsis">
+    002 - Authentication and Authorization
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/003-request-response-architecture/">
+<span class="md-ellipsis">
+    003 - Request/Response Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/004-spring-security-architecture/">
+<span class="md-ellipsis">
+    004 - Spring Security Architecture
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/005-default-user-creation/">
+<span class="md-ellipsis">
+    005 - Default User Creation
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/006-password-encoding-delegating-password-encoder/">
+<span class="md-ellipsis">
+    006 - Password Encoding &amp; DelegatingPasswordEncoder
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/007-database-based-authentication/">
+<span class="md-ellipsis">
+    007 - Database-Based Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/008-form-login-stateful-authentication/">
+<span class="md-ellipsis">
+    008 - Form Login Stateful Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/009-form-login-user-flow-session-lifecycle/">
+<span class="md-ellipsis">
+    009 - Form Login User Flow &amp; Session Lifecycle
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/010-customizing-form-login/">
+<span class="md-ellipsis">
+    010 - Customizing Form Login
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/011-session-persistence-spring-session-jdbc/">
+<span class="md-ellipsis">
+    011 - Session Persistence (Spring Session JDBC)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/012-distributed-sessions-with-redis/">
+<span class="md-ellipsis">
+    012 - Distributed Sessions with Redis
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/013-dao-authentication-provider/">
+<span class="md-ellipsis">
+    013 - DaoAuthenticationProvider Deep Dive
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/014-authenticated-request-flow/">
+<span class="md-ellipsis">
+    014 - Authenticated Request Flow
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/015-session-management-and-creation-policy/">
+<span class="md-ellipsis">
+    015 - Session Management &amp; Creation Policy
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/016-http-basic-authentication/">
+<span class="md-ellipsis">
+    016 - HTTP Basic Authentication
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/017-jwt-json-web-token/">
+<span class="md-ellipsis">
+    017 - JWT (JSON Web Token)
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/018-access-token-refresh-token-jwks/">
+<span class="md-ellipsis">
+    018 - Access Token, Refresh Token &amp; JWKS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/019-jwt-authentication-custom-security-filters/">
+<span class="md-ellipsis">
+    019 - JWT Authentication with Custom Filters
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/020-oauth2-and-openid-connect/">
+<span class="md-ellipsis">
+    020 - OAuth 2.0 &amp; OpenID Connect
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-security/021-role-based-authorization-rbac/">
+<span class="md-ellipsis">
+    021 - Role-Based Authorization (RBAC)
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_7" type="checkbox"/>
+<label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Testing
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_7_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_7">
+<span class="md-nav__icon md-icon"></span>
+            Spring Testing
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-testing/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_8" type="checkbox"/>
+<label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Kafka
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_8_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_8">
+<span class="md-nav__icon md-icon"></span>
+            Spring Kafka
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-kafka/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-kafka/kafka/">
+<span class="md-ellipsis">
+    Kafka Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_9" type="checkbox"/>
+<label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Redis
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_9_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_9">
+<span class="md-nav__icon md-icon"></span>
+            Spring Redis
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-redis/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-redis/redis/">
+<span class="md-ellipsis">
+    Redis Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_10" type="checkbox"/>
+<label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+<span class="md-ellipsis">
+    Spring Mongo
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_10_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_10">
+<span class="md-nav__icon md-icon"></span>
+            Spring Mongo
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-mongo/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../spring-mongo/mongodb/">
+<span class="md-ellipsis">
+    MongoDB Introduction
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+<input checked="" class="md-nav__toggle md-toggle" id="__nav_11" type="checkbox"/>
+<label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+<span class="md-ellipsis">
+    Spring Cloud
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="true" aria-labelledby="__nav_11_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_11">
+<span class="md-nav__icon md-icon"></span>
+            Spring Cloud
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../001-spring-cloud-config/">
+<span class="md-ellipsis">
+    Spring Cloud Config
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../002-spring-cloud-bus/">
+<span class="md-ellipsis">
+    Spring Cloud Bus
+  </span>
+</a>
+</li>
+<li class="md-nav__item md-nav__item--active">
+<input class="md-nav__toggle md-toggle" id="__toc" type="checkbox"/>
+<label class="md-nav__link md-nav__link--active" for="__toc">
+<span class="md-ellipsis">
+    Service Discovery
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<a class="md-nav__link md-nav__link--active" href="./">
+<span class="md-ellipsis">
+    Service Discovery
+  </span>
+</a>
+<nav aria-label="Table of contents" class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">
+<span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+<ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#detailed-guide">
+<span class="md-ellipsis">
+      Detailed Guide
+    </span>
+</a>
+<nav aria-label="Detailed Guide" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#spring-cloud-discovery-server-or-eureka-naming-server">
+<span class="md-ellipsis">
+      Spring cloud Discovery server or Eureka Naming Server
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#problems-with-eureka">
+<span class="md-ellipsis">
+      Problems with Eureka
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#resilient-eureka-server-with-multiple-instances-and-data-replication-theory">
+<span class="md-ellipsis">
+      Resilient Eureka Server with multiple instances and Data Replication Theory
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#self-preservation-mode-in-eureka">
+<span class="md-ellipsis">
+      Self-Preservation Mode in Eureka
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#registering-eureka-clients-and-sending-request">
+<span class="md-ellipsis">
+      Registering Eureka Clients And Sending Request
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#eureka-client-library">
+<span class="md-ellipsis">
+      Eureka Client Library
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#eureka-client-health-check-configuration">
+<span class="md-ellipsis">
+      Eureka Client Health Check Configuration
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#load-balancing-with-eureka-feign-spring-cloud-loadbalancer">
+<span class="md-ellipsis">
+      Load Balancing with Eureka, Feign &amp; Spring Cloud LoadBalancer
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#reactive-way-using-feign-reactive">
+<span class="md-ellipsis">
+      Reactive Way using Feign Reactive
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#configure-spring-security-to-eureka-server">
+<span class="md-ellipsis">
+      Configure Spring Security to Eureka Server
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#enable-web-security-in-eureka">
+<span class="md-ellipsis">
+      Enable Web Security in Eureka
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#configure-eureka-clients-to-use-username-and-password">
+<span class="md-ellipsis">
+      Configure Eureka Clients to use Username and Password
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#configure-eureka-service-url-in-config-server">
+<span class="md-ellipsis">
+      Configure Eureka Service URL in Config Server
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#move-username-and-password-to-config-server">
+<span class="md-ellipsis">
+      Move Username and Password to Config Server
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#encrypting-username-and-password">
+<span class="md-ellipsis">
+      Encrypting Username and Password
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#eureka-cluster-and-peer-awareness-configuration">
+<span class="md-ellipsis">
+      Eureka Cluster and Peer Awareness Configuration
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#eureka-cluster-update-hosts-file">
+<span class="md-ellipsis">
+      Eureka Cluster: Update Hosts File
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#staring-up-eureka-discovery-server-cluster">
+<span class="md-ellipsis">
+      Staring up Eureka Discovery Server Cluster
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#eureka-server-dashboard-checking-registered-peers">
+<span class="md-ellipsis">
+      Eureka Server Dashboard: Checking Registered Peers
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#eureka-discovery-client-with-default-configuration">
+<span class="md-ellipsis">
+      Eureka Discovery Client with Default Configuration
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#register-eureka-client-with-eureka-cluster">
+<span class="md-ellipsis">
+      Register Eureka Client with Eureka Cluster
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#interview-questions-answers">
+<span class="md-ellipsis">
+      Interview Questions &amp; Answers
+    </span>
+</a>
+<nav aria-label="Interview Questions &amp; Answers" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#eureka-fundamentals">
+<span class="md-ellipsis">
+      Eureka Fundamentals
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#problems-and-resilience">
+<span class="md-ellipsis">
+      Problems and Resilience
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#registration-health-and-load-balancing">
+<span class="md-ellipsis">
+      Registration, Health, and Load Balancing
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#security">
+<span class="md-ellipsis">
+      Security
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#cluster-configuration">
+<span class="md-ellipsis">
+      Cluster Configuration
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#resources">
+<span class="md-ellipsis">
+      Resources
+    </span>
+</a>
+<nav aria-label="Resources" class="md-nav">
+<ul class="md-nav__list">
+<li class="md-nav__item">
+<a class="md-nav__link" href="#youtube">
+<span class="md-ellipsis">
+      Youtube
+    </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="#medium">
+<span class="md-ellipsis">
+      Medium
+    </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../004-spring-cloud-load-balancing/">
+<span class="md-ellipsis">
+    Spring Cloud Load balancing
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../005-rest-client/">
+<span class="md-ellipsis">
+    Rest Client
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../006-spring-cloud-api-gateway/">
+<span class="md-ellipsis">
+    Spring Cloud API Gateway
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../007-spring-cloud-security/">
+<span class="md-ellipsis">
+    Spring Cloud Security
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../008-circuit-breakers-and-resilience4j/">
+<span class="md-ellipsis">
+    Circuit Breaker and Resilience4j
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../009-messaging/">
+<span class="md-ellipsis">
+    Spring Messaging
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../010-distributed-tracing/">
+<span class="md-ellipsis">
+    Distributed Tracing
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../011-log-aggregation-with-elk/">
+<span class="md-ellipsis">
+    Log Aggregation with ELK
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../012-testing/">
+<span class="md-ellipsis">
+    Spring Cloud Testing
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+<li class="md-nav__item md-nav__item--nested">
+<input class="md-nav__toggle md-toggle" id="__nav_12" type="checkbox"/>
+<label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="0">
+<span class="md-ellipsis">
+    Others
+  </span>
+<span class="md-nav__icon md-icon"></span>
+</label>
+<nav aria-expanded="false" aria-labelledby="__nav_12_label" class="md-nav" data-md-level="1">
+<label class="md-nav__title" for="__nav_12">
+<span class="md-nav__icon md-icon"></span>
+            Others
+          </label>
+<ul class="md-nav__list" data-md-scrollfix="">
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/">
+<span class="md-ellipsis">
+    Overview
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-batch/">
+<span class="md-ellipsis">
+    Spring Batch
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cassandra/">
+<span class="md-ellipsis">
+    Spring Cassandra
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-graphql/">
+<span class="md-ellipsis">
+    Spring GraphQL
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-reactive-programming/">
+<span class="md-ellipsis">
+    Spring Reactive Programming
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cloud-functions/">
+<span class="md-ellipsis">
+    Spring Cloud Functions
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-aws/">
+<span class="md-ellipsis">
+    Spring AWS
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-k8s/">
+<span class="md-ellipsis">
+    Spring Kubernetes
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-cicd/">
+<span class="md-ellipsis">
+    Spring CI/CD
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-observability/">
+<span class="md-ellipsis">
+    Spring Observability
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-splunk/">
+<span class="md-ellipsis">
+    Spring Splunk
+  </span>
+</a>
+</li>
+<li class="md-nav__item">
+<a class="md-nav__link" href="../../others/spring-docs/">
+<span class="md-ellipsis">
+    Spring Docs
+  </span>
+</a>
+</li>
+</ul>
+</nav>
+</li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+<div class="md-content" data-md-component="content">
+<article class="md-content__inner md-typeset">
+<div><h1 id="service-discovery">Service Discovery</h1>
+<h2 id="detailed-guide">Detailed Guide</h2>
+<h3 id="spring-cloud-discovery-server-or-eureka-naming-server">Spring cloud Discovery server or Eureka Naming Server</h3>
+<p>Eureka is Netflix's service discovery server, integrated into Spring Cloud as <code>spring-cloud-starter-netflix-eureka-server</code>. In a microservices architecture, service instances come and go dynamically due to scaling, deployments, and failures, so hard-coding hostnames and ports in configuration is brittle. Eureka solves this by acting as a phone book: every service instance registers itself with the Eureka server on startup, advertising its host, port, and metadata, and other services query Eureka to discover where to send requests instead of relying on static configuration.</p>
+<p>The Eureka server itself is a plain Spring Boot application annotated with <code>@EnableEurekaServer</code>. It exposes a REST API and dashboard (by default on port 8761) that clients use to register, renew their lease via heartbeats, and fetch the registry. Internally, Eureka keeps an in-memory registry structured as a map of application name to a list of instances, and this registry is periodically synchronized to registered clients so that lookups are fast and don't require a round trip to the server for every call.</p>
+<p>Eureka favors <strong>availability over strict consistency</strong> (an AP system in CAP terms). It would rather serve a slightly stale registry than reject requests, which is intentional for service discovery since a stale-but-mostly-correct list of instances is far more useful than no list at all during a network partition.</p>
+<p><strong>Real-life scenario:</strong> In an e-commerce platform with <code>order-service</code>, <code>inventory-service</code>, and <code>payment-service</code> each running multiple replicas behind auto-scaling, a dedicated Eureka server cluster lets every new pod register itself automatically the moment it starts, so <code>order-service</code> never needs a redeploy just because <code>payment-service</code> scaled from 3 to 5 instances.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-0-1" id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="nd">@SpringBootApplication</span>
+<a href="#__codelineno-0-2" id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="nd">@EnableEurekaServer</span>
+<a href="#__codelineno-0-3" id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">EurekaServerApplication</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-0-4" id="__codelineno-0-4" name="__codelineno-0-4"></a>
+<a href="#__codelineno-0-5" id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-0-6" id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="w">        </span><span class="n">SpringApplication</span><span class="p">.</span><span class="na">run</span><span class="p">(</span><span class="n">EurekaServerApplication</span><span class="p">.</span><span class="na">class</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="p">);</span>
+<a href="#__codelineno-0-7" id="__codelineno-0-7" name="__codelineno-0-7"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-0-8" id="__codelineno-0-8" name="__codelineno-0-8"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-1-1" id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="nt">server</span><span class="p">:</span>
+<a href="#__codelineno-1-2" id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8761</span>
+<a href="#__codelineno-1-3" id="__codelineno-1-3" name="__codelineno-1-3"></a>
+<a href="#__codelineno-1-4" id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="nt">eureka</span><span class="p">:</span>
+<a href="#__codelineno-1-5" id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="w">  </span><span class="nt">client</span><span class="p">:</span>
+<a href="#__codelineno-1-6" id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="w">    </span><span class="nt">register-with-eureka</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<a href="#__codelineno-1-7" id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="w">    </span><span class="nt">fetch-registry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<a href="#__codelineno-1-8" id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="w">  </span><span class="nt">server</span><span class="p">:</span>
+<a href="#__codelineno-1-9" id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="w">    </span><span class="nt">enable-self-preservation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<pre class="mermaid"><code>flowchart LR
+    subgraph Clients
+        A[order-service instance] 
+        B[inventory-service instance]
+        C[payment-service instance]
+    end
+    subgraph Eureka["Eureka Naming Server"]
+        R[(Service Registry)]
+    end
+    A -- register / heartbeat --&gt; R
+    B -- register / heartbeat --&gt; R
+    C -- register / heartbeat --&gt; R
+    A -- fetch registry --&gt; R
+    B -- fetch registry --&gt; R
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Discovery Option</th>
+<th>Consistency Model</th>
+<th>Health Check</th>
+<th>Typical Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Eureka</td>
+<td>AP (available, eventually consistent)</td>
+<td>Client heartbeat / self-preservation</td>
+<td>Cloud-native microservices, Netflix OSS stack</td>
+</tr>
+<tr>
+<td>Consul</td>
+<td>CP by default (Raft)</td>
+<td>Active health checks (HTTP/TCP/script)</td>
+<td>Multi-datacenter, service mesh integrations</td>
+</tr>
+<tr>
+<td>ZooKeeper</td>
+<td>CP (Zab consensus)</td>
+<td>Ephemeral znodes</td>
+<td>Coordination-heavy systems (Kafka, Hadoop)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why is Eureka's registry described as a "phone book" rather than a DNS replacement?</strong>
+Unlike static DNS, Eureka's registry updates dynamically as instances register, renew, and deregister in near real-time, and it carries richer per-instance metadata (status, zone, custom attributes) that plain DNS records don't support.</p>
+<p><strong>Q: What port does the Eureka dashboard/REST API run on by default, and why does the server itself set <code>register-with-eureka: false</code>?</strong>
+Port 8761 by default. A standalone Eureka server disables <code>register-with-eureka</code> and <code>fetch-registry</code> because it doesn't need to register with itself as a client — those flags are only meaningful for a peer-aware cluster or actual client applications.</p>
+<h3 id="problems-with-eureka">Problems with Eureka</h3>
+<p>While Eureka simplifies discovery, it introduces its own operational challenges. First, a single Eureka instance is a single point of failure — if it goes down, existing clients can still call each other using cached registries, but no new instances can register and stale entries won't be cleaned up. Second, Eureka's default lease expiration and eviction settings can lag reality: an instance that crashes ungracefully may still appear "UP" for up to 90 seconds (3 missed 30-second heartbeats) before being evicted, so a naive client could route traffic to a dead instance.</p>
+<p>Another common problem is network partition handling. During a partition, Eureka nodes may see a sharp drop in the number of renewing clients and trigger self-preservation mode, which stops evicting instances even if they haven't sent heartbeats — this protects against a false mass-eviction, but if left misunderstood, teams sometimes see "phantom" instances lingering in the dashboard and get confused. Finally, in polyglot environments, teams need to make sure clients from other languages implement the Eureka REST protocol correctly, since not all client libraries handle registry rate-limiting or delta fetches identically.</p>
+<p><strong>Real-life scenario:</strong> A team notices that after a rolling deployment, old pod IPs remain visible in the Eureka dashboard for over a minute, causing a handful of 5xx errors from clients that picked a stale instance — understanding lease duration and eviction timing helps them tune <code>lease-expiration-duration-in-seconds</code> appropriately instead of panicking.</p>
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>Cause</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stale instance served</td>
+<td>Slow eviction after crash</td>
+<td>Tune lease renewal/expiration intervals, use client-side circuit breakers</td>
+</tr>
+<tr>
+<td>Single point of failure</td>
+<td>One Eureka node</td>
+<td>Run a peer-aware cluster (2+ nodes)</td>
+</tr>
+<tr>
+<td>Self-preservation confusion</td>
+<td>Renewal threshold drop during partition/deploy storm</td>
+<td>Understand it's a safety net, tune thresholds, monitor via dashboard</td>
+</tr>
+<tr>
+<td>Registry propagation delay</td>
+<td>Client registry cache refresh interval</td>
+<td>Reduce <code>registry-fetch-interval-seconds</code> for faster convergence (trade-off: more load)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why can a dead instance still appear "UP" in Eureka for up to 90 seconds?</strong>
+Because eviction only happens after the lease expiration duration (90 seconds by default, three missed 30-second heartbeats) elapses without a renewal — Eureka doesn't detect crashes instantly, it detects the absence of heartbeats.</p>
+<p><strong>Q: How should client applications compensate for Eureka's slow eviction of dead instances?</strong>
+By layering client-side resilience such as connection timeouts, retries, and circuit breakers (e.g., Resilience4j) so a single stale instance returning errors or timing out doesn't cascade into a broader failure.</p>
+<h3 id="resilient-eureka-server-with-multiple-instances-and-data-replication-theory">Resilient Eureka Server with multiple instances and Data Replication Theory</h3>
+<p>To eliminate the single point of failure, Eureka servers are deployed as a peer-aware cluster where each node registers itself as a <em>client</em> of every other node. When any client registers, renews a lease, or cancels registration against one Eureka node, that node replicates the change to all its peers asynchronously. This means each Eureka server holds a full, independent copy of the registry — there's no leader/follower split-brain the way there is in Raft/Paxos-based systems; every node is symmetric.</p>
+<p>This replication model is intentionally <strong>eventually consistent</strong>. Because replication happens over plain HTTP calls between peers, a registration on node A might take a moment to appear on node B. Eureka embraces this trade-off because the alternative — a strongly consistent registry requiring quorum writes — would reduce availability exactly when the network is unreliable, which is the worst time to lose service discovery. Clients also cache the registry locally and refresh periodically, adding another layer of eventual consistency but also resilience to a temporary Eureka outage.</p>
+<p><strong>Real-life scenario:</strong> Running a 3-node Eureka cluster across three availability zones means that if an entire AZ goes down, clients in the other two AZs continue to discover and call each other because the surviving Eureka nodes still hold a replicated copy of the registry.</p>
+<pre class="mermaid"><code>sequenceDiagram
+    participant C as Client Instance
+    participant E1 as Eureka Node 1
+    participant E2 as Eureka Node 2
+    participant E3 as Eureka Node 3
+    C-&gt;&gt;E1: Register (host, port, metadata)
+    E1--&gt;&gt;E2: Replicate registration
+    E1--&gt;&gt;E3: Replicate registration
+    C-&gt;&gt;E1: Heartbeat (renew lease)
+    E1--&gt;&gt;E2: Replicate renewal
+    E1--&gt;&gt;E3: Replicate renewal
+</code></pre>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why doesn't a Eureka cluster use a consensus protocol like Raft or Paxos for replication?</strong>
+Because strong consistency via quorum writes would reduce availability precisely when the network is unreliable. Eureka trades strict consistency for availability, accepting brief replication lag in exchange for every node staying independently operational.</p>
+<p><strong>Q: What happens to registry data on a Eureka node that restarts within a cluster?</strong>
+On startup it tries to fetch the current registry from its peers before accepting traffic, so it doesn't briefly serve an empty registry; if peers are unreachable it falls back to waiting for clients to re-register.</p>
+<h3 id="self-preservation-mode-in-eureka">Self-Preservation Mode in Eureka</h3>
+<p>Self-preservation is a protective mechanism where the Eureka server stops expiring instances from the registry when the percentage of renewals received drops below a configured threshold (85% by default) within a rolling window. The rationale is that a sudden drop in heartbeats is more likely caused by a network issue between clients and the server than by all those instances actually dying simultaneously, so evicting them all would be a worse outcome than temporarily trusting possibly-stale data.</p>
+<p>When self-preservation kicks in, the Eureka dashboard displays a prominent warning banner ("EMERGENCY! EUREKA MAY BE INCORRECTLY CLAIMING INSTANCES ARE UP..."), and the server pauses eviction until renewals recover above the threshold. This is extremely common in local development and small clusters (fewer than ~3 instances), because the renewal threshold math doesn't have enough samples to behave predictably, which is why many teams disable it in dev/test with <code>eureka.server.enable-self-preservation=false</code> while keeping it enabled in production.</p>
+<pre class="mermaid"><code>stateDiagram-v2
+    [*] --&gt; Normal
+    Normal --&gt; SelfPreservation: renewal rate &lt; 85% threshold
+    SelfPreservation --&gt; Normal: renewal rate recovers
+    Normal --&gt; Normal: evict expired leases normally
+    SelfPreservation --&gt; SelfPreservation: no eviction, keep all leases
+</code></pre>
+<p><strong>Real-life scenario:</strong> During a chaotic deployment where 40% of instances restart within a short window, self-preservation prevents Eureka from wrongly wiping out the entire registry, avoiding a cascading outage where healthy services suddenly can't find anyone to call.</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Behavior</th>
+<th>Risk if Misconfigured</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Self-preservation enabled (default, prod)</td>
+<td>Stops evicting instances when renewals drop below threshold</td>
+<td>May briefly route to a truly dead instance; mitigated by client-side timeouts/circuit breakers</td>
+</tr>
+<tr>
+<td>Self-preservation disabled (common in dev)</td>
+<td>Evicts instances strictly based on lease expiration</td>
+<td>In small/unstable networks, can cause mass false-eviction and registry flapping</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-2-1" id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="nt">eureka</span><span class="p">:</span>
+<a href="#__codelineno-2-2" id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="w">  </span><span class="nt">server</span><span class="p">:</span>
+<a href="#__codelineno-2-3" id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="w">    </span><span class="nt">enable-self-preservation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">   </span><span class="c1"># typical for single-node local dev</span>
+<a href="#__codelineno-2-4" id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="w">    </span><span class="nt">renewal-percent-threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.85</span>
+<a href="#__codelineno-2-5" id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="w">    </span><span class="nt">eviction-interval-timer-in-ms</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60000</span>
+</code></pre></div>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What renewal threshold triggers self-preservation mode by default?</strong>
+When the number of renewals received in the last minute drops below 85% of the expected number (based on registered instance count), the server enters self-preservation and stops evicting instances.</p>
+<p><strong>Q: Should self-preservation be disabled in production?</strong>
+Generally no — it should stay enabled in production since it's a genuine safety net against mass false-eviction during transient network issues; it's typically only disabled in small local/dev setups where the renewal math is unreliable due to low instance counts.</p>
+<h3 id="registering-eureka-clients-and-sending-request">Registering Eureka Clients And Sending Request</h3>
+<p>A Eureka client is any Spring Boot application that includes <code>spring-cloud-starter-netflix-eureka-client</code> and is annotated with <code>@EnableDiscoveryClient</code> (or simply has the dependency on the classpath, since Spring Boot auto-configures it). On startup, the client reads its <code>spring.application.name</code>, host, and port, and sends a <code>POST</code> registration request to the Eureka server's <code>/eureka/apps/{APP-NAME}</code> endpoint. From then on, it sends periodic heartbeats (<code>PUT</code> renewals) every 30 seconds by default to keep its lease alive, and on graceful shutdown it sends a <code>DELETE</code> request to deregister immediately.</p>
+<p>Once registered, a client also acts as a discovery consumer: it downloads the full registry on startup and refreshes it on an interval (30 seconds by default), caching it locally. When code needs to call another service, it uses the logical application name (e.g., <code>payment-service</code>) rather than a physical host and port, and the client-side infrastructure (<code>DiscoveryClient</code>, Feign, or <code>RestTemplate</code> with <code>@LoadBalanced</code>) resolves that name to one of the currently registered, healthy instances.</p>
+<p><strong>Real-life scenario:</strong> A <code>checkout-service</code> calls <code>inventory-service</code> purely by name; when <code>inventory-service</code> is redeployed with new pod IPs, <code>checkout-service</code> needs zero configuration changes because it always resolves the name against the live Eureka registry.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-3-1" id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="nt">spring</span><span class="p">:</span>
+<a href="#__codelineno-3-2" id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="w">  </span><span class="nt">application</span><span class="p">:</span>
+<a href="#__codelineno-3-3" id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">checkout-service</span>
+<a href="#__codelineno-3-4" id="__codelineno-3-4" name="__codelineno-3-4"></a>
+<a href="#__codelineno-3-5" id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="nt">eureka</span><span class="p">:</span>
+<a href="#__codelineno-3-6" id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="w">  </span><span class="nt">client</span><span class="p">:</span>
+<a href="#__codelineno-3-7" id="__codelineno-3-7" name="__codelineno-3-7"></a><span class="w">    </span><span class="nt">service-url</span><span class="p">:</span>
+<a href="#__codelineno-3-8" id="__codelineno-3-8" name="__codelineno-3-8"></a><span class="w">      </span><span class="nt">defaultZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:8761/eureka/</span>
+<a href="#__codelineno-3-9" id="__codelineno-3-9" name="__codelineno-3-9"></a><span class="w">    </span><span class="nt">register-with-eureka</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a href="#__codelineno-3-10" id="__codelineno-3-10" name="__codelineno-3-10"></a><span class="w">    </span><span class="nt">fetch-registry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a href="#__codelineno-3-11" id="__codelineno-3-11" name="__codelineno-3-11"></a><span class="w">  </span><span class="nt">instance</span><span class="p">:</span>
+<a href="#__codelineno-3-12" id="__codelineno-3-12" name="__codelineno-3-12"></a><span class="w">    </span><span class="nt">prefer-ip-address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-4-1" id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="nd">@SpringBootApplication</span>
+<a href="#__codelineno-4-2" id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="nd">@EnableDiscoveryClient</span>
+<a href="#__codelineno-4-3" id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">CheckoutServiceApplication</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-4-4" id="__codelineno-4-4" name="__codelineno-4-4"></a>
+<a href="#__codelineno-4-5" id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-4-6" id="__codelineno-4-6" name="__codelineno-4-6"></a><span class="w">        </span><span class="n">SpringApplication</span><span class="p">.</span><span class="na">run</span><span class="p">(</span><span class="n">CheckoutServiceApplication</span><span class="p">.</span><span class="na">class</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="p">);</span>
+<a href="#__codelineno-4-7" id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-4-8" id="__codelineno-4-8" name="__codelineno-4-8"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What HTTP verbs does a Eureka client use over its registration lifecycle?</strong>
+<code>POST</code> to register on startup, <code>PUT</code> for periodic heartbeat renewals, and <code>DELETE</code> to deregister on graceful shutdown.</p>
+<p><strong>Q: Why set <code>eureka.instance.prefer-ip-address: true</code> in containerized environments?</strong>
+Containers often have unstable or non-resolvable hostnames, so advertising the IP address instead of the hostname ensures other services can actually reach the instance rather than failing DNS resolution.</p>
+<h3 id="eureka-client-library">Eureka Client Library</h3>
+<p>The <code>spring-cloud-starter-netflix-eureka-client</code> starter bundles the Netflix <code>eureka-client</code> library along with Spring Cloud's auto-configuration glue. It provides the <code>EurekaClient</code> / <code>com.netflix.discovery.EurekaClient</code> API for programmatic registry access, plus Spring abstractions like <code>DiscoveryClient</code> (Spring Cloud Commons) that abstract over Eureka, Consul, or Zookeeper so application code isn't tied to a specific discovery implementation.</p>
+<p>Under the hood, the library manages a background scheduler for heartbeats and registry fetches, an in-memory cache of the registry (refreshed via delta updates rather than full downloads after the initial fetch, to save bandwidth), and hooks into the Spring lifecycle so that registration happens after the web server has actually started listening (avoiding a race where Eureka advertises an instance before it can accept traffic).</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-5-1" id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="nd">@RestController</span>
+<a href="#__codelineno-5-2" id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">InstanceInfoController</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-5-3" id="__codelineno-5-3" name="__codelineno-5-3"></a>
+<a href="#__codelineno-5-4" id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">DiscoveryClient</span><span class="w"> </span><span class="n">discoveryClient</span><span class="p">;</span>
+<a href="#__codelineno-5-5" id="__codelineno-5-5" name="__codelineno-5-5"></a>
+<a href="#__codelineno-5-6" id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">InstanceInfoController</span><span class="p">(</span><span class="n">DiscoveryClient</span><span class="w"> </span><span class="n">discoveryClient</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-5-7" id="__codelineno-5-7" name="__codelineno-5-7"></a><span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">discoveryClient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">discoveryClient</span><span class="p">;</span>
+<a href="#__codelineno-5-8" id="__codelineno-5-8" name="__codelineno-5-8"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-5-9" id="__codelineno-5-9" name="__codelineno-5-9"></a>
+<a href="#__codelineno-5-10" id="__codelineno-5-10" name="__codelineno-5-10"></a><span class="w">    </span><span class="nd">@GetMapping</span><span class="p">(</span><span class="s">"/instances/{serviceId}"</span><span class="p">)</span>
+<a href="#__codelineno-5-11" id="__codelineno-5-11" name="__codelineno-5-11"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">ServiceInstance</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">instances</span><span class="p">(</span><span class="nd">@PathVariable</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">serviceId</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-5-12" id="__codelineno-5-12" name="__codelineno-5-12"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">discoveryClient</span><span class="p">.</span><span class="na">getInstances</span><span class="p">(</span><span class="n">serviceId</span><span class="p">);</span>
+<a href="#__codelineno-5-13" id="__codelineno-5-13" name="__codelineno-5-13"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-5-14" id="__codelineno-5-14" name="__codelineno-5-14"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A platform team builds an internal admin tool that uses the generic <code>DiscoveryClient</code> API to list all registered services and their instance counts, and the same code works unchanged whether the backing registry is Eureka in production or Consul in a newer cluster.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What is the difference between Netflix's <code>EurekaClient</code> API and Spring Cloud Commons' <code>DiscoveryClient</code>?</strong>
+<code>EurekaClient</code> is Eureka-specific and exposes Netflix's native API surface, while <code>DiscoveryClient</code> is a Spring Cloud abstraction that works uniformly across Eureka, Consul, or Zookeeper, letting application code stay decoupled from a specific discovery implementation.</p>
+<p><strong>Q: Why does the client fetch registry deltas instead of the full registry after the initial download?</strong>
+Delta fetches reduce bandwidth and processing overhead on both the client and server, since only changes since the last fetch need to be transmitted rather than the entire registry on every refresh cycle.</p>
+<h3 id="eureka-client-health-check-configuration">Eureka Client Health Check Configuration</h3>
+<p>By default, Eureka's notion of "instance health" is just whether the client is sending heartbeats — it doesn't know if the application itself is actually healthy (e.g., its database connection pool exhausted). Spring Boot Actuator can be wired in so Eureka reflects real application health: setting <code>eureka.client.healthcheck.enabled=true</code> makes the Eureka client delegate to Actuator's <code>/actuator/health</code> endpoint, and if that reports <code>DOWN</code>, the client actively tells Eureka the instance status is <code>DOWN</code> instead of waiting for lease expiration.</p>
+<p>This is important because without it, a service whose health indicator fails (say, a broken downstream dependency) would still show as <code>UP</code> in Eureka and keep receiving traffic until an operator intervenes, defeating the purpose of health checks. Combining Actuator health indicators with Eureka health propagation lets the registry reflect true application readiness, not just process liveness.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-6-1" id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="nt">eureka</span><span class="p">:</span>
+<a href="#__codelineno-6-2" id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="w">  </span><span class="nt">client</span><span class="p">:</span>
+<a href="#__codelineno-6-3" id="__codelineno-6-3" name="__codelineno-6-3"></a><span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<a href="#__codelineno-6-4" id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a href="#__codelineno-6-5" id="__codelineno-6-5" name="__codelineno-6-5"></a><span class="w">  </span><span class="nt">instance</span><span class="p">:</span>
+<a href="#__codelineno-6-6" id="__codelineno-6-6" name="__codelineno-6-6"></a><span class="w">    </span><span class="nt">lease-renewal-interval-in-seconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<a href="#__codelineno-6-7" id="__codelineno-6-7" name="__codelineno-6-7"></a><span class="w">    </span><span class="nt">lease-expiration-duration-in-seconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<a href="#__codelineno-6-8" id="__codelineno-6-8" name="__codelineno-6-8"></a>
+<a href="#__codelineno-6-9" id="__codelineno-6-9" name="__codelineno-6-9"></a><span class="nt">management</span><span class="p">:</span>
+<a href="#__codelineno-6-10" id="__codelineno-6-10" name="__codelineno-6-10"></a><span class="w">  </span><span class="nt">endpoint</span><span class="p">:</span>
+<a href="#__codelineno-6-11" id="__codelineno-6-11" name="__codelineno-6-11"></a><span class="w">    </span><span class="nt">health</span><span class="p">:</span>
+<a href="#__codelineno-6-12" id="__codelineno-6-12" name="__codelineno-6-12"></a><span class="w">      </span><span class="nt">show-details</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<a href="#__codelineno-6-13" id="__codelineno-6-13" name="__codelineno-6-13"></a><span class="w">  </span><span class="nt">health</span><span class="p">:</span>
+<a href="#__codelineno-6-14" id="__codelineno-6-14" name="__codelineno-6-14"></a><span class="w">    </span><span class="nt">db</span><span class="p">:</span>
+<a href="#__codelineno-6-15" id="__codelineno-6-15" name="__codelineno-6-15"></a><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> When <code>inventory-service</code>'s database connection pool is exhausted, its Actuator health indicator flips to <code>DOWN</code>, Eureka immediately marks the instance <code>DOWN</code>, and Feign clients stop routing new requests to it within seconds instead of waiting up to 90 seconds for a lease to expire.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Without <code>eureka.client.healthcheck.enabled=true</code>, what does Eureka's "UP" status actually reflect?</strong>
+Only that the client is currently sending heartbeats — it says nothing about whether the application's internal dependencies (database, downstream services) are actually functioning correctly.</p>
+<p><strong>Q: What is a risk of enabling Actuator health propagation to Eureka without care?</strong>
+If a non-critical health indicator (e.g., a rarely-used external dependency) is included in the aggregate health status, it could mark the whole instance <code>DOWN</code> and remove it from routing even though its core functionality is fine — health indicators should be scoped deliberately.</p>
+<h3 id="load-balancing-with-eureka-feign-spring-cloud-loadbalancer">Load Balancing with Eureka, Feign &amp; Spring Cloud LoadBalancer</h3>
+<p>Service discovery is only half the story — once multiple instances of a service are known, something needs to pick which one to call. Spring Cloud LoadBalancer is the client-side load balancer that plugs into <code>DiscoveryClient</code>: it fetches the list of instances for a logical service name from Eureka and applies a strategy (round-robin by default) to select one for each outgoing call. This replaced the older Netflix Ribbon library, which is now in maintenance mode.</p>
+<p>Feign, Spring Cloud's declarative REST client, integrates directly with Spring Cloud LoadBalancer: instead of hardcoding a URL, a Feign client interface is declared with just the logical service name, and Feign resolves it to a real instance transparently on every call, load-balancing across all healthy registered instances. <code>RestTemplate</code> can also be made load-balancing-aware simply by adding <code>@LoadBalanced</code> to its <code>@Bean</code> definition, which causes it to resolve service names the same way.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-7-1" id="__codelineno-7-1" name="__codelineno-7-1"></a><span class="nd">@FeignClient</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"inventory-service"</span><span class="p">)</span>
+<a href="#__codelineno-7-2" id="__codelineno-7-2" name="__codelineno-7-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">InventoryClient</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-7-3" id="__codelineno-7-3" name="__codelineno-7-3"></a>
+<a href="#__codelineno-7-4" id="__codelineno-7-4" name="__codelineno-7-4"></a><span class="w">    </span><span class="nd">@GetMapping</span><span class="p">(</span><span class="s">"/api/inventory/{sku}"</span><span class="p">)</span>
+<a href="#__codelineno-7-5" id="__codelineno-7-5" name="__codelineno-7-5"></a><span class="w">    </span><span class="n">InventoryResponse</span><span class="w"> </span><span class="nf">getStock</span><span class="p">(</span><span class="nd">@PathVariable</span><span class="p">(</span><span class="s">"sku"</span><span class="p">)</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">sku</span><span class="p">);</span>
+<a href="#__codelineno-7-6" id="__codelineno-7-6" name="__codelineno-7-6"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-8-1" id="__codelineno-8-1" name="__codelineno-8-1"></a><span class="nd">@Configuration</span>
+<a href="#__codelineno-8-2" id="__codelineno-8-2" name="__codelineno-8-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">RestTemplateConfig</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-8-3" id="__codelineno-8-3" name="__codelineno-8-3"></a>
+<a href="#__codelineno-8-4" id="__codelineno-8-4" name="__codelineno-8-4"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-8-5" id="__codelineno-8-5" name="__codelineno-8-5"></a><span class="w">    </span><span class="nd">@LoadBalanced</span>
+<a href="#__codelineno-8-6" id="__codelineno-8-6" name="__codelineno-8-6"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">RestTemplate</span><span class="w"> </span><span class="nf">restTemplate</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-8-7" id="__codelineno-8-7" name="__codelineno-8-7"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">RestTemplate</span><span class="p">();</span>
+<a href="#__codelineno-8-8" id="__codelineno-8-8" name="__codelineno-8-8"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-8-9" id="__codelineno-8-9" name="__codelineno-8-9"></a><span class="p">}</span>
+</code></pre></div>
+<pre class="mermaid"><code>flowchart TD
+    A[checkout-service] --&gt;|"1. resolve 'inventory-service'"| B[Spring Cloud LoadBalancer]
+    B --&gt;|"2. query instances"| C[(Eureka Registry)]
+    C --&gt;|"3. instance list"| B
+    B --&gt;|"4. pick instance round-robin"| D[inventory-service #1]
+    B -.-&gt;|alternative pick| E[inventory-service #2]
+    A --&gt;|"5. HTTP call via Feign"| D
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Style</th>
+<th>Load Balancing</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Feign</td>
+<td>Declarative interface-based client</td>
+<td>Built-in via Spring Cloud LoadBalancer</td>
+<td>Recommended</td>
+</tr>
+<tr>
+<td><code>RestTemplate</code> + <code>@LoadBalanced</code></td>
+<td>Imperative, manual calls</td>
+<td>Via <code>LoadBalancerInterceptor</code></td>
+<td>Supported, more boilerplate</td>
+</tr>
+<tr>
+<td>Netflix Ribbon</td>
+<td>Imperative</td>
+<td>Client-side rules</td>
+<td>Deprecated / maintenance mode</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Real-life scenario:</strong> <code>checkout-service</code> calls <code>inventory-service</code> through a Feign client; when traffic spikes and the platform scales <code>inventory-service</code> from 2 to 6 pods, no code or config changes are needed — new instances are picked up automatically and load spreads across all 6.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why was Netflix Ribbon replaced by Spring Cloud LoadBalancer?</strong>
+Ribbon entered maintenance mode and lacked first-class reactive support; Spring Cloud LoadBalancer is actively maintained, integrates cleanly with both blocking (<code>RestTemplate</code>) and reactive (<code>WebClient</code>) clients, and has simpler configuration.</p>
+<p><strong>Q: What load-balancing strategy does Spring Cloud LoadBalancer use by default?</strong>
+A round-robin strategy across the healthy instances returned by the <code>DiscoveryClient</code> for a given service name, though custom <code>ServiceInstanceListSupplier</code> implementations can plug in weighted, zone-aware, or other strategies.</p>
+<h3 id="reactive-way-using-feign-reactive">Reactive Way using Feign Reactive</h3>
+<p>Traditional Feign clients are blocking — each call occupies a thread until the HTTP response returns, which doesn't fit well into a reactive, non-blocking stack built on Spring WebFlux and Project Reactor. Reactive Feign (a community project, <code>feign-reactor</code>) and, in newer Spring Cloud versions, native support layered over <code>WebClient</code>, allow Feign-style declarative clients to return <code>Mono&lt;T&gt;</code> or <code>Flux&lt;T&gt;</code> instead of plain objects, so calls integrate into a fully non-blocking pipeline without dedicating a thread per in-flight request.</p>
+<p>This matters most for high-concurrency services that need to minimize thread usage, such as an API gateway aggregating calls to several downstream services. Combining reactive Feign with Eureka-backed load balancing means the reactive <code>WebClient</code> still needs a <code>ReactorLoadBalancerExchangeFilterFunction</code> (Spring Cloud LoadBalancer's reactive support) to resolve the logical service name against the registry before issuing the non-blocking call.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-9-1" id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="nd">@FeignClient</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"inventory-service"</span><span class="p">)</span>
+<a href="#__codelineno-9-2" id="__codelineno-9-2" name="__codelineno-9-2"></a><span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">ReactiveInventoryClient</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-9-3" id="__codelineno-9-3" name="__codelineno-9-3"></a>
+<a href="#__codelineno-9-4" id="__codelineno-9-4" name="__codelineno-9-4"></a><span class="w">    </span><span class="nd">@GetMapping</span><span class="p">(</span><span class="s">"/api/inventory/{sku}"</span><span class="p">)</span>
+<a href="#__codelineno-9-5" id="__codelineno-9-5" name="__codelineno-9-5"></a><span class="w">    </span><span class="n">Mono</span><span class="o">&lt;</span><span class="n">InventoryResponse</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getStock</span><span class="p">(</span><span class="nd">@PathVariable</span><span class="p">(</span><span class="s">"sku"</span><span class="p">)</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">sku</span><span class="p">);</span>
+<a href="#__codelineno-9-6" id="__codelineno-9-6" name="__codelineno-9-6"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-10-1" id="__codelineno-10-1" name="__codelineno-10-1"></a><span class="nd">@Bean</span>
+<a href="#__codelineno-10-2" id="__codelineno-10-2" name="__codelineno-10-2"></a><span class="nd">@LoadBalanced</span>
+<a href="#__codelineno-10-3" id="__codelineno-10-3" name="__codelineno-10-3"></a><span class="kd">public</span><span class="w"> </span><span class="n">WebClient</span><span class="p">.</span><span class="na">Builder</span><span class="w"> </span><span class="nf">loadBalancedWebClientBuilder</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-10-4" id="__codelineno-10-4" name="__codelineno-10-4"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">WebClient</span><span class="p">.</span><span class="na">builder</span><span class="p">();</span>
+<a href="#__codelineno-10-5" id="__codelineno-10-5" name="__codelineno-10-5"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> An API gateway aggregating responses from <code>pricing-service</code>, <code>inventory-service</code>, and <code>review-service</code> in parallel uses reactive Feign clients so a burst of 10,000 concurrent requests doesn't require 10,000 blocked threads, keeping memory and context-switching overhead low.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why don't blocking Feign clients scale well inside a WebFlux application?</strong>
+Each blocking call ties up a thread until the response returns, which defeats WebFlux's small, fixed-size event-loop thread model and can exhaust threads under high concurrency, negating the benefits of going reactive in the first place.</p>
+<p><strong>Q: What component resolves a logical service name for a reactive <code>WebClient</code> before the non-blocking call is issued?</strong>
+<code>ReactorLoadBalancerExchangeFilterFunction</code>, Spring Cloud LoadBalancer's reactive integration, intercepts the request and resolves the service name against the registry before the actual non-blocking HTTP call is dispatched.</p>
+<h3 id="configure-spring-security-to-eureka-server">Configure Spring Security to Eureka Server</h3>
+<p>By default, a Eureka server exposes its dashboard and REST API with no authentication, which is unacceptable outside of an isolated local/dev network. Adding <code>spring-boot-starter-security</code> to the Eureka server project brings Spring Security onto the classpath, which by default locks down <em>all</em> endpoints, including Eureka's own registration API, with basic authentication and a randomly generated password unless explicitly configured.</p>
+<p>The goal is to require credentials for both the human-facing dashboard and the machine-facing registration/heartbeat API, while keeping the actual security configuration simple since Eureka's server itself isn't meant to do fine-grained authorization — it's typically protected with a single shared username/password pair for all Eureka clients, sitting behind network-level controls for anything more sensitive.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-11-1" id="__codelineno-11-1" name="__codelineno-11-1"></a><span class="nt">spring</span><span class="p">:</span>
+<a href="#__codelineno-11-2" id="__codelineno-11-2" name="__codelineno-11-2"></a><span class="w">  </span><span class="nt">security</span><span class="p">:</span>
+<a href="#__codelineno-11-3" id="__codelineno-11-3" name="__codelineno-11-3"></a><span class="w">    </span><span class="nt">user</span><span class="p">:</span>
+<a href="#__codelineno-11-4" id="__codelineno-11-4" name="__codelineno-11-4"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eureka-admin</span>
+<a href="#__codelineno-11-5" id="__codelineno-11-5" name="__codelineno-11-5"></a><span class="w">      </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="s">"${EUREKA_SERVER_PASSWORD}"</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> Without security, any pod on the network segment could register itself as a fake <code>payment-service</code> instance and intercept traffic; requiring a shared credential for registration closes off this trivial spoofing vector.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What happens if <code>spring-boot-starter-security</code> is added to a Eureka server without any explicit user configuration?</strong>
+Spring Boot auto-generates a random password logged at startup for a default <code>user</code> account, which is fine for a quick smoke test but unusable operationally since the password changes every restart — explicit credentials must be configured.</p>
+<p><strong>Q: Is per-client fine-grained authorization typical for a Eureka server?</strong>
+No — Eureka servers are usually protected with a single shared credential for all clients rather than per-service authorization, with finer access control left to network segmentation or a service mesh layer.</p>
+<h3 id="enable-web-security-in-eureka">Enable Web Security in Eureka</h3>
+<p>Simply adding the security starter isn't enough — Spring Security's default behavior can interfere with Eureka's own client-to-server communication, which uses HTTP Basic auth but doesn't handle CSRF tokens the way browser-based forms do. A dedicated <code>SecurityFilterChain</code> bean is needed to require authentication for all requests while disabling CSRF protection specifically for the <code>/eureka/**</code> paths, since Eureka clients are non-browser HTTP clients that can't obtain or submit CSRF tokens.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-12-1" id="__codelineno-12-1" name="__codelineno-12-1"></a><span class="nd">@Configuration</span>
+<a href="#__codelineno-12-2" id="__codelineno-12-2" name="__codelineno-12-2"></a><span class="nd">@EnableWebSecurity</span>
+<a href="#__codelineno-12-3" id="__codelineno-12-3" name="__codelineno-12-3"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">EurekaServerSecurityConfig</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-12-4" id="__codelineno-12-4" name="__codelineno-12-4"></a>
+<a href="#__codelineno-12-5" id="__codelineno-12-5" name="__codelineno-12-5"></a><span class="w">    </span><span class="nd">@Bean</span>
+<a href="#__codelineno-12-6" id="__codelineno-12-6" name="__codelineno-12-6"></a><span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">SecurityFilterChain</span><span class="w"> </span><span class="nf">filterChain</span><span class="p">(</span><span class="n">HttpSecurity</span><span class="w"> </span><span class="n">http</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">Exception</span><span class="w"> </span><span class="p">{</span>
+<a href="#__codelineno-12-7" id="__codelineno-12-7" name="__codelineno-12-7"></a><span class="w">        </span><span class="n">http</span>
+<a href="#__codelineno-12-8" id="__codelineno-12-8" name="__codelineno-12-8"></a><span class="w">            </span><span class="p">.</span><span class="na">csrf</span><span class="p">(</span><span class="n">csrf</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">csrf</span><span class="p">.</span><span class="na">ignoringRequestMatchers</span><span class="p">(</span><span class="s">"/eureka/**"</span><span class="p">))</span>
+<a href="#__codelineno-12-9" id="__codelineno-12-9" name="__codelineno-12-9"></a><span class="w">            </span><span class="p">.</span><span class="na">authorizeHttpRequests</span><span class="p">(</span><span class="n">auth</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">auth</span><span class="p">.</span><span class="na">anyRequest</span><span class="p">().</span><span class="na">authenticated</span><span class="p">())</span>
+<a href="#__codelineno-12-10" id="__codelineno-12-10" name="__codelineno-12-10"></a><span class="w">            </span><span class="p">.</span><span class="na">httpBasic</span><span class="p">(</span><span class="n">Customizer</span><span class="p">.</span><span class="na">withDefaults</span><span class="p">());</span>
+<a href="#__codelineno-12-11" id="__codelineno-12-11" name="__codelineno-12-11"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">http</span><span class="p">.</span><span class="na">build</span><span class="p">();</span>
+<a href="#__codelineno-12-12" id="__codelineno-12-12" name="__codelineno-12-12"></a><span class="w">    </span><span class="p">}</span>
+<a href="#__codelineno-12-13" id="__codelineno-12-13" name="__codelineno-12-13"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> Without disabling CSRF on <code>/eureka/**</code>, Eureka clients would receive <code>403 Forbidden</code> responses when trying to register or renew leases, because they can't supply the CSRF token that Spring Security expects for state-changing POST/PUT requests by default.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why is CSRF protection disabled specifically for <code>/eureka/**</code> rather than globally?</strong>
+Disabling CSRF globally would remove protection for any browser-facing endpoints the application might expose; scoping the exemption to <code>/eureka/**</code> keeps CSRF defenses intact everywhere except the machine-to-machine registration API that can't supply CSRF tokens.</p>
+<p><strong>Q: What authentication scheme does the example <code>SecurityFilterChain</code> enforce for Eureka server requests?</strong>
+HTTP Basic authentication (<code>httpBasic(Customizer.withDefaults())</code>) combined with requiring authentication on every request via <code>anyRequest().authenticated()</code>.</p>
+<h3 id="configure-eureka-clients-to-use-username-and-password">Configure Eureka Clients to use Username and Password</h3>
+<p>Once the Eureka server requires authentication, every client must embed credentials in its <code>defaultZone</code> service URL, since Eureka's client library authenticates using HTTP Basic auth encoded directly into the registration endpoint URL. The credentials should never be hardcoded in plaintext in version control — they're typically injected via environment variables or pulled from Config Server/Vault.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-13-1" id="__codelineno-13-1" name="__codelineno-13-1"></a><span class="nt">eureka</span><span class="p">:</span>
+<a href="#__codelineno-13-2" id="__codelineno-13-2" name="__codelineno-13-2"></a><span class="w">  </span><span class="nt">client</span><span class="p">:</span>
+<a href="#__codelineno-13-3" id="__codelineno-13-3" name="__codelineno-13-3"></a><span class="w">    </span><span class="nt">service-url</span><span class="p">:</span>
+<a href="#__codelineno-13-4" id="__codelineno-13-4" name="__codelineno-13-4"></a><span class="w">      </span><span class="nt">defaultZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://${EUREKA_USERNAME}:${EUREKA_PASSWORD}@localhost:8761/eureka/</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A new microservice fails to register with "401 Unauthorized" in its startup logs until the ops team realizes the <code>EUREKA_USERNAME</code>/<code>EUREKA_PASSWORD</code> environment variables weren't propagated to its container, illustrating why centralizing these credentials (rather than copy-pasting per service) reduces this class of misconfiguration.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: How does a Eureka client pass credentials to a secured server?</strong>
+By embedding them directly in the <code>defaultZone</code> URL using standard HTTP Basic Auth URL syntax (<code>http://user:password@host:port/eureka/</code>), which the Eureka client library parses and uses for every registration/renewal request.</p>
+<p><strong>Q: Why is hardcoding credentials in <code>defaultZone</code> in version control a bad practice?</strong>
+Anyone with read access to the repository would see the plaintext password; credentials should instead come from environment variables, a secrets manager, or an encrypted value resolved via Config Server.</p>
+<h3 id="configure-eureka-service-url-in-config-server">Configure Eureka Service URL in Config Server</h3>
+<p>Rather than duplicating the Eureka <code>defaultZone</code> URL (and credentials) in every microservice's local <code>application.yml</code>, teams centralize it in Spring Cloud Config Server. Each client's <code>bootstrap.yml</code>/<code>application.yml</code> only needs to point at the Config Server, and the actual <code>eureka.client.service-url.defaultZone</code> value is resolved from a shared configuration file (e.g., <code>application.yml</code> in the Config Server's Git-backed repository) that all services inherit.</p>
+<p>This means changing the Eureka cluster address (say, moving from a 1-node dev cluster to a 3-node cluster) requires updating configuration in one place instead of redeploying every microservice, and combined with Spring Cloud Bus, the change can even be pushed to running instances without a restart.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-14-1" id="__codelineno-14-1" name="__codelineno-14-1"></a><span class="c1"># config-repo/application.yml (shared by all services via Config Server)</span>
+<a href="#__codelineno-14-2" id="__codelineno-14-2" name="__codelineno-14-2"></a><span class="nt">eureka</span><span class="p">:</span>
+<a href="#__codelineno-14-3" id="__codelineno-14-3" name="__codelineno-14-3"></a><span class="w">  </span><span class="nt">client</span><span class="p">:</span>
+<a href="#__codelineno-14-4" id="__codelineno-14-4" name="__codelineno-14-4"></a><span class="w">    </span><span class="nt">service-url</span><span class="p">:</span>
+<a href="#__codelineno-14-5" id="__codelineno-14-5" name="__codelineno-14-5"></a><span class="w">      </span><span class="nt">defaultZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://eureka1:8761/eureka/,http://eureka2:8762/eureka/,http://eureka3:8763/eureka/</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> When migrating Eureka from a single node to a highly available 3-node cluster, updating one shared file in the config repository automatically propagates the new cluster addresses to dozens of microservices without touching their individual repositories.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What problem does centralizing <code>eureka.client.service-url.defaultZone</code> in Config Server solve?</strong>
+It eliminates the need to duplicate (and keep in sync) the same Eureka cluster address across every microservice's local configuration, so infrastructure changes require editing one shared file instead of many repositories.</p>
+<p><strong>Q: How can a centralized Eureka URL change be propagated to already-running services without a restart?</strong>
+By combining Config Server with Spring Cloud Bus, which broadcasts a refresh event over a message broker to all subscribed instances, triggering them to re-fetch configuration without a redeploy.</p>
+<h3 id="move-username-and-password-to-config-server">Move Username and Password to Config Server</h3>
+<p>Extending centralization further, the Eureka Basic Auth credentials themselves are stored in the Config Server's backing repository rather than as plain environment variables on each service. This keeps sensitive values in one governed location (often a private Git repo or Vault-backed backend) instead of scattered across dozens of deployment manifests, making rotation and auditing far simpler.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-15-1" id="__codelineno-15-1" name="__codelineno-15-1"></a><span class="c1"># config-repo/application.yml</span>
+<a href="#__codelineno-15-2" id="__codelineno-15-2" name="__codelineno-15-2"></a><span class="nt">eureka</span><span class="p">:</span>
+<a href="#__codelineno-15-3" id="__codelineno-15-3" name="__codelineno-15-3"></a><span class="w">  </span><span class="nt">instance</span><span class="p">:</span>
+<a href="#__codelineno-15-4" id="__codelineno-15-4" name="__codelineno-15-4"></a><span class="w">    </span><span class="nt">hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">localhost</span>
+<a href="#__codelineno-15-5" id="__codelineno-15-5" name="__codelineno-15-5"></a><span class="w">  </span><span class="nt">client</span><span class="p">:</span>
+<a href="#__codelineno-15-6" id="__codelineno-15-6" name="__codelineno-15-6"></a><span class="w">    </span><span class="nt">service-url</span><span class="p">:</span>
+<a href="#__codelineno-15-7" id="__codelineno-15-7" name="__codelineno-15-7"></a><span class="w">      </span><span class="nt">defaultZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://${eureka.username}:${eureka.password}@localhost:8761/eureka/</span>
+<a href="#__codelineno-15-8" id="__codelineno-15-8" name="__codelineno-15-8"></a>
+<a href="#__codelineno-15-9" id="__codelineno-15-9" name="__codelineno-15-9"></a><span class="nt">eureka</span><span class="p">:</span>
+<a href="#__codelineno-15-10" id="__codelineno-15-10" name="__codelineno-15-10"></a><span class="w">  </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">eureka-admin</span>
+<a href="#__codelineno-15-11" id="__codelineno-15-11" name="__codelineno-15-11"></a><span class="w">  </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="s">"{cipher}AQBx...encrypted-value..."</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> During a security audit, rotating the Eureka credentials becomes a single commit to the config repository followed by a Spring Cloud Bus refresh event, instead of a coordinated redeploy of every consuming microservice.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why move Eureka credentials into the Config Server's backing repository instead of leaving them as per-service environment variables?</strong>
+It consolidates sensitive values into one governed location, making rotation, auditing, and access control far simpler than tracking credentials scattered across dozens of deployment manifests.</p>
+<p><strong>Q: What risk remains if credentials are stored in Config Server's repository as plain values?</strong>
+Anyone with read access to that repository (even a private one) can see the plaintext password, which is why the next step is typically encrypting the value rather than storing it as-is.</p>
+<h3 id="encrypting-username-and-password">Encrypting Username and Password</h3>
+<p>Storing credentials in Config Server as plaintext, even in a private repository, is still a risk — anyone with repo read access sees the password. Spring Cloud Config supports symmetric encryption: a shared secret key (<code>encrypt.key</code>) is configured on the Config Server, and sensitive values are encrypted using the <code>/encrypt</code> endpoint, then stored with a <code>{cipher}</code> prefix. The Config Server automatically decrypts these values before serving them to clients, so client applications never need to know about encryption at all.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-16-1" id="__codelineno-16-1" name="__codelineno-16-1"></a><span class="c1"># Encrypt a password via the Config Server's /encrypt endpoint</span>
+<a href="#__codelineno-16-2" id="__codelineno-16-2" name="__codelineno-16-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>--data-urlencode<span class="w"> </span><span class="s2">"eureka-secret-password"</span><span class="w"> </span><span class="se">\</span>
+<a href="#__codelineno-16-3" id="__codelineno-16-3" name="__codelineno-16-3"></a><span class="w">  </span>http://localhost:8888/encrypt
+<a href="#__codelineno-16-4" id="__codelineno-16-4" name="__codelineno-16-4"></a>
+<a href="#__codelineno-16-5" id="__codelineno-16-5" name="__codelineno-16-5"></a><span class="c1"># Response is the ciphertext to store with a {cipher} prefix</span>
+<a href="#__codelineno-16-6" id="__codelineno-16-6" name="__codelineno-16-6"></a><span class="c1"># eureka.password: '{cipher}3af9c1...'</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-17-1" id="__codelineno-17-1" name="__codelineno-17-1"></a><span class="nt">encrypt</span><span class="p">:</span>
+<a href="#__codelineno-17-2" id="__codelineno-17-2" name="__codelineno-17-2"></a><span class="w">  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="s">"${CONFIG_SERVER_ENCRYPT_KEY}"</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>Security</th>
+<th>Operational Complexity</th>
+<th>Key Rotation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Plaintext in config repo</td>
+<td>Low — anyone with repo access sees secrets</td>
+<td>Lowest</td>
+<td>Manual find/replace</td>
+</tr>
+<tr>
+<td>Symmetric encryption (<code>{cipher}</code>)</td>
+<td>Moderate — protects repo-at-rest, single shared key</td>
+<td>Low — Config Server decrypts transparently</td>
+<td>Requires re-encrypting all values on key rotation</td>
+</tr>
+<tr>
+<td>Asymmetric (JCE keystore)</td>
+<td>High — public/private key pair, supports key rotation policies</td>
+<td>Higher — keystore management</td>
+<td>Cleaner rotation via key aliases</td>
+</tr>
+<tr>
+<td>External vault (HashiCorp Vault)</td>
+<td>Highest — dynamic secrets, audit trail, leasing</td>
+<td>Highest — additional infrastructure</td>
+<td>Native support for rotation and revocation</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Real-life scenario:</strong> A compliance requirement mandates that no plaintext secrets exist in any Git repository; encrypting the Eureka password with Config Server's symmetric encryption satisfies the audit while requiring no changes to how client applications consume the configuration.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: How does the Config Server know to decrypt a <code>{cipher}</code>-prefixed value before serving it?</strong>
+The <code>{cipher}</code> prefix signals to the Config Server that the value is encrypted; it uses the configured <code>encrypt.key</code> to decrypt it transparently server-side before returning the resolved configuration to the requesting client, so clients never handle ciphertext.</p>
+<p><strong>Q: What's the trade-off between symmetric encryption and an external vault like HashiCorp Vault for Eureka credentials?</strong>
+Symmetric encryption is simple to operate but relies on a single shared key and requires re-encrypting values on key rotation; a vault provides dynamic secrets, leasing, and audit trails at the cost of additional infrastructure to run and maintain.</p>
+<h3 id="eureka-cluster-and-peer-awareness-configuration">Eureka Cluster and Peer Awareness Configuration</h3>
+<p>Peer awareness is what turns a set of independent Eureka servers into a resilient cluster. Each Eureka node is configured with its <em>own</em> hostname and, critically, with <code>eureka.client.service-url.defaultZone</code> pointing at the <em>other</em> peer nodes (not itself), which makes each server register with its peers as if it were a client. This is what enables the replication behavior described earlier — every node knows about every other node and pushes/pulls registry changes to/from them.</p>
+<p>A common mistake is having every node point at <code>localhost</code> for its peer list, which effectively creates isolated single-node "clusters" that never actually replicate anything. Each node's <code>defaultZone</code> must list the <em>actual</em> hostnames of its peers so replication traffic can reach them over the network.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-18-1" id="__codelineno-18-1" name="__codelineno-18-1"></a><span class="c1"># eureka-peer1 (application-peer1.yml)</span>
+<a href="#__codelineno-18-2" id="__codelineno-18-2" name="__codelineno-18-2"></a><span class="nt">eureka</span><span class="p">:</span>
+<a href="#__codelineno-18-3" id="__codelineno-18-3" name="__codelineno-18-3"></a><span class="w">  </span><span class="nt">instance</span><span class="p">:</span>
+<a href="#__codelineno-18-4" id="__codelineno-18-4" name="__codelineno-18-4"></a><span class="w">    </span><span class="nt">hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">peer1</span>
+<a href="#__codelineno-18-5" id="__codelineno-18-5" name="__codelineno-18-5"></a><span class="w">  </span><span class="nt">client</span><span class="p">:</span>
+<a href="#__codelineno-18-6" id="__codelineno-18-6" name="__codelineno-18-6"></a><span class="w">    </span><span class="nt">service-url</span><span class="p">:</span>
+<a href="#__codelineno-18-7" id="__codelineno-18-7" name="__codelineno-18-7"></a><span class="w">      </span><span class="nt">defaultZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://peer2:8762/eureka/,http://peer3:8763/eureka/</span>
+<a href="#__codelineno-18-8" id="__codelineno-18-8" name="__codelineno-18-8"></a>
+<a href="#__codelineno-18-9" id="__codelineno-18-9" name="__codelineno-18-9"></a><span class="c1"># eureka-peer2 (application-peer2.yml)</span>
+<a href="#__codelineno-18-10" id="__codelineno-18-10" name="__codelineno-18-10"></a><span class="nt">eureka</span><span class="p">:</span>
+<a href="#__codelineno-18-11" id="__codelineno-18-11" name="__codelineno-18-11"></a><span class="w">  </span><span class="nt">instance</span><span class="p">:</span>
+<a href="#__codelineno-18-12" id="__codelineno-18-12" name="__codelineno-18-12"></a><span class="w">    </span><span class="nt">hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">peer2</span>
+<a href="#__codelineno-18-13" id="__codelineno-18-13" name="__codelineno-18-13"></a><span class="w">  </span><span class="nt">client</span><span class="p">:</span>
+<a href="#__codelineno-18-14" id="__codelineno-18-14" name="__codelineno-18-14"></a><span class="w">    </span><span class="nt">service-url</span><span class="p">:</span>
+<a href="#__codelineno-18-15" id="__codelineno-18-15" name="__codelineno-18-15"></a><span class="w">      </span><span class="nt">defaultZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://peer1:8761/eureka/,http://peer3:8763/eureka/</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A team that copy-pasted the same <code>defaultZone: http://localhost:8761/eureka/</code> across all three "cluster" nodes discovers during a failover drill that killing one node causes total registry loss for its clients, because the nodes were never actually peer-aware in the first place.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What is the single most common mistake when configuring a Eureka peer cluster?</strong>
+Pointing every node's <code>defaultZone</code> at <code>localhost</code> instead of the actual peer hostnames, which silently creates isolated single-node instances that never replicate with each other despite appearing to run correctly.</p>
+<p><strong>Q: Does a Eureka node register itself in its own <code>defaultZone</code>?</strong>
+No — each node's <code>defaultZone</code> should list only its <em>peer</em> nodes, not itself; a node registering with itself doesn't achieve peer awareness or replication.</p>
+<h3 id="eureka-cluster-update-hosts-file">Eureka Cluster: Update Hosts File</h3>
+<p>Since each Eureka node's peer configuration references peer hostnames (like <code>peer1</code>, <code>peer2</code>, <code>peer3</code>) rather than IP addresses, local development and on-prem VM setups often need those hostnames resolvable. Editing <code>/etc/hosts</code> (or <code>C:\Windows\System32\drivers\etc\hosts</code> on Windows) to map each peer hostname to <code>127.0.0.1</code> (when running multiple instances on one machine) or to the correct internal IP lets the peers reach each other without relying on a full DNS setup.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-19-1" id="__codelineno-19-1" name="__codelineno-19-1"></a><span class="c1"># /etc/hosts — running a 3-node Eureka cluster locally</span>
+<a href="#__codelineno-19-2" id="__codelineno-19-2" name="__codelineno-19-2"></a><span class="m">127</span>.0.0.1<span class="w">   </span>peer1
+<a href="#__codelineno-19-3" id="__codelineno-19-3" name="__codelineno-19-3"></a><span class="m">127</span>.0.0.1<span class="w">   </span>peer2
+<a href="#__codelineno-19-4" id="__codelineno-19-4" name="__codelineno-19-4"></a><span class="m">127</span>.0.0.1<span class="w">   </span>peer3
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-20-1" id="__codelineno-20-1" name="__codelineno-20-1"></a><span class="c1"># Apply changes immediately (macOS/Linux) — usually no extra step needed,</span>
+<a href="#__codelineno-20-2" id="__codelineno-20-2" name="__codelineno-20-2"></a><span class="c1"># but flush DNS cache if resolution seems stale</span>
+<a href="#__codelineno-20-3" id="__codelineno-20-3" name="__codelineno-20-3"></a>sudo<span class="w"> </span>dscacheutil<span class="w"> </span>-flushcache
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> Running a 3-node Eureka cluster on a single developer laptop for testing peer replication requires distinct hostnames mapped in <code>/etc/hosts</code> so each Eureka instance (bound to a different port) can address its peers by name exactly as it would in a real multi-host deployment.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: Why use hostnames instead of <code>localhost</code> directly for each peer in a single-machine test cluster?</strong>
+Using distinct hostnames (all mapped to <code>127.0.0.1</code> in <code>/etc/hosts</code>) mirrors how peer configuration would look in a real multi-host deployment, making the local test setup representative of production behavior.</p>
+<p><strong>Q: In a Kubernetes deployment, what replaces manual <code>/etc/hosts</code> editing for peer resolution?</strong>
+A headless Service providing stable per-pod DNS names, so peers can address each other by predictable DNS entries without any manual host-file management.</p>
+<h3 id="staring-up-eureka-discovery-server-cluster">Staring up Eureka Discovery Server Cluster</h3>
+<p>Starting a Eureka cluster means launching each peer node with its own Spring profile (or distinct config file) so it binds to the correct port and points at the correct peers. In practice this is done either by running the same JAR multiple times with different <code>--spring.profiles.active</code> flags, or via separate containers/pods in Docker/Kubernetes, each with environment-specific configuration.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-21-1" id="__codelineno-21-1" name="__codelineno-21-1"></a><span class="c1"># Start peer1 on port 8761</span>
+<a href="#__codelineno-21-2" id="__codelineno-21-2" name="__codelineno-21-2"></a>java<span class="w"> </span>-jar<span class="w"> </span>eureka-server.jar<span class="w"> </span>--spring.profiles.active<span class="o">=</span>peer1
+<a href="#__codelineno-21-3" id="__codelineno-21-3" name="__codelineno-21-3"></a>
+<a href="#__codelineno-21-4" id="__codelineno-21-4" name="__codelineno-21-4"></a><span class="c1"># Start peer2 on port 8762 (separate terminal/host)</span>
+<a href="#__codelineno-21-5" id="__codelineno-21-5" name="__codelineno-21-5"></a>java<span class="w"> </span>-jar<span class="w"> </span>eureka-server.jar<span class="w"> </span>--spring.profiles.active<span class="o">=</span>peer2
+<a href="#__codelineno-21-6" id="__codelineno-21-6" name="__codelineno-21-6"></a>
+<a href="#__codelineno-21-7" id="__codelineno-21-7" name="__codelineno-21-7"></a><span class="c1"># Start peer3 on port 8763 (separate terminal/host)</span>
+<a href="#__codelineno-21-8" id="__codelineno-21-8" name="__codelineno-21-8"></a>java<span class="w"> </span>-jar<span class="w"> </span>eureka-server.jar<span class="w"> </span>--spring.profiles.active<span class="o">=</span>peer3
+</code></pre></div>
+<pre class="mermaid"><code>sequenceDiagram
+    participant P1 as Eureka Peer1 (8761)
+    participant P2 as Eureka Peer2 (8762)
+    participant P3 as Eureka Peer3 (8763)
+    P1-&gt;&gt;P2: Register as peer client
+    P1-&gt;&gt;P3: Register as peer client
+    P2-&gt;&gt;P1: Register as peer client
+    P2-&gt;&gt;P3: Register as peer client
+    P3-&gt;&gt;P1: Register as peer client
+    P3-&gt;&gt;P2: Register as peer client
+    Note over P1,P3: Cluster fully peer-aware, ready to replicate registry changes
+</code></pre>
+<p><strong>Real-life scenario:</strong> In a Kubernetes deployment, three Eureka pods behind a headless service each start with an environment variable pointing at the other two pods' stable DNS names, forming a resilient cluster that survives the loss of any single pod.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What is the purpose of <code>--spring.profiles.active</code> when starting each Eureka peer?</strong>
+It selects a profile-specific configuration file (e.g., <code>application-peer1.yml</code>) so each node binds to its own port/hostname and points at the correct set of peers, without needing separate JARs or codebases.</p>
+<p><strong>Q: Why does the startup sequence diagram show each peer registering with every other peer?</strong>
+Because true peer awareness is symmetric — every node must know about and replicate to every other node, not just one designated node, so there's no single leader whose failure would break the cluster.</p>
+<h3 id="eureka-server-dashboard-checking-registered-peers">Eureka Server Dashboard: Checking Registered Peers</h3>
+<p>Each Eureka node's dashboard (<code>http://&lt;host&gt;:&lt;port&gt;/</code>) shows a "DS Replicas" panel listing the other nodes it considers its peers, alongside the "Instances currently registered with Eureka" table showing every registered application and instance. Checking this panel after startup is the simplest way to confirm peer awareness actually worked — if a node's DS Replicas list is empty or incorrect, replication silently isn't happening even though the server appears to run fine.</p>
+<p>The dashboard also surfaces general server health: uptime, renewal threshold, whether self-preservation is active, and the current renewals-per-minute versus the expected threshold, which is the first place to check when diagnosing why an instance appears in an unexpected state.</p>
+<p><strong>Real-life scenario:</strong> After deploying a new Eureka node into an existing cluster, an engineer checks the dashboard's "DS Replicas" section on all three nodes to confirm the new node is visible everywhere before routing any production traffic through it.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What does an empty or incomplete "DS Replicas" panel indicate?</strong>
+That peer awareness/replication configuration is broken for that node — even though the Eureka server process runs fine and may still serve its own registry, it isn't actually syncing with its intended peers.</p>
+<p><strong>Q: Besides DS Replicas, what other information does the Eureka dashboard surface for diagnosing issues?</strong>
+Server uptime, the renewal threshold, whether self-preservation mode is currently active, and the current renewals-per-minute compared to the expected threshold.</p>
+<h3 id="eureka-discovery-client-with-default-configuration">Eureka Discovery Client with Default Configuration</h3>
+<p>When a Eureka client is added to a Spring Boot project with no explicit <code>eureka.client.service-url.defaultZone</code> configured, it falls back to the default value of <code>http://localhost:8761/eureka/</code>. This "just works" convention is convenient for local development against a single Eureka instance on the default port, but it also means a misconfigured or forgotten override in other environments silently tries to reach <code>localhost</code>, which will simply fail to connect rather than raise a clear configuration error.</p>
+<p>Other client defaults worth knowing: <code>lease-renewal-interval-in-seconds</code> defaults to 30, <code>lease-expiration-duration-in-seconds</code> defaults to 90, and <code>registry-fetch-interval-seconds</code> defaults to 30 — these defaults balance registry freshness against network chatter and are usually fine for production but are often tightened in demos to make registration/eviction visibly faster.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-22-1" id="__codelineno-22-1" name="__codelineno-22-1"></a><span class="c1"># No eureka.client.service-url.defaultZone specified —</span>
+<a href="#__codelineno-22-2" id="__codelineno-22-2" name="__codelineno-22-2"></a><span class="c1"># client defaults to http://localhost:8761/eureka/</span>
+<a href="#__codelineno-22-3" id="__codelineno-22-3" name="__codelineno-22-3"></a><span class="nt">spring</span><span class="p">:</span>
+<a href="#__codelineno-22-4" id="__codelineno-22-4" name="__codelineno-22-4"></a><span class="w">  </span><span class="nt">application</span><span class="p">:</span>
+<a href="#__codelineno-22-5" id="__codelineno-22-5" name="__codelineno-22-5"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">demo-service</span>
+</code></pre></div>
+<p><strong>Real-life scenario:</strong> A developer's integration test suite mysteriously hangs trying to reach <code>localhost:8761</code> in a CI pipeline where no Eureka server runs — the fix is either providing <code>eureka.client.enabled=false</code> for tests or spinning up a lightweight Eureka test server, since the default <code>service-url</code> silently assumed a local instance exists.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What is the default <code>eureka.client.service-url.defaultZone</code> if none is configured?</strong>
+<code>http://localhost:8761/eureka/</code> — convenient for local development but a silent trap in other environments where no Eureka server runs at that address.</p>
+<p><strong>Q: How can tests avoid unnecessary Eureka registration attempts?</strong>
+By setting <code>eureka.client.enabled=false</code> in the test configuration, which disables the Eureka client entirely instead of letting it try (and fail or hang) to reach a non-existent local server.</p>
+<h3 id="register-eureka-client-with-eureka-cluster">Register Eureka Client with Eureka Cluster</h3>
+<p>When a Eureka server is a peer-aware cluster, clients should be configured with the <strong>full list</strong> of peer URLs in <code>defaultZone</code>, comma-separated, rather than just one node. This lets the Eureka client library fail over automatically: if the first URL in the list is unreachable, the client tries the next one, so a single Eureka node outage doesn't prevent new registrations or heartbeats.</p>
+<div class="highlight"><pre><span></span><code><a href="#__codelineno-23-1" id="__codelineno-23-1" name="__codelineno-23-1"></a><span class="nt">eureka</span><span class="p">:</span>
+<a href="#__codelineno-23-2" id="__codelineno-23-2" name="__codelineno-23-2"></a><span class="w">  </span><span class="nt">client</span><span class="p">:</span>
+<a href="#__codelineno-23-3" id="__codelineno-23-3" name="__codelineno-23-3"></a><span class="w">    </span><span class="nt">service-url</span><span class="p">:</span>
+<a href="#__codelineno-23-4" id="__codelineno-23-4" name="__codelineno-23-4"></a><span class="w">      </span><span class="nt">defaultZone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://peer1:8761/eureka/,http://peer2:8762/eureka/,http://peer3:8763/eureka/</span>
+<a href="#__codelineno-23-5" id="__codelineno-23-5" name="__codelineno-23-5"></a><span class="w">    </span><span class="nt">register-with-eureka</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a href="#__codelineno-23-6" id="__codelineno-23-6" name="__codelineno-23-6"></a><span class="w">    </span><span class="nt">fetch-registry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<pre class="mermaid"><code>flowchart TD
+    S[order-service] --&gt;|try peer1 first| P1[Eureka Peer1]
+    S -.-&gt;|peer1 down, fail over| P2[Eureka Peer2]
+    S -.-&gt;|peer1 &amp; peer2 down| P3[Eureka Peer3]
+    P1 &lt;--&gt; P2
+    P2 &lt;--&gt; P3
+    P1 &lt;--&gt; P3
+</code></pre>
+<p><strong>Real-life scenario:</strong> During a rolling restart of the Eureka cluster itself (e.g., for a version upgrade), client services configured with all three peer URLs keep registering and renewing leases uninterrupted because they transparently fail over to whichever peer is currently available.</p>
+<p><strong>Interview Q&amp;A:</strong></p>
+<p><strong>Q: What happens if a client is configured with only one Eureka node's URL and that node goes down for maintenance?</strong>
+The client can't register or renew its lease against that node, and since no fallback URL exists, discovery for that client is disrupted until the node returns or its configuration is updated to include other peers.</p>
+<p><strong>Q: Does the order of URLs in a comma-separated <code>defaultZone</code> list matter?</strong>
+The client tries them in order, using the first reachable one, but since all peers hold an equivalent replicated registry, the choice of which one ends up serving the client doesn't affect correctness — only initial connection latency.</p>
+<h2 id="interview-questions-answers">Interview Questions &amp; Answers</h2>
+<h3 id="eureka-fundamentals">Eureka Fundamentals</h3>
+<p><strong>Q: What problem does Eureka (service discovery) solve in a microservices architecture?</strong></p>
+<p>It removes the need to hard-code hostnames and ports of dependent services. As instances scale up/down or get rescheduled with new IPs, each service registers itself with Eureka on startup, and callers resolve a logical service name to a currently healthy instance at call time instead of relying on static configuration.</p>
+<p><strong>Q: Is Eureka a CP or AP system in terms of the CAP theorem, and why does that matter?</strong></p>
+<p>Eureka is AP — it favors availability over strict consistency. During a network partition, it would rather serve a possibly stale registry than reject discovery requests entirely, because for service discovery, a mostly-correct answer is far more useful than no answer.</p>
+<p><strong>Q: What is the role of <code>@EnableEurekaServer</code> versus <code>@EnableDiscoveryClient</code>?</strong></p>
+<p><code>@EnableEurekaServer</code> turns a Spring Boot application into the Eureka registry itself. <code>@EnableDiscoveryClient</code> (largely automatic since Spring Boot auto-configures it when the client starter is present) marks an application as a client that registers itself with, and discovers other services from, a Eureka server.</p>
+<p><strong>Q: What is the default heartbeat/lease renewal interval, and what happens if a client stops sending heartbeats?</strong></p>
+<p>By default, clients renew their lease every 30 seconds, and the lease expires after 90 seconds without a renewal (<code>lease-expiration-duration-in-seconds</code>). If heartbeats stop, the server eventually evicts the instance from the registry once the lease expires, unless self-preservation mode is active.</p>
+<h3 id="problems-and-resilience">Problems and Resilience</h3>
+<p><strong>Q: What are the main operational risks of running Eureka?</strong></p>
+<p>A single Eureka node is a single point of failure; eviction timing means a crashed instance can appear "UP" for up to 90 seconds; and self-preservation, if misunderstood, can make stale instances linger in the registry during deploy storms or network partitions.</p>
+<p><strong>Q: How does Eureka achieve high availability?</strong></p>
+<p>By running a peer-aware cluster of two or more Eureka nodes, each configured to know about the others. Every registration, renewal, or cancellation received by one node is asynchronously replicated to its peers, so any node can serve a (eventually consistent) copy of the full registry.</p>
+<p><strong>Q: Is Eureka's peer replication synchronous or asynchronous, and what trade-off does that represent?</strong></p>
+<p>It's asynchronous, which means replication is eventually consistent rather than strongly consistent. The trade-off favors availability and low latency for registration/renewal over guaranteeing every peer has the absolute latest state at every instant.</p>
+<p><strong>Q: What is self-preservation mode and when does it activate?</strong></p>
+<p>It's a safety mechanism where Eureka stops evicting instances when the percentage of renewals received falls below a threshold (85% by default) within a rolling window, on the assumption that a sharp heartbeat drop is more likely a network problem than mass instance failure.</p>
+<p><strong>Q: Why is self-preservation often disabled in local development?</strong></p>
+<p>With very few instances and frequent restarts, the renewal-percentage math doesn't have enough samples to be meaningful, so self-preservation triggers easily and clutters the dashboard with warnings; disabling it (<code>eureka.server.enable-self-preservation=false</code>) keeps local eviction behavior predictable.</p>
+<h3 id="registration-health-and-load-balancing">Registration, Health, and Load Balancing</h3>
+<p><strong>Q: What API calls does a Eureka client make against the server over its lifecycle?</strong></p>
+<p>Registration (<code>POST</code>) on startup, periodic heartbeat/renewal (<code>PUT</code>) while running, and deregistration (<code>DELETE</code>) on graceful shutdown. It also periodically fetches the registry (initially a full fetch, then incremental deltas).</p>
+<p><strong>Q: How can Eureka reflect actual application health rather than just process liveness?</strong></p>
+<p>By enabling <code>eureka.client.healthcheck.enabled=true</code>, which wires the Eureka client to Spring Boot Actuator's <code>/actuator/health</code> endpoint, so if a health indicator (e.g., database connectivity) reports <code>DOWN</code>, the client actively updates its status in Eureka instead of waiting for lease expiration.</p>
+<p><strong>Q: How does Spring Cloud LoadBalancer differ from the older Netflix Ribbon?</strong></p>
+<p>Spring Cloud LoadBalancer is the modern, actively maintained client-side load balancer that integrates with <code>DiscoveryClient</code> and reactive <code>WebClient</code>. Ribbon is in maintenance mode and was Netflix's original client-side load balancer, superseded because Spring Cloud LoadBalancer has better reactive support and simpler configuration.</p>
+<p><strong>Q: How does a Feign client resolve a logical service name to a real network address?</strong></p>
+<p>Feign delegates name resolution to Spring Cloud LoadBalancer, which queries the registered <code>DiscoveryClient</code> (backed by Eureka) for the current instance list of that service name and applies a selection strategy (round-robin by default) to pick one instance per call.</p>
+<p><strong>Q: Why would you use reactive Feign or <code>WebClient</code> instead of a blocking Feign client?</strong></p>
+<p>In a non-blocking, WebFlux-based application, blocking calls would tie up threads waiting for I/O, negating the benefits of reactive programming. Reactive Feign or <code>WebClient</code> returns <code>Mono</code>/<code>Flux</code> so calls compose into a non-blocking pipeline, which matters most under high concurrency.</p>
+<h3 id="security">Security</h3>
+<p><strong>Q: Why does adding <code>spring-boot-starter-security</code> to a Eureka server require additional configuration for clients to keep working?</strong></p>
+<p>Spring Security secures all endpoints by default and enforces CSRF protection, which breaks Eureka's non-browser client registration calls. A custom <code>SecurityFilterChain</code> is needed to require Basic Auth for all requests while explicitly disabling CSRF for <code>/eureka/**</code>.</p>
+<p><strong>Q: How do Eureka clients authenticate against a secured Eureka server?</strong></p>
+<p>By embedding credentials directly in the <code>defaultZone</code> service URL using HTTP Basic Auth syntax, e.g., <code>http://user:password@host:port/eureka/</code>, since the Eureka client library extracts and uses these credentials for every registration/renewal call.</p>
+<p><strong>Q: Why centralize the Eureka service URL and credentials in Config Server rather than each service's local configuration?</strong></p>
+<p>It avoids duplicating (and potentially drifting) the same URL and secret across every microservice. A single change in the shared config repository — e.g., adding a new cluster node or rotating a password — propagates to all consuming services without redeploying each one individually.</p>
+<p><strong>Q: How does Spring Cloud Config's symmetric encryption protect stored credentials?</strong></p>
+<p>A shared secret key (<code>encrypt.key</code>) configured on the Config Server is used to encrypt sensitive values via its <code>/encrypt</code> endpoint; the encrypted value is stored with a <code>{cipher}</code> prefix in the repository, and the Config Server transparently decrypts it before serving configuration to clients, so plaintext secrets never live in version control.</p>
+<h3 id="cluster-configuration">Cluster Configuration</h3>
+<p><strong>Q: What is "peer awareness" in a Eureka cluster, and what is the most common misconfiguration?</strong></p>
+<p>Peer awareness means each Eureka node is configured with the URLs of its <em>sibling</em> nodes (not itself) in <code>defaultZone</code>, so it registers as a client of its peers and replicates registry changes to them. A common mistake is pointing every node at <code>localhost</code>, which creates isolated single-node instances that never actually replicate.</p>
+<p><strong>Q: Why might a Eureka cluster running locally need <code>/etc/hosts</code> entries?</strong></p>
+<p>Because peer configuration typically references peer hostnames rather than raw IPs (to mirror real deployments), and those hostnames need to resolve to something reachable — usually <code>127.0.0.1</code> when running multiple instances on one machine for testing.</p>
+<p><strong>Q: How can you verify that a Eureka cluster's peer replication is actually working?</strong></p>
+<p>Check each node's dashboard "DS Replicas" panel — it should list the other peer nodes. If it's empty or incomplete, replication configuration is broken even though the server process appears to run normally.</p>
+<p><strong>Q: Why should clients be configured with the full list of Eureka peer URLs rather than just one?</strong></p>
+<p>So the Eureka client library can fail over automatically: if the first URL is unreachable, it tries the next one in the comma-separated list, allowing registration and heartbeats to continue even if one Eureka node is down or being restarted.</p>
+<p><strong>Q: What happens to a client if it doesn't configure <code>eureka.client.service-url.defaultZone</code> at all?</strong></p>
+<p>It falls back to the default <code>http://localhost:8761/eureka/</code>. In non-local environments this silently fails to connect rather than raising an explicit configuration error, which can be confusing when debugging why a service never registers.</p>
+<h2 id="resources">Resources</h2>
+<h3 id="youtube">Youtube</h3>
+<ul>
+<li><a href="https://www.youtube.com/watch?v=Y3JxNzBSOp0">Highly Available Eureka Service Registry | Spring Cloud | Microservice Architecture</a></li>
+<li><a href="https://www.youtube.com/watch?v=e09P-CkCvvs">Spring Cloud Netflix Eureka - Service Discovery with Spring Boot Microservices</a></li>
+<li><a href="https://www.youtube.com/watch?v=sTKQSPDAnlA">Spring Boot Microservices - Service Discovery &amp; Registration using Netflix Eureka | JavaTechie</a></li>
+</ul>
+<h3 id="medium">Medium</h3>
+<ul>
+<li><a href="https://medium.com/@ankithahjprakash/service-discovery-in-spring-boot-microservices-using-netflix-eureka-5b41827ba0c6">Service Discovery in Spring Boot Microservices using Netflix Eureka</a></li>
+<li><a href="https://www.baeldung.com/spring-cloud-netflix-eureka">Spring Cloud Netflix Eureka: Service Discovery in Microservices</a></li>
+</ul></div>
+</article>
+</div>
+<script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+</div>
+<button class="md-top md-icon" data-md-component="top" hidden="" type="button">
+<svg viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  Back to top
+</button>
+</main>
+<footer class="md-footer">
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-copyright">
+<div class="md-copyright__highlight">
+      © 2025 <a href="https://github.com/abhishekghoshh" rel="noopener" target="_blank">Abhishek Ghosh</a>
+</div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" rel="noopener" target="_blank">
+      Material for MkDocs
+    </a>
+</div>
+<div class="md-social">
+<a class="md-social__link" href="https://github.com/abhishekghoshh" rel="noopener" target="_blank" title="github.com">
+<svg viewbox="0 0 480 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M186.1 328.7c0 20.9-10.9 55.1-36.7 55.1s-36.7-34.2-36.7-55.1 10.9-55.1 36.7-55.1 36.7 34.2 36.7 55.1M480 278.2c0 31.9-3.2 65.7-17.5 95-37.9 76.6-142.1 74.8-216.7 74.8-75.8 0-186.2 2.7-225.6-74.8-14.6-29-20.2-63.1-20.2-95 0-41.9 13.9-81.5 41.5-113.6-5.2-15.8-7.7-32.4-7.7-48.8 0-21.5 4.9-32.3 14.6-51.8 45.3 0 74.3 9 108.8 36 29-6.9 58.8-10 88.7-10 27 0 54.2 2.9 80.4 9.2 34-26.7 63-35.2 107.8-35.2 9.8 19.5 14.6 30.3 14.6 51.8 0 16.4-2.6 32.7-7.7 48.2 27.5 32.4 39 72.3 39 114.2m-64.3 50.5c0-43.9-26.7-82.6-73.5-82.6-18.9 0-37 3.4-56 6-14.9 2.3-29.8 3.2-45.1 3.2-15.2 0-30.1-.9-45.1-3.2-18.7-2.6-37-6-56-6-46.8 0-73.5 38.7-73.5 82.6 0 87.8 80.4 101.3 150.4 101.3h48.2c70.3 0 150.6-13.4 150.6-101.3m-82.6-55.1c-25.8 0-36.7 34.2-36.7 55.1s10.9 55.1 36.7 55.1 36.7-34.2 36.7-55.1-10.9-55.1-36.7-55.1"></path></svg>
+</a>
+<a class="md-social__link" href="https://x.com/abhishek_ghoshh" rel="noopener" target="_blank" title="x.com">
+<svg viewbox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253"></path></svg>
+</a>
+<a class="md-social__link" href="https://www.linkedin.com/in/abhishek-ghosh-220679132/" rel="noopener" target="_blank" title="www.linkedin.com">
+<svg viewbox="0 0 448 512" xmlns="http://www.w3.org/2000/svg"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5m282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"></path></svg>
+</a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<div class="md-dialog" data-md-component="dialog">
+<div class="md-dialog__inner md-typeset"></div>
+</div>
+<script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.sections", "toc.integrate", "navigation.top", "search.suggest", "search.highlight", "content.tabs.link", "content.code.annotation", "content.code.copy"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+<script src="../../assets/javascripts/bundle.60a45f97.min.js"></script>
+<script type="module">import mermaid from "https://unpkg.com/mermaid@10.4.0/dist/mermaid.esm.min.mjs";
+window.mermaidConfig = {default: {
+    startOnLoad: false
+}};</script></body>
+</html>
