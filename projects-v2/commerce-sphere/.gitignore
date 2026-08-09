@@ -1,0 +1,51 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env.local
+.env.*.local
+
+# Docker data volumes
+redis_data/
+postgres_data/
+mongo_data/
+
+# Logs
+*.log
+logs/
+
+# Node
+node_modules/
+dist/
+.next/
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+# Helm
+charts/**/charts/
+charts/**/tmp/
+
+# Uploads
+uploads/

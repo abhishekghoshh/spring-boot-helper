@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+  labels:
+    {{- include "loansphere.labels" . | nindent 4 }}
+data:
+  EUREKA_SERVER_URL: http://discovery-server:8761/eureka/
+  MONGODB_HOST: mongodb
+  REDIS_HOST: redis

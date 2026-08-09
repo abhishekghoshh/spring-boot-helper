@@ -16,15 +16,52 @@ The agent should build the project incrementally while following clean architect
 
 ---
 
+## Technology Baseline
+
+- **Java 25 (LTS)** for every backend service, with **Spring Boot 4.1** (latest GA) as the baseline, paired with matching current-generation Spring Kafka, Spring Security, Spring Data JPA, MapStruct and springdoc-openapi versions compatible with it.
+- **Virtual Threads** must be enabled on every service (`spring.threads.virtual.enabled=true`); Tomcat, JDBC calls, Kafka consumer/producer processing and `@Async`/scheduled work should run on virtual threads instead of platform thread pools. Avoid `synchronized` blocks; prefer `ReentrantLock` where locking is required.
+- **React 19.2** (latest GA) as the baseline for both frontend apps, paired with the current stable TypeScript, Vite, TanStack Query, React Router, Material UI, React Hook Form and Zod versions compatible with it.
+- Beyond these pinned baselines, always prefer the **latest stable release** of every other library in the stack at implementation time instead of pinning to older majors.
+- Prefer modern patterns (React Compiler-friendly code, function components, hooks, no legacy class components).
+
+---
+
+## No Shared Libraries / No Monorepo Tooling
+
+This repository is a collection of **fully independent Spring Boot projects**, not a monorepo with shared code.
+
+- There is **no parent POM** and **no shared/common library** (no `common-event-library`, `common-security-library`, `common-api-library`, `common-exception-library`).
+- Every service under `backend/` owns **its own** `pom.xml` (or Gradle build), and its own event classes, DTOs, mappers, security config and exception classes — duplication across services is expected and acceptable.
+- Do not introduce cross-module Maven/Gradle dependencies between backend services. Services only communicate over the network (Kafka events / REST from the frontend), never via shared JARs.
+- Do not extract multi-module Maven reactor builds, BOMs, or Gradle composite builds to "deduplicate" services — each service must build and deploy on its own.
+- Each React app under `ui/` has its own `package.json`, its own components/hooks/API clients — no shared npm workspace or shared component library between `ui/admin-portal` and `ui/customer-portal`.
+
+---
+
+## Implementation Expectations
+
+When asked to generate a service or feature, the AI Agent must produce **actual working implementation code**, not placeholders or scaffolding:
+
+- Real controllers, services, repositories, entities, DTOs, mappers, Kafka producers/consumers, security config, and exception handlers with full method bodies — not `// TODO` stubs or empty classes.
+- Real React components, hooks and API service files with working logic (state, effects, API calls, form validation) — not empty JSX shells or placeholder components.
+- Configuration files (`application.yml`, `.env`, Dockerfiles, Helm values) should contain concrete, usable values consistent with the rest of the stack, not generic placeholders left for the user to fill in.
+
+---
+
 ## High-Level Architecture
 
 ```mermaid
 flowchart TD
-    UI[React Admin UI] -->|REST APIs| Order[Order API]
-    UI -->|REST APIs| Inventory[Inventory API]
-    UI -->|REST APIs| Payment[Payment API]
-    UI -->|REST APIs| Shipping[Shipping API]
-    UI -->|REST APIs| Notification[Notification API]
+    AdminUI[React Admin UI] -->|REST APIs| Order[Order API]
+    AdminUI -->|REST APIs| Inventory[Inventory API]
+    AdminUI -->|REST APIs| Payment[Payment API]
+    AdminUI -->|REST APIs| Shipping[Shipping API]
+    AdminUI -->|REST APIs| Notification[Notification API]
+
+    CustomerUI[React Customer Portal] -->|REST APIs| Order
+    CustomerUI -->|REST APIs| Payment
+    CustomerUI -->|REST APIs| Shipping
+    CustomerUI -->|REST APIs| Notification
 
     Order --> Kafka[[Kafka - KRaft]]
     Inventory --> Kafka
@@ -47,8 +84,8 @@ No backend service should directly call another backend unless absolutely necess
 
 ### Backend
 
-- Java 21
-- Spring Boot 3.x
+- Java 25 (virtual threads enabled)
+- Spring Boot 4.1
 - Spring MVC
 - Spring WebFlux (where appropriate)
 - Spring Data JPA
@@ -88,7 +125,7 @@ No backend service should directly call another backend unless absolutely necess
 
 ### UI
 
-- React
+- React 19.2
 - Vite
 - React Router
 - TypeScript
@@ -120,25 +157,26 @@ event-driven-order-system/
 ├── docker-compose.yaml
 ├── docs/
 ├── scripts/
-├── ui-admin-portal/
-├── order-command-service/
-├── inventory-service/
-├── payment-service/
-├── shipping-service/
-├── notification-service/
-├── common-event-library/
-├── common-security-library/
-├── common-api-library/
-├── common-exception-library/
+├── ui/
+│   ├── admin-portal/
+│   └── customer-portal/
+├── backend/
+│   ├── order-command-service/
+│   ├── inventory-service/
+│   ├── payment-service/
+│   ├── shipping-service/
+│   └── notification-service/
 └── README.md
 ```
+
+Each directory under `backend/` and `ui/` is a standalone, independently buildable project (its own build file, no shared parent, no shared library module).
 
 ---
 
 ## Common Structure for Every Spring Boot Service
 
 ```
-service-name/
+backend/service-name/
 ├── src/
 │   ├── main/
 │   │   ├── java/
@@ -215,6 +253,13 @@ Every project must include:
 
 Admin should be seeded automatically.
 
+### Default Customer
+
+- **Username:** `customer`
+- **Password:** `Customer@123`
+
+A sample customer should be seeded automatically for the Customer Portal.
+
 ---
 
 ## Roles
@@ -226,7 +271,7 @@ Admin should be seeded automatically.
 
 ## Admin Dashboard
 
-The React application must include
+The React Admin Portal must include
 
 - Dashboard
 - Login
@@ -239,6 +284,22 @@ The React application must include
 - Kafka Event Monitor
 - System Health
 - Audit Logs
+
+---
+
+## Customer Portal
+
+The React Customer Portal must include
+
+- Login
+- Register
+- Home / My Dashboard
+- Place Order
+- My Orders
+- Order Detail / Tracking
+- Order Cancellation
+- Notifications
+- Profile
 
 ---
 
@@ -373,49 +434,20 @@ None
 
 ## Shared Libraries
 
-### common-event-library
+There are **no shared library modules** in this repository (see [No Shared Libraries / No Monorepo Tooling](#no-shared-libraries--no-monorepo-tooling) above). Each service defines and owns, locally within its own codebase:
 
-Contains
+- Its own Kafka event classes, event versions and event DTOs.
+- Its own JWT/security filters, authentication and authorization configuration.
+- Its own API response wrappers, pagination helpers and utilities.
+- Its own exception classes and global error models.
 
-- Kafka Events
-- Event Versions
-- Shared DTOs
-
----
-
-### common-security-library
-
-Contains
-
-- JWT
-- Security Filters
-- Authentication
-- Authorization
+Duplication of these concerns across `order-command-service`, `inventory-service`, `payment-service`, `shipping-service` and `notification-service` is expected and intentional.
 
 ---
 
-### common-api-library
+## React Application: Admin Portal
 
-Contains
-
-- API Response
-- Pagination
-- Utilities
-
----
-
-### common-exception-library
-
-Contains
-
-- Exception Classes
-- Global Error Models
-
----
-
-## React Application
-
-Folder: `ui-admin-portal`
+Folder: `ui/admin-portal`
 
 **Pages**
 
@@ -464,6 +496,63 @@ Folder: `ui-admin-portal`
 
 ---
 
+## React Application: Customer Portal
+
+Folder: `ui/customer-portal`
+
+A self-service portal for normal (`CUSTOMER` role) end users to place and track their own orders, distinct from the internal admin portal.
+
+**Pages**
+
+- Login
+- Register
+- Home / My Dashboard
+- Place Order
+- My Orders
+- Order Detail / Tracking
+- Order Cancellation
+- Notifications
+- Profile
+
+**Components**
+
+- Navbar
+- Footer
+- OrderForm
+- OrderTable
+- OrderTimeline
+- OrderStatusBadge
+- NotificationList
+- ProfileForm
+- Dialogs
+- Loading
+- Snackbar
+- ProtectedRoute
+
+**Hooks**
+
+- `useAuth`
+- `useMyOrders`
+- `usePlaceOrder`
+- `useOrderTracking`
+- `useNotifications`
+- `useProfile`
+
+**Services**
+
+- `authApi.ts`
+- `orderApi.ts`
+- `shippingApi.ts`
+- `notificationApi.ts`
+- `profileApi.ts`
+
+**Access**
+
+- Restricted to the `CUSTOMER` role, scoped to the authenticated customer's own orders only.
+- No access to inventory, payments administration, Kafka event monitor or other customers' data.
+
+---
+
 ## Docker
 
 Every backend should include
@@ -485,7 +574,8 @@ The root `docker-compose.yaml` should start:
 - Payment Service
 - Shipping Service
 - Notification Service
-- React UI
+- React Admin Portal
+- React Customer Portal
 
 ---
 
@@ -535,8 +625,9 @@ Example routes:
 - `/api/shipping`
 - `/api/notification`
 - `/`
+- `/admin`
 
-The React application should be served from `/`.
+The React Customer Portal should be served from `/`, and the React Admin Portal should be served from `/admin`.
 
 ---
 
@@ -621,7 +712,7 @@ For every feature, the agent should:
 4. Build the service layer.
 5. Expose REST APIs.
 6. Add Kafka producers or consumers.
-7. Implement React UI changes.
+7. Implement React Admin Portal and Customer Portal UI changes.
 8. Write unit tests.
 9. Write integration tests.
 10. Create Docker configuration.

@@ -31,6 +31,40 @@ The goal is to understand how large organisations build scalable Spring applicat
 
 ---
 
+## Technology Baseline
+
+- **Java 25 (LTS)** for every backend service. Use modern language features (virtual threads, records, sealed interfaces, pattern matching for switch, structured concurrency) wherever they simplify the code.
+- **Spring Boot 4.1** (latest GA) as the baseline for every backend service, paired with matching current-generation Spring Cloud, Spring Security, Spring Data (JPA/MongoDB/Redis), Spring AMQP, springdoc-openapi, MapStruct, Resilience4j and Micrometer/OpenTelemetry versions compatible with it.
+- **Virtual Threads** must be enabled on every service (`spring.threads.virtual.enabled=true`) and Tomcat/WebFlux, JDBC, Feign and RabbitMQ listener containers should run on virtual threads instead of platform thread pools. Avoid `synchronized` blocks and thread-pool tuning that defeats virtual threads; prefer `ReentrantLock` where locking is required.
+- **React 19.2** (latest GA) as the baseline for every frontend app, paired with the current stable TypeScript, Vite, TanStack Query, React Router, Material UI, React Hook Form and Zod versions compatible with it.
+- Beyond these pinned baselines, always prefer the **latest stable release** of every other library in the stack at implementation time instead of pinning to older majors.
+- Prefer modern patterns (React Compiler-friendly code, function components, hooks, no legacy class components).
+- Dependency versions in `pom.xml`/`package.json` should be revisited whenever a service is generated or regenerated so the stack doesn't silently drift behind Spring Boot 4.1 / React 19.2 or their current-compatible library versions.
+
+---
+
+## No Shared Libraries / No Monorepo Tooling
+
+This repository is a collection of **fully independent Spring Boot projects**, not a monorepo with shared code.
+
+- There is **no parent POM** and **no shared/common library** (no `common-api-library`, `common-security-library`, `common-event-library`, `common-model-library`, `common-exception-library`, or any `libraries/` directory).
+- Every service under `backend/` owns **its own** `pom.xml` (or Gradle build), its own DTOs, mappers, exception classes, security config and event/message contracts — duplication across services is expected and acceptable.
+- Do not introduce cross-module Maven/Gradle dependencies between backend services. Services only communicate over the network (REST/Feign/RabbitMQ), never via shared JARs.
+- Do not extract multi-module Maven reactor builds, BOMs, or Gradle composite builds to "deduplicate" services — each service must build and deploy on its own.
+- Each React app under `ui/` similarly has its own `package.json`, its own components/hooks/API clients — no shared npm workspace or shared component library between `ui/admin-console` and `ui/customer-console`.
+
+---
+
+## Implementation Expectations
+
+When asked to generate a service or feature, the AI Agent must produce **actual working implementation code**, not placeholders or scaffolding:
+
+- Real controllers, services, repositories, entities/documents, DTOs, mappers, security config, and exception handlers with full method bodies — not `// TODO` stubs or empty classes.
+- Real React components, hooks and API service files with working logic (state, effects, API calls, form validation) — not empty JSX shells or placeholder components.
+- Configuration files (`application.yml`, `.env`, Dockerfiles, Helm values) should contain concrete, usable values consistent with the rest of the stack, not generic placeholders left for the user to fill in.
+
+---
+
 ## Primary Learning Objectives
 
 The repository should intentionally cover nearly every major Spring ecosystem project.
@@ -289,7 +323,7 @@ Log Collection
 
 React
 
-- React 19
+- React 19.2
 - TypeScript
 - Vite
 - Material UI
@@ -320,28 +354,59 @@ commerce-mesh/
 ├── docker-compose.yaml
 ├── docs/
 ├── scripts/
-├── ui-admin-console/
-├── discovery-server/
-├── config-server/
-├── api-gateway/
-├── authentication-service/
-├── user-service/
-├── product-catalog-service/
-├── cart-service/
-├── order-service/
-├── inventory-service/
-├── payment-service/
-├── notification-service/
-├── search-service/
-├── common-security-library/
-├── common-api-library/
-├── common-domain-library/
-├── common-event-library/
-├── common-exception-library/
+├── ui/
+│   ├── admin-console/
+│   └── customer-console/
+├── backend/
+│   ├── discovery-server/
+│   ├── config-server/
+│   ├── api-gateway/
+│   ├── authentication-service/
+│   ├── user-service/
+│   ├── product-catalog-service/
+│   ├── cart-service/
+│   ├── inventory-service/
+│   ├── order-service/
+│   ├── payment-service/
+│   ├── notification-service/
+│   └── search-service/
 ├── monitoring/
 ├── README.md
 └── AGENT.md
 ```
+
+Each directory under `backend/` and `ui/` is a standalone, independently buildable project (its own build file, no shared parent, no shared library module).
+
+### ui/customer-console
+
+Customer-facing e-commerce storefront for browsing and purchasing products.
+
+**Pages**
+- Home — featured products, category grid, hero banner
+- Product Listing — grid view with category/sort/filter sidebar
+- Product Detail — images, description, reviews, add to cart
+- Cart — item management, quantity adjustment, checkout link
+- Checkout — multi-step (shipping → payment → review → place order)
+- Order History — list of past orders with status badges
+- Profile — user info, address management
+- Wishlist — saved products with quick add-to-cart
+
+**Components**
+- Navbar — logo, search bar, cart badge, user menu, category links
+- ProductCard — image, name, price, rating, add-to-cart button
+- CartSummary — cart icon with item count badge
+- Footer — copyright and links
+- SearchBar — inline search with auto-suggest
+- ProtectedRoute — redirect to login if not authenticated
+
+**Hooks**
+- `useAuth()` — login, register, logout, user state
+- `useCart()` — add/remove/update items, totals
+- `useProducts()` — product listing with filters
+- `useOrders()` — order history
+
+**API Services**
+- `apiClient.ts` — shared Axios instance with JWT interceptor
 
 ---
 
@@ -389,7 +454,9 @@ docker-compose.yaml
 docs/
 scripts/
 monitoring/
-ui-admin-console/
+ui/
+├── admin-console/
+└── customer-console/
 backend/
 ├── discovery-server/
 ├── config-server/
@@ -403,13 +470,9 @@ backend/
 ├── order-service/
 ├── notification-service/
 └── search-service/
-libraries/
-├── common-api-library/
-├── common-security-library/
-├── common-events-library/
-├── common-model-library/
-└── common-exception-library/
 ```
+
+No `libraries/` directory and no parent/aggregator POM — every entry above is a fully independent, self-contained project.
 
 ---
 
@@ -598,7 +661,7 @@ libraries/
 
 ## React UI
 
-Repository: `ui-admin-console`
+Repository: `ui/admin-console`
 
 ---
 
@@ -999,7 +1062,9 @@ For every feature, the AI Agent should:
 
 The completed repository should resemble a real-world enterprise e-commerce platform and demonstrate:
 
-- Spring Boot 3
+- Java 25 with virtual threads enabled across all services
+- Spring Boot 4.1 backend services and a React 19.2 frontend, with all other libraries kept at their latest compatible stable releases
+- Independent, non-monorepo services with no shared libraries or parent POM
 - Spring Cloud Gateway
 - Eureka Service Discovery
 - Spring Cloud Config

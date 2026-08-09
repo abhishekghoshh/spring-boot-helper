@@ -1,0 +1,6 @@
+replicaCount: 2
+image:
+  repository: commercesphere/cart-service
+  tag: latest
+service:
+  port: 8080

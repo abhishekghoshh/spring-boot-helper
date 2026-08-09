@@ -1,0 +1,46 @@
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+ingress:
+  enabled: true
+  className: nginx
+  host: commercemesh.local
+
+services:
+  discovery-server:
+    enabled: true
+    port: 8761
+  config-server:
+    enabled: true
+    port: 8888
+  api-gateway:
+    enabled: true
+    port: 8080
+  authentication-service:
+    enabled: true
+    port: 8081
+  user-service:
+    enabled: true
+    port: 8082
+  product-catalog-service:
+    enabled: true
+    port: 8083
+  cart-service:
+    enabled: true
+    port: 8084
+  inventory-service:
+    enabled: true
+    port: 8085
+  order-service:
+    enabled: true
+    port: 8086
+  payment-service:
+    enabled: true
+    port: 8087
+  notification-service:
+    enabled: true
+    port: 8088
+  search-service:
+    enabled: true
+    port: 8089

@@ -1,0 +1,26 @@
+server:
+  port: ${CONFIG_SERVER_PORT:8888}
+
+spring:
+  threads:
+    virtual:
+      enabled: true
+  application:
+    name: config-server
+  profiles:
+    active: native
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: classpath:/config
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

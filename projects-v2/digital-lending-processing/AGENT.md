@@ -29,6 +29,38 @@ The AI Agent should always generate production-ready code, follow modern Spring 
 
 ---
 
+## Technology Baseline
+
+- **Java 25 (LTS)** for every backend service, with **Spring Boot 4.1** (latest GA) as the baseline, paired with matching current-generation Spring Cloud, Spring Security, Spring Data MongoDB/Redis, MapStruct, Resilience4j and springdoc-openapi versions compatible with it.
+- **Virtual Threads** must be enabled on every service (`spring.threads.virtual.enabled=true`); Tomcat, MongoDB/Redis blocking calls, Feign clients and `@Async`/scheduled work should run on virtual threads instead of platform thread pools. Avoid `synchronized` blocks; prefer `ReentrantLock` where locking is required.
+- **React 19.2** (latest GA) as the baseline for both frontend apps, paired with the current stable TypeScript, Vite, TanStack Query, React Router, Material UI, React Hook Form and Zod versions compatible with it.
+- Beyond these pinned baselines, always prefer the **latest stable release** of every other library in the stack at implementation time instead of pinning to older majors.
+- Prefer modern patterns (React Compiler-friendly code, function components, hooks, no legacy class components).
+
+---
+
+## No Shared Libraries / No Monorepo Tooling
+
+This repository is a collection of **fully independent Spring Boot projects**, not a monorepo with shared code.
+
+- There is **no parent POM** and **no shared/common library** (no `common-api-library`, `common-security-library`, `common-domain-library`, `common-exception-library`).
+- Every service under `backend/` owns **its own** `pom.xml` (or Gradle build), its own DTOs, mappers, exception classes and security config — duplication across services is expected and acceptable.
+- Do not introduce cross-module Maven/Gradle dependencies between backend services. Services only communicate over the network (REST/Feign), never via shared JARs.
+- Do not extract multi-module Maven reactor builds, BOMs, or Gradle composite builds to "deduplicate" services — each service must build and deploy on its own.
+- Each React app under `ui/` has its own `package.json`, its own components/hooks/API clients — no shared npm workspace or shared component library between `ui/loan-portal` and `ui/admin-console`.
+
+---
+
+## Implementation Expectations
+
+When asked to generate a service or feature, the AI Agent must produce **actual working implementation code**, not placeholders or scaffolding:
+
+- Real controllers, services, repositories, documents, DTOs, mappers, security config, and exception handlers with full method bodies — not `// TODO` stubs or empty classes.
+- Real React components, hooks and API service files with working logic (state, effects, API calls, form validation) — not empty JSX shells or placeholder components.
+- Configuration files (`application.yml`, `.env`, Dockerfiles, Helm values) should contain concrete, usable values consistent with the rest of the stack, not generic placeholders left for the user to fill in.
+
+---
+
 ## Primary Learning Goals
 
 This repository should comprehensively teach:
@@ -170,7 +202,7 @@ Use Redis for
 
 ### Frontend
 
-- React
+- React 19.2
 - TypeScript
 - Vite
 - Material UI
@@ -180,6 +212,11 @@ Use Redis for
 - React Hook Form
 - Zod
 - Recharts
+
+**UIs**:
+
+- `ui/loan-portal/` — Customer-facing portal (port 5173)
+- `ui/admin-console/` — Staff admin console (port 5174)
 
 ---
 
@@ -201,25 +238,26 @@ loan-sphere/
 ├── docker-compose.yaml
 ├── docs/
 ├── scripts/
-├── ui-loan-portal/
-├── discovery-server/
-├── config-server/
-├── api-gateway/
-├── authentication-service/
-├── customer-profile-service/
-├── loan-offer-service/
-├── loan-application-service/
-├── emi-calculation-service/
-├── loan-processing-service/
-├── notification-service/
-├── document-service/
-├── common-api-library/
-├── common-security-library/
-├── common-domain-library/
-├── common-exception-library/
+├── ui/
+│   ├── loan-portal/
+│   └── admin-console/
+├── backend/
+│   ├── discovery-server/
+│   ├── config-server/
+│   ├── api-gateway/
+│   ├── authentication-service/
+│   ├── customer-profile-service/
+│   ├── loan-offer-service/
+│   ├── loan-application-service/
+│   ├── emi-calculation-service/
+│   ├── loan-processing-service/
+│   ├── notification-service/
+│   └── document-service/
 ├── README.md
 └── AGENT.md
 ```
+
+Each directory under `backend/` and `ui/` is a standalone, independently buildable project (its own build file, no shared parent, no shared library module).
 
 ---
 
@@ -257,24 +295,27 @@ flowchart TD
 - `docker-compose.yaml`
 - `docs/`
 - `scripts/`
-- `ui-loan-portal/`
-- `discovery-server/`
-- `config-server/`
-- `api-gateway/`
-- `authentication-service/`
-- `customer-profile-service/`
-- `loan-offer-service/`
-- `loan-application-service/`
-- `loan-processing-service/`
-- `emi-calculation-service/`
-- `notification-service/`
-- `document-service/`
+- `ui/loan-portal/`
+- `ui/admin-console/`
+- `backend/discovery-server/`
+- `backend/config-server/`
+- `backend/api-gateway/`
+- `backend/authentication-service/`
+- `backend/customer-profile-service/`
+- `backend/loan-offer-service/`
+- `backend/loan-application-service/`
+- `backend/loan-processing-service/`
+- `backend/emi-calculation-service/`
+- `backend/notification-service/`
+- `backend/document-service/`
+
+No `common-*` library modules and no parent/aggregator POM — every entry above is a fully independent, self-contained project.
 
 ---
 
 ## Project 1: Discovery Server
 
-Repository: `discovery-server`
+Repository: `backend/discovery-server`
 
 **Topics**
 
@@ -286,7 +327,7 @@ Repository: `discovery-server`
 
 ## Project 2: Config Server
 
-Repository: `config-server`
+Repository: `backend/config-server`
 
 **Topics**
 
@@ -298,7 +339,7 @@ Repository: `config-server`
 
 ## Project 3: API Gateway
 
-Repository: `api-gateway`
+Repository: `backend/api-gateway`
 
 **Responsibilities**
 
@@ -493,9 +534,9 @@ Repository: `api-gateway`
 
 ---
 
-## React Project
+## Customer Portal (React)
 
-Repository: `ui-loan-portal`
+Repository: `ui/loan-portal` (port 5173)
 
 ### Pages
 
@@ -508,14 +549,10 @@ Repository: `ui-loan-portal`
 - EMI Calculator
 - Documents
 - Notifications
-- Admin Dashboard
-- Users
-- Approvals
-- Settings
 
 ---
 
-### React Components
+### Customer Portal Components
 
 - Navbar
 - Sidebar
@@ -561,6 +598,42 @@ Repository: `ui-loan-portal`
 - `emiApi.ts`
 - `documentApi.ts`
 - `notificationApi.ts`
+
+---
+
+## Admin Console (React)
+
+Repository: `ui/admin-console` (port 5174)
+
+The Admin Console is a role-restricted staff dashboard. Access requires `SUPER_ADMIN`, `BANK_ADMIN`, `LOAN_MANAGER`, or `UNDERWRITER` role.
+
+### Pages
+
+- Login
+- Dashboard (stats: customers, applications, approvals, rejections)
+- Users (user table, role management)
+- Loan Offers (create, update, activate/deactivate)
+- Applications (all customer applications)
+- Approvals (review queue: approve, reject, request info)
+- Settings (platform configuration, feature flags)
+
+### React Components
+
+- AdminLayout (dark sidebar, MUI)
+- DashboardCards
+- DataTables
+- ApprovalActions (approve/reject/request-info buttons)
+- OfferForm
+- UserRoleChips
+- FeatureFlagsToggles
+
+### API Services
+
+- `authApi.ts`
+- `offerApi.ts`
+- `customerApi.ts`
+- `processingApi.ts`
+- `dashboardApi.ts`
 
 ---
 
@@ -638,7 +711,8 @@ Should automatically start
 - Loan Processing Service
 - Notification Service
 - Document Service
-- React UI
+- React Customer Portal (ui/loan-portal)
+- React Admin Console (ui/admin-console)
 
 ---
 
@@ -870,7 +944,10 @@ For every feature, the AI Agent should:
 
 The completed repository should resemble a real-world digital banking platform and demonstrate:
 
-- Complete Spring Boot 3 ecosystem
+- Java 25 with virtual threads enabled across all services
+- Spring Boot 4.1 backend services and a React 19.2 frontend, with all other libraries kept at their latest compatible stable releases
+- Independent, non-monorepo services with no shared libraries or parent POM
+- Complete Spring Boot ecosystem
 - Spring Cloud Gateway
 - Eureka Service Discovery
 - Spring Cloud Config

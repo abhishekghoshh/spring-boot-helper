@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "identity-service.fullname" . }}-config
+  labels:
+    {{- include "identity-service.labels" . | nindent 4 }}
+data:
+  application-override.yml: |
+    spring:
+      data:
+        mongodb:
+          auto-index-creation: true
+        redis:
+          timeout: 2000ms
+      threads:
+        virtual:
+          enabled: true

@@ -1,0 +1,55 @@
+app:
+  jwt:
+    secret: ${JWT_SECRET:commerce-mesh-secret-key-must-be-at-least-256-bits}
+
+server:
+  port: ${USER_SERVICE_PORT:8082}
+
+spring:
+  threads:
+    virtual:
+      enabled: true
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+  application:
+    name: user-service
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:commercemesh}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:rootroot}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
+
+springdoc:
+  swagger-ui:
+    doc-expansion: none
+    operations-sorter: alpha
+    tags-sorter: alpha
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0

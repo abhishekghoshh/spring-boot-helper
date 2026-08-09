@@ -1,0 +1,37 @@
+server:
+  port: ${CATALOG_SERVICE_PORT:8082}
+
+spring:
+  application:
+    name: catalog-service
+  threads:
+    virtual:
+      enabled: true
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_ROOT_USER:root}:${MONGO_ROOT_PASSWORD:rootroot}@${MONGO_HOST:localhost}:${MONGO_PORT:27017}/${MONGO_DATABASE:commercesphere}?authSource=admin
+      auto-index-creation: true
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:rootroot}
+      timeout: 2000ms
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+app:
+  upload:
+    dir: ${UPLOAD_DIR:uploads}
+  identity:
+    url: ${IDENTITY_SERVICE_URL:http://localhost:8081}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+logging:
+  level:
+    com.commercesphere: DEBUG

@@ -1,0 +1,16 @@
+**/node_modules
+**/.git
+**/.env
+**/target
+**/dist
+**/coverage
+**/*.log
+**/uploads
+**/docker-compose*.yml
+**/Dockerfile*
+**/README.md
+**/AGENT.md
+**/.idea
+**/.vscode
+**/.DS_Store
+**/Thumbs.db

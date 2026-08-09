@@ -1,0 +1,70 @@
+server:
+  port: ${AUTH_SERVICE_PORT:8081}
+
+spring:
+  threads:
+    virtual:
+      enabled: true
+  application:
+    name: authentication-service
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:commercemesh}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:rootroot}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+      password: ${REDIS_PASSWORD:rootroot}
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
+
+springdoc:
+  swagger-ui:
+    doc-expansion: none
+    operations-sorter: alpha
+    tags-sorter: alpha
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:commerce-mesh-secret-key-must-be-at-least-256-bits}
+    access-token-expiration: 900000
+    refresh-token-expiration: 604800000

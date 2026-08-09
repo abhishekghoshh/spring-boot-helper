@@ -1,0 +1,48 @@
+server:
+  port: ${IDENTITY_SERVICE_PORT:8081}
+
+spring:
+  application:
+    name: identity-service
+  threads:
+    virtual:
+      enabled: true
+
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_ROOT_USER:root}:${MONGO_ROOT_PASSWORD:rootroot}@${MONGO_HOST:localhost}:${MONGO_PORT:27017}/${MONGO_DATABASE:commercesphere}?authSource=admin
+      auto-index-creation: true
+
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:rootroot}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+
+  security:
+    user:
+      name: ${ADMIN_USERNAME:admin}
+      password: ${ADMIN_PASSWORD:Admin@123}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:commerce-sphere-jwt-secret-key-that-is-at-least-256-bits-long-for-hs256}
+    expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:2592000000}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+logging:
+  level:
+    com.commercesphere: DEBUG
+    org.springframework.security: INFO

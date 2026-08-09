@@ -6,13 +6,45 @@
 
 > **Objective**
 >
-> Build a production-ready enterprise e-commerce platform using **Spring Boot 3**, **Spring Security 6**, **React**, **PostgreSQL**, **MongoDB**, and **Redis**.
+> Build a production-ready enterprise e-commerce platform using **Spring Boot 4.1**, **Spring Security 6**, **React 19.2**, **PostgreSQL**, **MongoDB**, and **Redis**.
 >
 > This project is designed to teach nearly every important aspect of Spring Boot by building an enterprise-scale microservices application.
 >
 > The AI Agent should always follow modern Spring Boot, Spring Security and software engineering best practices while producing modular, testable, secure and maintainable code.
 >
 > **Do NOT include Observability** (Prometheus, Grafana, OpenTelemetry, Jaeger, Zipkin, ELK, Loki, etc.).
+
+---
+
+## Technology Baseline
+
+- **Java 25 (LTS)** for every backend service, with **Spring Boot 4.1** (latest GA) as the baseline, paired with matching current-generation Spring Security, Spring Data JPA/MongoDB/Redis, MapStruct and springdoc-openapi versions compatible with it.
+- **Virtual Threads** must be enabled on every service (`spring.threads.virtual.enabled=true`); Tomcat, JDBC/MongoDB/Redis calls and `@Async`/scheduled work should run on virtual threads instead of platform thread pools. Avoid `synchronized` blocks; prefer `ReentrantLock` where locking is required.
+- **React 19.2** (latest GA) as the baseline for both frontend apps, paired with the current stable TypeScript, Vite, TanStack Query, React Router, Material UI, React Hook Form and Zod versions compatible with it.
+- Beyond these pinned baselines, always prefer the **latest stable release** of every other library in the stack at implementation time instead of pinning to older majors.
+- Prefer modern patterns (React Compiler-friendly code, function components, hooks, no legacy class components).
+
+---
+
+## No Shared Libraries / No Monorepo Tooling
+
+This repository is a collection of **fully independent Spring Boot projects**, not a monorepo with shared code.
+
+- There is **no parent POM** and **no shared/common library** (no `common-security-library`, `common-api-library`, `common-model-library`, `common-exception-library`).
+- Every service under `backend/` owns **its own** `pom.xml` (or Gradle build), its own DTOs, mappers, exception classes and security config — duplication across services is expected and acceptable.
+- Do not introduce cross-module Maven/Gradle dependencies between backend services. Services only communicate over the network (REST), never via shared JARs.
+- Do not extract multi-module Maven reactor builds, BOMs, or Gradle composite builds to "deduplicate" services — each service must build and deploy on its own.
+- Each React app under `ui/` has its own `package.json`, its own components/hooks/API clients — no shared npm workspace or shared component library between `ui/admin-console` and `ui/storefront`.
+
+---
+
+## Implementation Expectations
+
+When asked to generate a service or feature, the AI Agent must produce **actual working implementation code**, not placeholders or scaffolding:
+
+- Real controllers, services, repositories, entities/documents, DTOs, mappers, security config, and exception handlers with full method bodies — not `// TODO` stubs or empty classes.
+- Real React components, hooks and API service files with working logic (state, effects, API calls, form validation) — not empty JSX shells or placeholder components.
+- Configuration files (`application.yml`, `.env`, Dockerfiles, Helm values) should contain concrete, usable values consistent with the rest of the stack, not generic placeholders left for the user to fill in.
 
 ---
 
@@ -109,7 +141,7 @@ Use Redis for:
 
 ### Frontend
 
-- React
+- React 19.2
 - TypeScript
 - Vite
 - React Router
@@ -140,21 +172,22 @@ nova-commerce/
 ├── docker-compose.yaml
 ├── docs/
 ├── scripts/
-├── ui-admin-console/
-├── identity-service/
-├── catalog-service/
-├── cart-service/
-├── order-service/
-├── inventory-service/
-├── payment-service/
-├── notification-service/
-├── common-security-library/
-├── common-api-library/
-├── common-model-library/
-├── common-exception-library/
+├── ui/
+│   ├── admin-console/
+│   └── storefront/
+├── backend/
+│   ├── identity-service/
+│   ├── catalog-service/
+│   ├── cart-service/
+│   ├── order-service/
+│   ├── inventory-service/
+│   ├── payment-service/
+│   └── notification-service/
 ├── README.md
 └── AGENT.md
 ```
+
+Each directory under `backend/` and `ui/` is a standalone, independently buildable project (its own build file, no shared parent, no shared library module).
 
 ---
 
@@ -162,13 +195,19 @@ nova-commerce/
 
 ```mermaid
 flowchart TD
-    UI[React Admin Console] -->|REST APIs| Identity[Identity Service]
-    UI -->|REST APIs| Catalog[Catalog Service]
-    UI -->|REST APIs| Cart[Cart Service]
-    UI -->|REST APIs| Inventory[Inventory Service]
-    UI -->|REST APIs| Order[Order Service]
-    UI -->|REST APIs| Payment[Payment Service]
-    UI -->|REST APIs| Notification[Notification Service]
+    AdminUI[React Admin Console] -->|REST APIs| Identity[Identity Service]
+    AdminUI -->|REST APIs| Catalog[Catalog Service]
+    AdminUI -->|REST APIs| Cart[Cart Service]
+    AdminUI -->|REST APIs| Inventory[Inventory Service]
+    AdminUI -->|REST APIs| Order[Order Service]
+    AdminUI -->|REST APIs| Payment[Payment Service]
+    AdminUI -->|REST APIs| Notification[Notification Service]
+
+    StorefrontUI[React Storefront] -->|REST APIs| Identity
+    StorefrontUI -->|REST APIs| Catalog
+    StorefrontUI -->|REST APIs| Cart
+    StorefrontUI -->|REST APIs| Order
+    StorefrontUI -->|REST APIs| Payment
 
     Identity --> DataStores[(PostgreSQL + MongoDB + Redis)]
     Catalog --> DataStores
@@ -184,7 +223,7 @@ flowchart TD
 ## Standard Structure for Every Service
 
 ```
-service-name/
+backend/service-name/
 ├── src/
 │   ├── main/
 │   │   ├── java/
@@ -217,7 +256,7 @@ service-name/
 
 ## Project 1: Identity Service
 
-Repository: `identity-service`
+Repository: `backend/identity-service`
 
 **Responsibilities**
 
@@ -262,7 +301,7 @@ Tables
 
 ## Project 2: Catalog Service
 
-Repository: `catalog-service`
+Repository: `backend/catalog-service`
 
 **Responsibilities**
 
@@ -299,7 +338,7 @@ Repository: `catalog-service`
 
 ## Project 3: Cart Service
 
-Repository: `cart-service`
+Repository: `backend/cart-service`
 
 **Responsibilities**
 
@@ -331,7 +370,7 @@ Repository: `cart-service`
 
 ## Project 4: Inventory Service
 
-Repository: `inventory-service`
+Repository: `backend/inventory-service`
 
 **Responsibilities**
 
@@ -361,7 +400,7 @@ Tables
 
 ## Project 5: Order Service
 
-Repository: `order-service`
+Repository: `backend/order-service`
 
 **Responsibilities**
 
@@ -392,7 +431,7 @@ Tables
 
 ## Project 6: Payment Service
 
-Repository: `payment-service`
+Repository: `backend/payment-service`
 
 **Responsibilities**
 
@@ -417,7 +456,7 @@ Tables
 
 ## Project 7: Notification Service
 
-Repository: `notification-service`
+Repository: `backend/notification-service`
 
 **Responsibilities**
 
@@ -434,9 +473,9 @@ Repository: `notification-service`
 
 ---
 
-## React Application
+## React Application: Admin Console
 
-Repository: `ui-admin-console`
+Repository: `ui/admin-console`
 
 ### Pages
 
@@ -509,6 +548,96 @@ Repository: `ui-admin-console`
 - `inventoryApi.ts`
 - `paymentApi.ts`
 - `userApi.ts`
+
+---
+
+## React Application: Customer Storefront
+
+Repository: `ui/storefront`
+
+A customer-facing storefront for normal (non-admin) shoppers to browse, search and purchase products, distinct from the internal admin console.
+
+### Pages
+
+- Home
+- Product Listing
+- Product Detail
+- Category Landing
+- Search Results
+- Shopping Cart
+- Wishlist
+- Checkout
+- Order Confirmation
+- Order History
+- Order Detail
+- Login
+- Register
+- Forgot Password
+- My Account / Profile
+- Address Book
+
+---
+
+### Components
+
+- Navbar
+- Footer
+- HeroBanner
+- ProductCard
+- ProductGrid
+- ProductGallery
+- ProductReviews
+- CategoryMenu
+- Breadcrumbs
+- CartDrawer
+- CartItem
+- WishlistButton
+- CheckoutSteps
+- AddressForm
+- PaymentForm
+- OrderSummary
+- SearchBar
+- Filters
+- SortDropdown
+- Pagination
+- RatingStars
+- Snackbar
+- Loading
+- ProtectedRoute
+
+---
+
+### React Hooks
+
+- `useAuth()`
+- `useProducts()`
+- `useProductDetail()`
+- `useCategories()`
+- `useCart()`
+- `useWishlist()`
+- `useCheckout()`
+- `useOrders()`
+- `usePayments()`
+- `useSearch()`
+
+---
+
+### API Clients
+
+- `authApi.ts`
+- `catalogApi.ts`
+- `cartApi.ts`
+- `orderApi.ts`
+- `paymentApi.ts`
+- `profileApi.ts`
+
+---
+
+### Access
+
+- Publicly browsable (Home, Product Listing, Product Detail, Search, Category pages) without authentication.
+- Authentication (`CUSTOMER` role) required for Checkout, Order History, Wishlist persistence and Account pages.
+- Guest cart support with merge-on-login (backed by Cart Service).
 
 ---
 
@@ -597,7 +726,8 @@ The root compose file should start
 - Order Service
 - Payment Service
 - Notification Service
-- React UI
+- React Admin Console
+- React Storefront
 
 ---
 
@@ -645,6 +775,7 @@ Each deployment should implement
 Create a single NGINX Ingress with routes:
 
 - `/`
+- `/admin`
 - `api/auth`
 - `api/catalog`
 - `api/cart`
@@ -653,7 +784,7 @@ Create a single NGINX Ingress with routes:
 - `api/payments`
 - `api/notifications`
 
-The React application should be served from `/`.
+The React Storefront should be served from `/`, and the React Admin Console should be served from `/admin`.
 
 ---
 
@@ -790,7 +921,7 @@ For every feature, the AI Agent should:
 5. Secure endpoints with Spring Security.
 6. Expose REST APIs.
 7. Implement caching where appropriate.
-8. Update the React UI.
+8. Update the React Admin Console and React Storefront.
 9. Write unit tests.
 10. Write integration tests.
 11. Build Docker images.
@@ -805,7 +936,10 @@ For every feature, the AI Agent should:
 
 The completed repository should resemble a production-quality enterprise e-commerce platform that demonstrates:
 
-- Spring Boot 3 microservices
+- Java 25 with virtual threads enabled across all services
+- Spring Boot 4.1 backend services and a React 19.2 frontend, with all other libraries kept at their latest compatible stable releases
+- Independent, non-monorepo services with no shared libraries or parent POM
+- Spring Boot microservices
 - Comprehensive Spring Security implementation
 - JWT-based authentication and RBAC
 - Hybrid persistence using PostgreSQL, MongoDB and Redis

@@ -1,0 +1,7 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://root:rootroot@mongodb:27017/notification_db?authSource=admin
+  mail:
+    host: mailpit
+    port: 1025

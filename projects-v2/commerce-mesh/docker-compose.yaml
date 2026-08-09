@@ -1,0 +1,461 @@
+services:
+  # ============================================
+  # Infrastructure
+  # ============================================
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: cm-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rootroot}
+      POSTGRES_DB: ${POSTGRES_DB:-commercemesh}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - cm-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cm-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - cm-network
+
+  mongodb:
+    image: mongo:8
+    container_name: cm-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-rootroot}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-commercemesh}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./scripts/init-mongo.js:/docker-entrypoint-initdb.d/init.js
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - cm-network
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: cm-mongo-express
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_ROOT_USER:-root}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD:-rootroot}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ROOT_USER:-root}:${MONGO_ROOT_PASSWORD:-rootroot}@mongodb:27017/
+    ports:
+      - "8081:8081"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - cm-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: cm-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-rootroot}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - cm-network
+
+  redis-insight:
+    image: redis/redisinsight:latest
+    container_name: cm-redis-insight
+    ports:
+      - "8001:5540"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - cm-network
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: cm-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin123}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cm-network
+
+  # ============================================
+  # Spring Cloud Infrastructure
+  # ============================================
+
+  config-server:
+    build:
+      context: ./backend/config-server
+      dockerfile: Dockerfile
+    container_name: cm-config-server
+    environment:
+      CONFIG_SERVER_PORT: 8888
+      EUREKA_HOST: discovery-server
+      EUREKA_PORT: 8761
+    ports:
+      - "8888:8888"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8888/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cm-network
+
+  discovery-server:
+    build:
+      context: ./backend/discovery-server
+      dockerfile: Dockerfile
+    container_name: cm-discovery-server
+    environment:
+      DISCOVERY_SERVER_PORT: 8761
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cm-network
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: cm-api-gateway
+    environment:
+      API_GATEWAY_PORT: 8080
+      EUREKA_HOST: discovery-server
+      EUREKA_PORT: 8761
+    ports:
+      - "8080:8080"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    networks:
+      - cm-network
+
+  # ============================================
+  # Microservices
+  # ============================================
+
+  authentication-service:
+    build:
+      context: ./backend/authentication-service
+      dockerfile: Dockerfile
+    container_name: cm-authentication-service
+    environment:
+      AUTH_SERVICE_PORT: 8081
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      EUREKA_HOST: discovery-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - cm-network
+
+  user-service:
+    build:
+      context: ./backend/user-service
+      dockerfile: Dockerfile
+    container_name: cm-user-service
+    environment:
+      USER_SERVICE_PORT: 8082
+      POSTGRES_HOST: postgres
+      EUREKA_HOST: discovery-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - cm-network
+
+  product-catalog-service:
+    build:
+      context: ./backend/product-catalog-service
+      dockerfile: Dockerfile
+    container_name: cm-product-catalog-service
+    environment:
+      CATALOG_SERVICE_PORT: 8083
+      MONGO_HOST: mongodb
+      EUREKA_HOST: discovery-server
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - cm-network
+
+  cart-service:
+    build:
+      context: ./backend/cart-service
+      dockerfile: Dockerfile
+    container_name: cm-cart-service
+    environment:
+      CART_SERVICE_PORT: 8084
+      MONGO_HOST: mongodb
+      REDIS_HOST: redis
+      EUREKA_HOST: discovery-server
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - cm-network
+
+  inventory-service:
+    build:
+      context: ./backend/inventory-service
+      dockerfile: Dockerfile
+    container_name: cm-inventory-service
+    environment:
+      INVENTORY_SERVICE_PORT: 8085
+      POSTGRES_HOST: postgres
+      EUREKA_HOST: discovery-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - cm-network
+
+  order-service:
+    build:
+      context: ./backend/order-service
+      dockerfile: Dockerfile
+    container_name: cm-order-service
+    environment:
+      ORDER_SERVICE_PORT: 8086
+      POSTGRES_HOST: postgres
+      RABBITMQ_HOST: rabbitmq
+      EUREKA_HOST: discovery-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - cm-network
+
+  payment-service:
+    build:
+      context: ./backend/payment-service
+      dockerfile: Dockerfile
+    container_name: cm-payment-service
+    environment:
+      PAYMENT_SERVICE_PORT: 8087
+      POSTGRES_HOST: postgres
+      EUREKA_HOST: discovery-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - cm-network
+
+  notification-service:
+    build:
+      context: ./backend/notification-service
+      dockerfile: Dockerfile
+    container_name: cm-notification-service
+    environment:
+      NOTIFICATION_SERVICE_PORT: 8088
+      POSTGRES_HOST: postgres
+      RABBITMQ_HOST: rabbitmq
+      EUREKA_HOST: discovery-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - cm-network
+
+  search-service:
+    build:
+      context: ./backend/search-service
+      dockerfile: Dockerfile
+    container_name: cm-search-service
+    environment:
+      SEARCH_SERVICE_PORT: 8089
+      MONGO_HOST: mongodb
+      EUREKA_HOST: discovery-server
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - cm-network
+
+  # ============================================
+  # Frontend
+  # ============================================
+
+  ui-admin-console:
+    build:
+      context: ./ui/admin-console
+      dockerfile: Dockerfile
+    container_name: cm-ui-admin-console
+    ports:
+      - "3000:8080"
+    depends_on:
+      - api-gateway
+    networks:
+      - cm-network
+
+  ui-customer-console:
+    build:
+      context: ./ui/customer-console
+      dockerfile: Dockerfile
+    container_name: cm-ui-customer-console
+    ports:
+      - "3002:8080"
+    depends_on:
+      - api-gateway
+    networks:
+      - cm-network
+
+  # ============================================
+  # Observability
+  # ============================================
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cm-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - cm-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cm-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - cm-network
+
+  loki:
+    image: grafana/loki:latest
+    container_name: cm-loki
+    command: -config.file=/etc/loki/loki-config.yaml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki/loki-config.yaml:/etc/loki/loki-config.yaml
+      - loki_data:/loki
+    networks:
+      - cm-network
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: cm-promtail
+    volumes:
+      - ./monitoring/promtail/promtail-config.yaml:/etc/promtail/promtail-config.yaml
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/promtail-config.yaml
+    depends_on:
+      - loki
+    networks:
+      - cm-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: cm-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - cm-network
+
+networks:
+  cm-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mongo_data:
+  redis_data:
+  rabbitmq_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:

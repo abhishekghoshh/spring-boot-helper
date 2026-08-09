@@ -1,0 +1,6 @@
+apiVersion: v2
+name: loan-processing-service
+description: LoanSphere loan-processing-service
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

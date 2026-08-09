@@ -1,0 +1,54 @@
+server:
+  port: ${SEARCH_SERVICE_PORT:8089}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:commerce-mesh-secret-key-must-be-at-least-256-bits}
+
+spring:
+  threads:
+    virtual:
+      enabled: true
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+  application:
+    name: search-service
+  data:
+    mongodb:
+      host: ${MONGO_HOST:localhost}
+      port: 27017
+      authentication-database: admin
+      username: ${MONGO_ROOT_USER:root}
+      password: ${MONGO_ROOT_PASSWORD:rootroot}
+      database: ${MONGO_DATABASE:commercemesh}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
+
+springdoc:
+  swagger-ui:
+    doc-expansion: none
+    operations-sorter: alpha
+    tags-sorter: alpha
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0

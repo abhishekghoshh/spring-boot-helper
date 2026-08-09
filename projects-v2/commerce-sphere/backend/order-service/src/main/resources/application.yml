@@ -1,0 +1,23 @@
+server:
+  port: ${ORDER_SERVICE_PORT:8085}
+spring:
+  application:
+    name: order-service
+  threads:
+    virtual:
+      enabled: true
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_ROOT_USER:root}:${MONGO_ROOT_PASSWORD:rootroot}@${MONGO_HOST:localhost}:${MONGO_PORT:27017}/${MONGO_DATABASE:commercesphere}?authSource=admin
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:rootroot}
+app:
+  cart:
+    url: ${CART_SERVICE_URL:http://localhost:8083}
+  inventory:
+    url: ${INVENTORY_SERVICE_URL:http://localhost:8084}
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

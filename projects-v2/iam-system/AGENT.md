@@ -4,7 +4,7 @@
 
 > **Goal**
 >
-> Build a production-grade Enterprise Identity and Access Management (IAM) platform using **Spring Boot 3**, **Spring Security 6**, **React**, **Keycloak**, **Google OAuth2**, **GitHub OAuth2**, **JWT**, and **Multi-Tenant Architecture**.
+> Build a production-grade Enterprise Identity and Access Management (IAM) platform using **Spring Boot 4.1**, **Spring Security 6**, **React 19.2**, **Keycloak**, **Google OAuth2**, **GitHub OAuth2**, **JWT**, and **Multi-Tenant Architecture**.
 >
 > This repository is intended as a learning project that covers most areas of Spring Boot while following modern enterprise architecture and best practices.
 >
@@ -57,12 +57,44 @@ The repository should teach the following Spring Boot concepts:
 
 ---
 
+## Technology Baseline
+
+- **Java 25 (LTS)** for every backend service, with **Spring Boot 4.1** (latest GA) as the baseline, paired with matching current-generation Spring Security, Spring Data JPA, Hibernate, MapStruct and springdoc-openapi versions compatible with it.
+- **Virtual Threads** must be enabled on every service (`spring.threads.virtual.enabled=true`); Tomcat, JDBC/Hibernate calls, OAuth2 token exchanges and `@Async`/scheduled work should run on virtual threads instead of platform thread pools. Avoid `synchronized` blocks; prefer `ReentrantLock` where locking is required.
+- **React 19.2** (latest GA) as the baseline for both frontend apps, paired with the current stable TypeScript, Vite, TanStack Query, React Router, Material UI, React Hook Form and Zod versions compatible with it.
+- Beyond these pinned baselines, always prefer the **latest stable release** of every other library in the stack at implementation time instead of pinning to older majors.
+- Prefer modern patterns (React Compiler-friendly code, function components, hooks, no legacy class components).
+
+---
+
+## No Shared Libraries / No Monorepo Tooling
+
+This repository is a collection of **fully independent Spring Boot projects**, not a monorepo with shared code.
+
+- There is **no parent POM** and **no shared/common library** (no `common-security-library`, `common-auth-library`, `common-api-library`, `common-exception-library`).
+- Every service under `backend/` owns **its own** `pom.xml` (or Gradle build), its own DTOs, mappers, exception classes and security config — duplication across services is expected and acceptable.
+- Do not introduce cross-module Maven/Gradle dependencies between backend services. Services only communicate over the network (REST), never via shared JARs.
+- Do not extract multi-module Maven reactor builds, BOMs, or Gradle composite builds to "deduplicate" services — each service must build and deploy on its own.
+- Each React app under `ui/` has its own `package.json`, its own components/hooks/API clients — no shared npm workspace or shared component library between `ui/admin-console` and `ui/user-portal`.
+
+---
+
+## Implementation Expectations
+
+When asked to generate a service or feature, the AI Agent must produce **actual working implementation code**, not placeholders or scaffolding:
+
+- Real controllers, services, repositories, entities, DTOs, mappers, security config, and exception handlers with full method bodies — not `// TODO` stubs or empty classes.
+- Real React components, hooks and API service files with working logic (state, effects, API calls, form validation) — not empty JSX shells or placeholder components.
+- Configuration files (`application.yml`, `.env`, Dockerfiles, Helm values) should contain concrete, usable values consistent with the rest of the stack, not generic placeholders left for the user to fill in.
+
+---
+
 ## Technology Stack
 
 ### Backend
 
-- Java 21
-- Spring Boot 3.x
+- Java 25 (virtual threads enabled)
+- Spring Boot 4.1
 - Spring Security
 - Spring Authorization Server (where appropriate)
 - Spring OAuth2 Client
@@ -102,7 +134,7 @@ The application must support
 
 ### Frontend
 
-- React
+- React 19.2
 - Vite
 - TypeScript
 - React Router
@@ -132,19 +164,20 @@ enterprise-sso-platform/
 ├── docker-compose.yaml
 ├── docs/
 ├── scripts/
-├── ui-admin-console/
-├── authentication-service/
-├── tenant-management-service/
-├── user-management-service/
-├── notification-service/
-├── file-storage-service/
-├── common-security-library/
-├── common-auth-library/
-├── common-api-library/
-├── common-exception-library/
+├── ui/
+│   ├── admin-console/
+│   └── user-portal/
+├── backend/
+│   ├── authentication-service/
+│   ├── tenant-management-service/
+│   ├── user-management-service/
+│   ├── notification-service/
+│   └── file-storage-service/
 ├── README.md
 └── AGENT.md
 ```
+
+Each directory under `backend/` and `ui/` is a standalone, independently buildable project (its own build file, no shared parent, no shared library module).
 
 ---
 
@@ -152,10 +185,14 @@ enterprise-sso-platform/
 
 ```mermaid
 flowchart TD
-    UI[React Admin Console] -->|REST APIs| Auth[Authentication Service]
-    UI -->|REST APIs| Tenant[Tenant Service]
-    UI -->|REST APIs| User[User Service]
-    UI -->|REST APIs| Notification[Notification Service]
+    AdminUI[React Admin Console] -->|REST APIs| Auth[Authentication Service]
+    AdminUI -->|REST APIs| Tenant[Tenant Service]
+    AdminUI -->|REST APIs| User[User Service]
+    AdminUI -->|REST APIs| Notification[Notification Service]
+
+    PortalUI[React User Portal] -->|REST APIs| Auth
+    PortalUI -->|REST APIs| User
+    PortalUI -->|REST APIs| Notification
 
     Auth --> DB[(PostgreSQL)]
     Tenant --> DB
@@ -173,16 +210,15 @@ flowchart TD
 - `docker-compose.yaml`
 - `docs/`
 - `scripts/`
-- `ui-admin-console/`
-- `authentication-service/`
-- `tenant-management-service/`
-- `user-management-service/`
-- `notification-service/`
-- `file-storage-service/`
-- `common-security-library/`
-- `common-auth-library/`
-- `common-api-library/`
-- `common-exception-library/`
+- `ui/admin-console/`
+- `ui/user-portal/`
+- `backend/authentication-service/`
+- `backend/tenant-management-service/`
+- `backend/user-management-service/`
+- `backend/notification-service/`
+- `backend/file-storage-service/`
+
+No `common-*` library modules and no parent/aggregator POM — every entry above is a fully independent, self-contained project.
 
 ---
 
@@ -191,6 +227,7 @@ flowchart TD
 Every Spring Boot service should follow
 
 ```
+backend/service-name/
 src/
 ├── main/
 │   ├── java/
@@ -227,7 +264,7 @@ helm/
 
 ## Project 1: Authentication Service
 
-Repository: `authentication-service`
+Repository: `backend/authentication-service`
 
 **Responsibilities**
 
@@ -258,7 +295,7 @@ Repository: `authentication-service`
 
 ## Project 2: Tenant Management Service
 
-Repository: `tenant-management-service`
+Repository: `backend/tenant-management-service`
 
 **Responsibilities**
 
@@ -284,7 +321,7 @@ Repository: `tenant-management-service`
 
 ## Project 3: User Management Service
 
-Repository: `user-management-service`
+Repository: `backend/user-management-service`
 
 **Responsibilities**
 
@@ -386,9 +423,9 @@ Default tenant: `master`
 
 ---
 
-## React Project
+## React Project: Admin Console
 
-Repository: `ui-admin-console`
+Repository: `ui/admin-console`
 
 **Pages**
 
@@ -406,7 +443,7 @@ Repository: `ui-admin-console`
 
 ---
 
-## React Components
+## React Components (Admin Console)
 
 - Navbar
 - Sidebar
@@ -430,7 +467,7 @@ Repository: `ui-admin-console`
 
 ---
 
-## React Hooks
+## React Hooks (Admin Console)
 
 - `useAuth`
 - `useUser`
@@ -442,7 +479,7 @@ Repository: `ui-admin-console`
 
 ---
 
-## React Services
+## React Services (Admin Console)
 
 - `authApi.ts`
 - `tenantApi.ts`
@@ -451,6 +488,81 @@ Repository: `ui-admin-console`
 - `permissionApi.ts`
 - `profileApi.ts`
 - `uploadApi.ts`
+
+---
+
+## React Project: User Portal
+
+Repository: `ui/user-portal`
+
+A self-service portal for normal (non-admin) end users to manage their own account across tenants, distinct from the tenant/system administration console.
+
+**Pages**
+
+- Login
+- Register
+- Forgot Password
+- Reset Password
+- Email Verification
+- Home / My Dashboard
+- My Profile
+- Security (Change Password, Sessions, Connected Accounts)
+- Notifications
+- My Files
+- Organisation Invitations
+- Account Deactivation
+
+---
+
+## React Components (User Portal)
+
+- Navbar
+- Footer
+- ProtectedRoute
+- LoginForm
+- RegistrationForm
+- ForgotPasswordForm
+- ResetPasswordForm
+- OAuthLoginButtons
+- ProfileForm
+- SecurityPanel
+- SessionList
+- AvatarUpload
+- NotificationList
+- InvitationCard
+- Loading
+- Snackbar
+
+---
+
+## React Hooks (User Portal)
+
+- `useAuth`
+- `useProfile`
+- `useSecurity`
+- `useSessions`
+- `useNotifications`
+- `useFileUpload`
+- `useInvitations`
+
+---
+
+## React Services (User Portal)
+
+- `authApi.ts`
+- `profileApi.ts`
+- `securityApi.ts`
+- `notificationApi.ts`
+- `uploadApi.ts`
+- `invitationApi.ts`
+
+---
+
+### Access
+
+- Uses the same Authentication Service (local login, Google OAuth, GitHub OAuth, Keycloak) as the Admin Console.
+- Restricted to the authenticated user's own tenant-scoped data; no tenant, role or permission management screens.
+- Users with elevated roles (`TENANT_ADMIN`, `SUPER_ADMIN`) may still use the User Portal for personal account management, and separately access the Admin Console for administration.
 
 ---
 
@@ -517,7 +629,8 @@ The root compose file should start
 - User Service
 - Notification Service
 - File Storage Service
-- React UI
+- React Admin Console
+- React User Portal
 
 ---
 
@@ -566,11 +679,14 @@ Create one NGINX Ingress.
 **Routes**
 
 - `/`
+- `/admin`
 - `api/auth`
 - `api/users`
 - `api/tenants`
 - `api/files`
 - `api/notifications`
+
+The React User Portal should be available at `/`, and the React Admin Console should be available at `/admin`.
 
 TLS-ready configuration should be supported.
 
@@ -669,7 +785,7 @@ For every feature, the AI Agent should:
 4. Develop business services.
 5. Expose REST APIs.
 6. Secure endpoints with Spring Security.
-7. Update the React UI.
+7. Update the React Admin Console and React User Portal.
 8. Add unit tests.
 9. Add integration tests.
 10. Build Docker images.
@@ -684,6 +800,9 @@ For every feature, the AI Agent should:
 
 The final repository should resemble a real-world enterprise Identity & Access Management platform that demonstrates:
 
+- Java 25 with virtual threads enabled across all services
+- Spring Boot 4.1 backend services and a React 19.2 frontend, with all other libraries kept at their latest compatible stable releases
+- Independent, non-monorepo services with no shared libraries or parent POM
 - Enterprise authentication and authorisation
 - Google OAuth2 integration
 - GitHub OAuth2 integration

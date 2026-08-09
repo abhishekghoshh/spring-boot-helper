@@ -1,0 +1,22 @@
+/* Reset & base — MUI CssBaseline handles most */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Image defaults */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}

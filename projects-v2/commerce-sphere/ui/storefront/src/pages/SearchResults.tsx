@@ -1,0 +1,4 @@
+import { useSearchParams } from 'react-router-dom'; import { Container, Typography, Grid } from '@mui/material'; import { useQuery } from '@tanstack/react-query'; import { productApi } from '../api/productApi'; import ProductCard from '../components/shared/ProductCard'; import Loading from '../components/shared/Loading'
+export default function SearchResults() { const [params] = useSearchParams(); const q = params.get('q') || ''; const { data, isLoading } = useQuery({ queryKey: ['search', q], queryFn: () => productApi.search({ query: q, page: 0, size: 20 }) })
+  return <Container sx={{ mt: 4 }}><Typography variant="h4" mb={3}>Results for "{q}"</Typography>{isLoading ? <Loading /> : <Grid container spacing={3}>{data?.content?.map((p: any) => <Grid item xs={12} sm={6} md={3} key={p.id}><ProductCard product={p} /></Grid>)}</Grid>}</Container>
+}

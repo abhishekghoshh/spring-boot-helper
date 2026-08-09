@@ -1,0 +1,10 @@
+-- CommerceMesh PostgreSQL Initialization
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Create schemas if needed
+CREATE SCHEMA IF NOT EXISTS auth;
+CREATE SCHEMA IF NOT EXISTS users;
+CREATE SCHEMA IF NOT EXISTS inventory;
+CREATE SCHEMA IF NOT EXISTS orders;
+CREATE SCHEMA IF NOT EXISTS payments;
+CREATE SCHEMA IF NOT EXISTS notifications;

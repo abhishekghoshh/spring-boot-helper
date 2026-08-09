@@ -6,13 +6,45 @@
 
 > **Objective**
 >
-> Build a production-grade **Banking Ledger & High-Concurrency Transaction Engine** using **Spring Boot 3**, **Spring Data JPA**, **PostgreSQL**, **Redis**, and **React**.
+> Build a production-grade **Banking Ledger & High-Concurrency Transaction Engine** using **Spring Boot 4.1**, **Spring Data JPA**, **PostgreSQL**, **Redis**, and **React 19.2**.
 >
 > This repository is intended to teach advanced Spring Boot concepts through realistic banking microservices while following modern enterprise architecture and production-ready engineering practices.
 >
 > The AI Agent should always generate clean, modular, testable, secure and maintainable code following current Spring Boot best practices.
 >
 > **Observability (Prometheus, Grafana, OpenTelemetry, Jaeger, ELK, etc.) must NOT be included.**
+
+---
+
+## Technology Baseline
+
+- **Java 25 (LTS)** for every backend service, with **Spring Boot 4.1** (latest GA) as the baseline, paired with matching current-generation Spring Data JPA, Hibernate, MapStruct, Resilience4j and springdoc-openapi versions compatible with it.
+- **Virtual Threads** must be enabled on every service (`spring.threads.virtual.enabled=true`); Tomcat, JDBC/Hibernate calls, Redis operations and `@Async`/scheduled work should run on virtual threads instead of platform thread pools. Avoid `synchronized` blocks; prefer `ReentrantLock` where locking is required.
+- **React 19.2** (latest GA) as the baseline for both frontend apps, paired with the current stable TypeScript, Vite, TanStack Query, React Router, Material UI, React Hook Form and Zod versions compatible with it.
+- Beyond these pinned baselines, always prefer the **latest stable release** of every other library in the stack at implementation time instead of pinning to older majors.
+- Prefer modern patterns (React Compiler-friendly code, function components, hooks, no legacy class components).
+
+---
+
+## No Shared Libraries / No Monorepo Tooling
+
+This repository is a collection of **fully independent Spring Boot projects**, not a monorepo with shared code.
+
+- There is **no parent POM** and **no shared/common library** (no `common-api-library`, `common-security-library`, `common-domain-library`, `common-exception-library`).
+- Every service under `backend/` owns **its own** `pom.xml` (or Gradle build), its own DTOs, mappers, exception classes and security config — duplication across services is expected and acceptable.
+- Do not introduce cross-module Maven/Gradle dependencies between backend services. Services only communicate over the network (REST), never via shared JARs.
+- Do not extract multi-module Maven reactor builds, BOMs, or Gradle composite builds to "deduplicate" services — each service must build and deploy on its own.
+- Each React app under `ui/` has its own `package.json`, its own components/hooks/API clients — no shared npm workspace or shared component library between `ui/admin-portal` and `ui/customer-portal`.
+
+---
+
+## Implementation Expectations
+
+When asked to generate a service or feature, the AI Agent must produce **actual working implementation code**, not placeholders or scaffolding:
+
+- Real controllers, services, repositories, entities, DTOs, mappers, security config, and exception handlers with full method bodies — not `// TODO` stubs or empty classes.
+- Real React components, hooks and API service files with working logic (state, effects, API calls, form validation) — not empty JSX shells or placeholder components.
+- Configuration files (`application.yml`, `.env`, Dockerfiles, Helm values) should contain concrete, usable values consistent with the rest of the stack, not generic placeholders left for the user to fill in.
 
 ---
 
@@ -108,7 +140,7 @@ Use Redis for
 
 ### Frontend
 
-- React
+- React 19.2
 - TypeScript
 - Vite
 - Material UI
@@ -139,19 +171,20 @@ ledgerx-platform/
 ├── docker-compose.yaml
 ├── docs/
 ├── scripts/
-├── ui-admin-portal/
-├── customer-service/
-├── account-service/
-├── ledger-service/
-├── transaction-service/
-├── reporting-service/
-├── common-api-library/
-├── common-security-library/
-├── common-domain-library/
-├── common-exception-library/
+├── ui/
+│   ├── admin-portal/
+│   └── customer-portal/
+├── backend/
+│   ├── customer-service/
+│   ├── account-service/
+│   ├── ledger-service/
+│   ├── transaction-service/
+│   └── reporting-service/
 ├── README.md
 └── AGENT.md
 ```
+
+Each directory under `backend/` and `ui/` is a standalone, independently buildable project (its own build file, no shared parent, no shared library module).
 
 ---
 
@@ -159,11 +192,16 @@ ledgerx-platform/
 
 ```mermaid
 flowchart TD
-    UI[React Admin Portal] -->|REST APIs| Customer[Customer Service]
-    UI -->|REST APIs| Account[Account Service]
-    UI -->|REST APIs| Transaction[Transaction Service]
-    UI -->|REST APIs| Ledger[Ledger Service]
-    UI -->|REST APIs| Reporting[Reporting Service]
+    AdminUI[React Admin Portal] -->|REST APIs| Customer[Customer Service]
+    AdminUI -->|REST APIs| Account[Account Service]
+    AdminUI -->|REST APIs| Transaction[Transaction Service]
+    AdminUI -->|REST APIs| Ledger[Ledger Service]
+    AdminUI -->|REST APIs| Reporting[Reporting Service]
+
+    CustomerUI[React Customer Portal] -->|REST APIs| Customer
+    CustomerUI -->|REST APIs| Account
+    CustomerUI -->|REST APIs| Transaction
+    CustomerUI -->|REST APIs| Reporting
 
     Customer --> DataStores[(PostgreSQL + Redis)]
     Account --> DataStores
@@ -180,23 +218,22 @@ flowchart TD
 - `docker-compose.yaml`
 - `docs/`
 - `scripts/`
-- `ui-admin-portal/`
-- `customer-service/`
-- `account-service/`
-- `transaction-service/`
-- `ledger-service/`
-- `reporting-service/`
-- `common-api-library/`
-- `common-security-library/`
-- `common-domain-library/`
-- `common-exception-library/`
+- `ui/admin-portal/`
+- `ui/customer-portal/`
+- `backend/customer-service/`
+- `backend/account-service/`
+- `backend/transaction-service/`
+- `backend/ledger-service/`
+- `backend/reporting-service/`
+
+No `common-*` library modules and no parent/aggregator POM — every entry above is a fully independent, self-contained project.
 
 ---
 
 ## Standard Structure for Every Backend
 
 ```
-service-name/
+backend/service-name/
 ├── src/
 │   ├── main/
 │   │   ├── java/
@@ -230,7 +267,7 @@ service-name/
 
 ## Project 1: Customer Service
 
-Repository: `customer-service`
+Repository: `backend/customer-service`
 
 **Responsibilities**
 
@@ -264,7 +301,7 @@ Repository: `customer-service`
 
 ## Project 2: Account Service
 
-Repository: `account-service`
+Repository: `backend/account-service`
 
 **Responsibilities**
 
@@ -299,7 +336,7 @@ Repository: `account-service`
 
 ## Project 3: Transaction Service
 
-Repository: `transaction-service`
+Repository: `backend/transaction-service`
 
 **Responsibilities**
 
@@ -338,7 +375,7 @@ Repository: `transaction-service`
 
 ## Project 4: Ledger Service
 
-Repository: `ledger-service`
+Repository: `backend/ledger-service`
 
 **Responsibilities**
 
@@ -373,7 +410,7 @@ Repository: `ledger-service`
 
 ## Project 5: Reporting Service
 
-Repository: `reporting-service`
+Repository: `backend/reporting-service`
 
 **Responsibilities**
 
@@ -398,9 +435,9 @@ Repository: `reporting-service`
 
 ---
 
-## React Application
+## React Application: Admin Portal
 
-Repository: `ui-admin-portal`
+Repository: `ui/admin-portal`
 
 ### Pages
 
@@ -464,6 +501,85 @@ Repository: `ui-admin-portal`
 
 ---
 
+## React Application: Customer Portal
+
+Repository: `ui/customer-portal`
+
+A self-service banking portal for normal (non-admin) bank customers to manage their own accounts, distinct from the internal admin/branch-staff portal.
+
+### Pages
+
+- Login
+- Register
+- Forgot Password
+- Reset Password
+- Home / My Dashboard
+- Accounts Overview
+- Account Details
+- Transaction History
+- Transfer Money
+- Scheduled Transfers
+- Statements & Reports
+- Profile
+- Security Settings
+- Support
+
+---
+
+### Components
+
+- Navbar
+- Footer
+- DashboardCards
+- AccountCard
+- AccountSummary
+- TransactionTable
+- TransferForm
+- ScheduledTransferForm
+- StatementDownload
+- BalanceChart
+- ProfileForm
+- SecurityPanel
+- Dialogs
+- Pagination
+- Filters
+- Snackbar
+- Loading
+- ProtectedRoute
+
+---
+
+### Hooks
+
+- `useAuth()`
+- `useAccounts()`
+- `useAccountDetails()`
+- `useTransactions()`
+- `useTransfer()`
+- `useStatements()`
+- `useProfile()`
+
+---
+
+### API Clients
+
+- `authApi.ts`
+- `accountApi.ts`
+- `transactionApi.ts`
+- `transferApi.ts`
+- `reportApi.ts`
+- `profileApi.ts`
+
+---
+
+### Access
+
+- Restricted to the `CUSTOMER` role, scoped to the authenticated customer's own accounts only.
+- No access to other customers' data, branch administration, ledger postings or system reports.
+- Uses the same Authentication Service (JWT, refresh tokens) as the Admin Portal.
+
+---
+
 ## Authentication
 
 Spring Security with
@@ -485,6 +601,7 @@ Spring Security with
 - `AUDITOR`
 - `CUSTOMER_SUPPORT`
 - `READ_ONLY`
+- `CUSTOMER`
 
 ---
 
@@ -494,6 +611,15 @@ Automatically seed:
 
 - **Username:** `admin`
 - **Password:** `Admin@123`
+
+---
+
+## Default Customer
+
+Automatically seed a sample bank customer for the Customer Portal:
+
+- **Username:** `customer`
+- **Password:** `Customer@123`
 
 ---
 
@@ -511,6 +637,19 @@ Display
 - Cached Objects
 - Daily Deposits
 - Daily Withdrawals
+
+---
+
+## Customer Dashboard
+
+Display
+
+- Total Balance Across Accounts
+- Linked Accounts
+- Recent Transactions
+- Upcoming Scheduled Transfers
+- Monthly Spending Summary
+- Quick Transfer
 
 ---
 
@@ -540,7 +679,8 @@ The root compose file should start
 - Transaction Service
 - Ledger Service
 - Reporting Service
-- React UI
+- React Admin Portal
+- React Customer Portal
 
 ---
 
@@ -589,11 +729,14 @@ Every deployment should implement
 **Routes**
 
 - `/`
+- `/admin`
 - `api/customers`
 - `api/accounts`
 - `api/transactions`
 - `api/ledger`
 - `api/reports`
+
+The React Customer Portal should be available at `/`, and the React Admin Portal should be available at `/admin`.
 
 TLS-ready configuration should be included.
 
@@ -715,7 +858,7 @@ The AI Agent must always follow these engineering practices:
 
 ### General
 
-- Use Java 21 features where appropriate.
+- Use Java 25 features where appropriate.
 - Follow SOLID, DRY and KISS principles.
 - Prefer composition over inheritance.
 - Keep methods small and focused.
@@ -787,7 +930,7 @@ For every feature, the AI Agent should:
 6. Add Redis caching where appropriate.
 7. Expose REST APIs.
 8. Secure endpoints with Spring Security.
-9. Update the React UI.
+9. Update the React Admin Portal and React Customer Portal.
 10. Write unit tests.
 11. Write integration tests.
 12. Build Docker images.
@@ -802,7 +945,10 @@ For every feature, the AI Agent should:
 
 The completed repository should resemble a production-quality banking platform demonstrating:
 
-- Advanced Spring Boot 3 architecture
+- Java 25 with virtual threads enabled across all services
+- Spring Boot 4.1 backend services and a React 19.2 frontend, with all other libraries kept at their latest compatible stable releases
+- Independent, non-monorepo services with no shared libraries or parent POM
+- Advanced Spring Boot architecture
 - Enterprise Spring Data JPA
 - High-concurrency transaction processing
 - Double-entry ledger implementation

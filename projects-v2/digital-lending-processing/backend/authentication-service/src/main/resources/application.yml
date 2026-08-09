@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: authentication-service
+  threads:
+    virtual:
+      enabled: true
+  data:
+    mongodb:
+      uri: mongodb://root:rootroot@mongodb:27017/auth_db?authSource=admin
+
+jwt:
+  secret: loansphere-docker-secret-key-must-be-at-least-256-bits-long
+  expiration-ms: 3600000
+  refresh-expiration-ms: 86400000
+
+server:
+  port: 8081
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+
+springdoc:
+  swagger-ui:
+    doc-expansion: none
+    operations-sorter: alpha
+    tags-sorter: alpha
+management:
+  server:
+    port: 9081
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health

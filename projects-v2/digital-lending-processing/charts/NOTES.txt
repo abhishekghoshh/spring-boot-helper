@@ -1,0 +1,13 @@
+LoanSphere has been deployed.
+
+To access the services:
+  kubectl get pods -n {{ .Release.Namespace }}
+
+API Gateway:
+  kubectl port-forward svc/api-gateway 8080:8080 -n {{ .Release.Namespace }}
+
+Customer Portal:
+  kubectl port-forward svc/ui-loan-portal 5173:5173 -n {{ .Release.Namespace }}
+
+Admin Console:
+  kubectl port-forward svc/ui-admin-console 5174:5174 -n {{ .Release.Namespace }}

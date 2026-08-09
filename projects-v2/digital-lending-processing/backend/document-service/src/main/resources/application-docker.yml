@@ -1,0 +1,4 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://root:rootroot@mongodb:27017/document_db?authSource=admin

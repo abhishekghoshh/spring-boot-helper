@@ -1,0 +1,9 @@
+import { useState } from 'react'; import { Container, Card, TextField, Button, Typography, Alert, Link } from '@mui/material'; import { useNavigate, Link as RouterLink } from 'react-router-dom'; import { useAuth } from '../hooks/useAuth'
+export default function Register() {
+  const { registerUser } = useAuth(); const navigate = useNavigate(); const [form, setForm] = useState({ username: '', email: '', password: '', firstName: '', lastName: '' }); const [error, setError] = useState('')
+  const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); try { await registerUser(form); navigate('/') } catch { setError('Registration failed') } }
+  return <Container maxWidth="sm" sx={{ mt: 8 }}><Card sx={{ p: 4 }}><Typography variant="h4" mb={3} textAlign="center">Register</Typography>{error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+    <form onSubmit={handleSubmit}><TextField fullWidth label="Username" value={form.username} onChange={e => setForm({...form, username: e.target.value})} margin="normal" /><TextField fullWidth label="Email" type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} margin="normal" /><TextField fullWidth label="Password" type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} margin="normal" /><TextField fullWidth label="First Name" value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} margin="normal" /><TextField fullWidth label="Last Name" value={form.lastName} onChange={e => setForm({...form, lastName: e.target.value})} margin="normal" />
+      <Button fullWidth type="submit" variant="contained" size="large" sx={{ mt: 2 }}>Register</Button></form>
+    <Typography textAlign="center" mt={2}>Already have an account? <Link component={RouterLink} to="/login">Login</Link></Typography></Card></Container>
+}

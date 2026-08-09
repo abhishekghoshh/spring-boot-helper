@@ -1,0 +1,26 @@
+server:
+  port: ${CART_SERVICE_PORT:8083}
+spring:
+  application:
+    name: cart-service
+  threads:
+    virtual:
+      enabled: true
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_ROOT_USER:root}:${MONGO_ROOT_PASSWORD:rootroot}@${MONGO_HOST:localhost}:${MONGO_PORT:27017}/${MONGO_DATABASE:commercesphere}?authSource=admin
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:rootroot}
+app:
+  cart:
+    ttl-seconds: 604800
+  identity:
+    url: ${IDENTITY_SERVICE_URL:http://localhost:8081}
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+logging:
+  level:
+    com.commercesphere: DEBUG

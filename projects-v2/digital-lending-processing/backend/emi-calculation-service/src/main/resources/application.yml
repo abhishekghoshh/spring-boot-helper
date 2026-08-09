@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: emi-calculation-service
+  threads:
+    virtual:
+      enabled: true
+
+jwt:
+  secret: loansphere-docker-secret-key-must-be-at-least-256-bits-long
+  expiration-ms: 3600000
+
+server:
+  port: 8084
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+management.endpoint.health.show-details: always
+management:
+  server:
+    port: 9084
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health

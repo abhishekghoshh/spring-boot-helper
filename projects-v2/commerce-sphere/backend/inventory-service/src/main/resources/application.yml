@@ -1,0 +1,23 @@
+server:
+  port: ${INVENTORY_SERVICE_PORT:8084}
+spring:
+  application:
+    name: inventory-service
+  threads:
+    virtual:
+      enabled: true
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_ROOT_USER:root}:${MONGO_ROOT_PASSWORD:rootroot}@${MONGO_HOST:localhost}:${MONGO_PORT:27017}/${MONGO_DATABASE:commercesphere}?authSource=admin
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:rootroot}
+app:
+  reservation:
+    ttl-seconds: 1800
+  catalog:
+    url: ${CATALOG_SERVICE_URL:http://localhost:8082}
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

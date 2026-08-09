@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: api-gateway
+  threads:
+    virtual:
+      enabled: true
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+      globalcors:
+        cors-configurations:
+          "[/**]":
+            allowedOrigins: 
+              - "http://localhost:5173"
+              - "http://localhost:5174"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        - id: authentication-service
+          uri: lb://authentication-service
+          predicates:
+            - Path=/api/v1/auth/**
+        - id: customer-profile-service
+          uri: lb://customer-profile-service
+          predicates:
+            - Path=/api/v1/customers/**
+        - id: loan-offer-service
+          uri: lb://loan-offer-service
+          predicates:
+            - Path=/api/v1/offers/**
+        - id: emi-calculation-service
+          uri: lb://emi-calculation-service
+          predicates:
+            - Path=/api/v1/emi/**
+        - id: loan-application-service
+          uri: lb://loan-application-service
+          predicates:
+            - Path=/api/v1/applications/**
+        - id: loan-processing-service
+          uri: lb://loan-processing-service
+          predicates:
+            - Path=/api/v1/processing/**
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notifications/**
+        - id: document-service
+          uri: lb://document-service
+          predicates:
+            - Path=/api/v1/documents/**
+
+server:
+  port: 8080
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/

@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "catalog-service.fullname" . }}
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: commercesphere.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "catalog-service.fullname" . }}
+                port:
+                  number: {{ .Values.service.port }}

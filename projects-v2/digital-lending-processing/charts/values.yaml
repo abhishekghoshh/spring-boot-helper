@@ -1,0 +1,55 @@
+replicaCount: 1
+
+image:
+  repository: loansphere
+  pullPolicy: IfNotPresent
+
+mongodb:
+  username: root
+  password: rootroot
+
+redis:
+  password: rootroot
+
+jwt:
+  secret: loansphere-jwt-secret-key
+
+service:
+  type: ClusterIP
+
+ingress:
+  enabled: true
+  className: nginx
+  host: loansphere.local
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+services:
+  discovery:
+    port: 8761
+  config:
+    port: 8888
+  gateway:
+    port: 8080
+  auth:
+    port: 8081
+  customer:
+    port: 8082
+  offer:
+    port: 8083
+  emi:
+    port: 8084
+  application:
+    port: 8085
+  processing:
+    port: 8086
+  notification:
+    port: 8087
+  document:
+    port: 8088

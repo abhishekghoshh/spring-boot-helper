@@ -16,6 +16,38 @@
 
 ---
 
+## Technology Baseline
+
+- **Java 25 (LTS)** for every backend service, with **Spring Boot 4.1** (latest GA) as the baseline, paired with matching current-generation Spring Security, Spring Data MongoDB/Redis, MapStruct and springdoc-openapi versions compatible with it.
+- **Virtual Threads** must be enabled on every service (`spring.threads.virtual.enabled=true`); Tomcat, MongoDB/Redis blocking calls and `@Async`/scheduled work should run on virtual threads instead of platform thread pools. Avoid `synchronized` blocks; prefer `ReentrantLock` where locking is required.
+- **React 19.2** (latest GA) as the baseline for both frontend apps, paired with the current stable TypeScript, Vite, TanStack Query, React Router, Material UI, React Hook Form and Zod versions compatible with it.
+- Beyond these pinned baselines, always prefer the **latest stable release** of every other library in the stack at implementation time instead of pinning to older majors.
+- Prefer modern patterns (React Compiler-friendly code, function components, hooks, no legacy class components).
+
+---
+
+## No Shared Libraries / No Monorepo Tooling
+
+This repository is a collection of **fully independent Spring Boot projects**, not a monorepo with shared code.
+
+- There is **no parent POM** and **no shared/common library** (no `common-api-library`, `common-security-library`, `common-model-library`, `common-exception-library`).
+- Every service under `backend/` owns **its own** `pom.xml` (or Gradle build), its own DTOs, mappers, exception classes and security config — duplication across services is expected and acceptable.
+- Do not introduce cross-module Maven/Gradle dependencies between backend services. Services only communicate over the network (REST), never via shared JARs.
+- Do not extract multi-module Maven reactor builds, BOMs, or Gradle composite builds to "deduplicate" services — each service must build and deploy on its own.
+- Each React app under `ui/` has its own `package.json`, its own components/hooks/API clients — no shared npm workspace or shared component library between `ui/admin-console` and `ui/storefront`.
+
+---
+
+## Implementation Expectations
+
+When asked to generate a service or feature, the AI Agent must produce **actual working implementation code**, not placeholders or scaffolding:
+
+- Real controllers, services, repositories, documents, DTOs, mappers, security config, and exception handlers with full method bodies — not `// TODO` stubs or empty classes.
+- Real React components, hooks and API service files with working logic (state, effects, API calls, form validation) — not empty JSX shells or placeholder components.
+- Configuration files (`application.yml`, `.env`, Dockerfiles, Helm values) should contain concrete, usable values consistent with the rest of the stack, not generic placeholders left for the user to fill in.
+
+---
+
 ## Objectives
 
 The repository should help developers understand:
@@ -55,8 +87,8 @@ The repository should help developers understand:
 
 ### Backend
 
-- Java 21
-- Spring Boot 3.x
+- Java 25 (virtual threads enabled)
+- Spring Boot 4.1
 - Spring Security
 - Spring MVC
 - Spring Validation
@@ -101,7 +133,7 @@ Use Redis for
 
 ### Frontend
 
-- React
+- React 19.2
 - TypeScript
 - Vite
 - React Router
@@ -132,19 +164,20 @@ commerce-sphere/
 ├── docker-compose.yaml
 ├── docs/
 ├── scripts/
-├── ui-admin-console/
-├── identity-service/
-├── catalog-service/
-├── cart-service/
-├── order-service/
-├── inventory-service/
-├── common-api-library/
-├── common-security-library/
-├── common-model-library/
-├── common-exception-library/
+├── ui/
+│   ├── admin-console/
+│   └── storefront/
+├── backend/
+│   ├── identity-service/
+│   ├── catalog-service/
+│   ├── cart-service/
+│   ├── inventory-service/
+│   └── order-service/
 ├── README.md
 └── AGENT.md
 ```
+
+Each directory under `backend/` and `ui/` is a standalone, independently buildable project (its own build file, no shared parent, no shared library module).
 
 ---
 
@@ -152,11 +185,16 @@ commerce-sphere/
 
 ```mermaid
 flowchart TD
-    UI[React Admin Console] -->|REST APIs| Identity[Identity Service]
-    UI -->|REST APIs| Catalog[Catalog Service]
-    UI -->|REST APIs| Cart[Cart Service]
-    UI -->|REST APIs| Inventory[Inventory Service]
-    UI -->|REST APIs| Order[Order Service]
+    AdminUI[React Admin Console] -->|REST APIs| Identity[Identity Service]
+    AdminUI -->|REST APIs| Catalog[Catalog Service]
+    AdminUI -->|REST APIs| Cart[Cart Service]
+    AdminUI -->|REST APIs| Inventory[Inventory Service]
+    AdminUI -->|REST APIs| Order[Order Service]
+
+    StorefrontUI[React Storefront] -->|REST APIs| Identity
+    StorefrontUI -->|REST APIs| Catalog
+    StorefrontUI -->|REST APIs| Cart
+    StorefrontUI -->|REST APIs| Order
 
     Identity --> DataStores[(MongoDB + Redis)]
     Catalog --> DataStores
@@ -173,23 +211,22 @@ flowchart TD
 - `docker-compose.yaml`
 - `docs/`
 - `scripts/`
-- `ui-admin-console/`
-- `identity-service/`
-- `catalog-service/`
-- `cart-service/`
-- `inventory-service/`
-- `order-service/`
-- `common-api-library/`
-- `common-security-library/`
-- `common-model-library/`
-- `common-exception-library/`
+- `ui/admin-console/`
+- `ui/storefront/`
+- `backend/identity-service/`
+- `backend/catalog-service/`
+- `backend/cart-service/`
+- `backend/inventory-service/`
+- `backend/order-service/`
+
+No `common-*` library modules and no parent/aggregator POM — every entry above is a fully independent, self-contained project.
 
 ---
 
 ## Common Structure for Every Backend Service
 
 ```
-service-name/
+backend/service-name/
 ├── src/
 │   ├── main/
 │   │   ├── java/
@@ -222,7 +259,7 @@ service-name/
 
 ## Project 1: Identity Service
 
-Repository: `identity-service`
+Repository: `backend/identity-service`
 
 **Responsibilities**
 
@@ -259,7 +296,7 @@ Repository: `identity-service`
 
 ## Project 2: Catalog Service
 
-Repository: `catalog-service`
+Repository: `backend/catalog-service`
 
 **Responsibilities**
 
@@ -299,7 +336,7 @@ Repository: `catalog-service`
 
 ## Project 3: Cart Service
 
-Repository: `cart-service`
+Repository: `backend/cart-service`
 
 **Responsibilities**
 
@@ -333,7 +370,7 @@ Repository: `cart-service`
 
 ## Project 4: Inventory Service
 
-Repository: `inventory-service`
+Repository: `backend/inventory-service`
 
 **Responsibilities**
 
@@ -362,7 +399,7 @@ Repository: `inventory-service`
 
 ## Project 5: Order Service
 
-Repository: `order-service`
+Repository: `backend/order-service`
 
 **Responsibilities**
 
@@ -391,9 +428,9 @@ Repository: `order-service`
 
 ---
 
-## React Project
+## React Project: Admin Console
 
-Repository: `ui-admin-console`
+Repository: `ui/admin-console`
 
 ### Pages
 
@@ -465,6 +502,98 @@ Repository: `ui-admin-console`
 
 ---
 
+## React Project: Customer Storefront
+
+Repository: `ui/storefront`
+
+A customer-facing storefront for the normal (non-admin) end user to browse, search and purchase products.
+
+### Pages
+
+- Home
+- Product Listing
+- Product Detail
+- Category Landing
+- Search Results
+- Shopping Cart
+- Wishlist
+- Checkout
+- Order Confirmation
+- Order History
+- Order Detail
+- Login
+- Register
+- Forgot Password
+- My Account / Profile
+- Address Book
+- Not Found (404)
+
+---
+
+### Components
+
+- Navbar
+- Footer
+- HeroBanner
+- ProductCard
+- ProductGrid
+- ProductGallery
+- ProductReviews
+- CategoryMenu
+- Breadcrumbs
+- CartDrawer
+- CartItem
+- WishlistButton
+- CheckoutSteps
+- AddressForm
+- PaymentForm
+- OrderSummary
+- SearchBar
+- Filters
+- SortDropdown
+- Pagination
+- RatingStars
+- Loading
+- Snackbar
+- ProtectedRoute
+
+---
+
+### Hooks
+
+- `useAuth`
+- `useProducts`
+- `useProductDetail`
+- `useCategories`
+- `useCart`
+- `useWishlist`
+- `useCheckout`
+- `useOrders`
+- `useSearch`
+- `useReviews`
+
+---
+
+### Services
+
+- `authApi.ts`
+- `productApi.ts`
+- `categoryApi.ts`
+- `cartApi.ts`
+- `wishlistApi.ts`
+- `orderApi.ts`
+- `reviewApi.ts`
+
+---
+
+### Access
+
+- Publicly browsable (Home, Product Listing, Product Detail, Search, Category pages) without authentication.
+- Authentication (via Identity Service) required for Checkout, Order History, Wishlist persistence and Account pages.
+- Guest cart support with merge-on-login (backed by Cart Service).
+
+---
+
 ## Admin Dashboard
 
 Every project must expose an administration dashboard.
@@ -515,7 +644,8 @@ The root compose file should start
 - Cart Service
 - Inventory Service
 - Order Service
-- React UI
+- React Admin Console
+- React Storefront
 
 ---
 
@@ -564,13 +694,14 @@ Create a single NGINX Ingress.
 **Routes**
 
 - `/`
+- `/admin`
 - `api/auth`
 - `api/catalog`
 - `api/cart`
 - `api/orders`
 - `api/inventory`
 
-The React application should be available at `/`.
+The React Storefront application should be available at `/`, and the React Admin Console should be available at `/admin`.
 
 ---
 
@@ -713,7 +844,7 @@ For every feature, the AI Agent should:
 5. Develop business services.
 6. Expose REST APIs.
 7. Secure endpoints with Spring Security.
-8. Build or update the React UI.
+8. Build or update the React Storefront UI and Admin Console UI.
 9. Write unit tests.
 10. Write integration tests.
 11. Build Docker images.
@@ -728,6 +859,9 @@ For every feature, the AI Agent should:
 
 The final repository should represent a production-style e-commerce platform that demonstrates:
 
+- Java 25 with virtual threads enabled across all services
+- Spring Boot 4.1 backend services and a React 19.2 frontend, with all other libraries kept at their latest compatible stable releases
+- Independent, non-monorepo services with no shared libraries or parent POM
 - Spring Boot microservices
 - MongoDB document modelling
 - Redis caching and session management

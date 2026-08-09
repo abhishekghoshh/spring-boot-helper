@@ -1,0 +1,6 @@
+apiVersion: v2
+name: identity-service
+description: CommerceSphere Identity Service - Authentication and User Management
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
