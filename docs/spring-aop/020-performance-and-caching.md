@@ -185,10 +185,10 @@ public class AspectJExpressionPointcut implements MethodMatcher {
 │  ┌────────────────────────────────────────┬──────────────────────────────────────┐│
 │  │ Phase                                  │ Cost                                 ││
 │  ├────────────────────────────────────────┼──────────────────────────────────────┤│
-│  │ Startup: Parse 100 pointcut strings    │ ~100-500ms (one-time)               ││
-│  │ Startup: Match 100 pointcuts × N beans │ ~1-5ms per bean (one-time)          ││
-│  │ First call: Build interceptor chain    │ ~0.01ms per method (one-time)       ││
-│  │ Every call: Cache lookup + chain exec  │ ~0.001ms overhead per interceptor   ││
+│  │ Startup: Parse 100 pointcut strings    │ ~100-500ms (one-time, illustrative) ││
+│  │ Startup: Match 100 pointcuts × N beans │ ~1-5ms per bean (one-time, illustr.)││
+│  │ First call: Build interceptor chain    │ ~0.01ms per method (illustrative)   ││
+│  │ Every call: Cache lookup + chain exec  │ ~0.001ms per interceptor (illustr.) ││
 │  │ Every call: Target method execution    │ ONCE — same as without AOP          ││
 │  └────────────────────────────────────────┴──────────────────────────────────────┘│
 │                                                                                  │

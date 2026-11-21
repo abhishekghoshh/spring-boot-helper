@@ -70,7 +70,7 @@ public class BankService {
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**The Fix — Using `@Transactional`:**
+**The Fix — Using `@Transactional` (atomicity) + locking (lost-update protection):**
 
 ```java
 @Service
@@ -79,7 +79,10 @@ public class BankService {
     @Autowired
     private AccountRepository accountRepository;
 
-    // ✅ WITH @Transactional — critical section is now PROTECTED
+    // ✅ WITH @Transactional — atomicity is now PROTECTED (all-or-nothing),
+    // ⚠️ BUT lost-update is NOT prevented by @Transactional alone under
+    // default READ_COMMITTED: two threads can still both read the same
+    // stale balance. Combine with a lock (see below).
     @Transactional
     public void transferFunds(Long fromAccountId, Long toAccountId, BigDecimal amount) {
 
@@ -99,6 +102,18 @@ public class BankService {
     }
 }
 ```
+
+> **Lost-update protection (required for concurrent balance updates):**
+> `@Transactional` alone does not stop two threads from reading the same
+> stale balance. Add a pessimistic lock or optimistic version:
+> ```java
+> @Lock(LockModeType.PESSIMISTIC_WRITE)
+> @Query("SELECT a FROM Account a WHERE a.id = :id")
+> Optional<Account> findByIdForUpdate(@Param("id") Long id);
+> // SQL: SELECT ... FOR UPDATE (row locked until COMMIT)
+> // Alternative: @Version Long version on Account → OptimisticLockException on conflict
+> ```
+> See `014-isolation-level.md` and `013-transaction-propagation.md`.
 
 ---
 

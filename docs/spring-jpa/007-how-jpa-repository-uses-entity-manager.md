@@ -59,3 +59,18 @@ Every Spring Data JPA method — `save()`, `findById()`, `delete()`, `findAll()`
 
 ---
 
+### GOLD: isNew detection + readOnly hint + Q&A
+
+How `isNew()` is decided (in order):
+
+- `@Version` present → new if version is `null`.
+- Assigned `@Id` (no generation) → new if `@Id` is `null`; a non-null Id triggers `merge()` (SELECT-then-UPDATE).
+- Implement `Persistable<ID>` + override `isNew()` when Id is assigned but entity is still new — avoids the extra SELECT from `merge()`.
+
+readOnly hint: the class-level `@Transactional(readOnly = true)` in `SimpleJpaRepository` means `findById`/`findAll` skip dirty checking; write methods re-declare `@Transactional` (read-write) to override it.
+
+**Interview Q&A**
+
+1. **Q: save() does INSERT or UPDATE?** A: New → `persist()` (INSERT); existing → `merge()` (SELECT + UPDATE). Assigned IDs with non-null value are treated as existing unless you implement `Persistable`.
+2. **Q: Why is merge() slower than persist()?** A: `merge()` copies state onto a managed instance (extra SELECT + managed-copy return) — never use its return value interchangeably with the passed entity.
+

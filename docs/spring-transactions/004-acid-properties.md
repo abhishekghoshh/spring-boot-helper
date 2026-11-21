@@ -161,9 +161,11 @@ SELECT balance FROM accounts WHERE id = 1;
 │  │   ├────────────────────┼────────────┼──────────────────┼──────────────┤       │
 │  │   │ READ_UNCOMMITTED   │ Possible   │ Possible         │ Possible     │       │
 │  │   │ READ_COMMITTED     │ Prevented  │ Possible         │ Possible     │       │
-│  │   │ REPEATABLE_READ    │ Prevented  │ Prevented        │ Possible     │       │
+│  │   │ REPEATABLE_READ    │ Prevented  │ Prevented        │ Possible*    │       │
 │  │   │ SERIALIZABLE       │ Prevented  │ Prevented        │ Prevented    │       │
 │  │   └────────────────────┴────────────┴──────────────────┴──────────────┘       │
+│  │   * REPEATABLE_READ phantom = Possible per SQL standard, but MySQL/InnoDB     │
+│  │     gap locks prevent phantoms in practice — see 014-isolation-level.md.      │
 │  │                                                                               │
 │  └── Durability ─→ Handled by DB engine (WAL / redo logs)                        │
 │                    Once COMMIT returns, data is on disk                           │

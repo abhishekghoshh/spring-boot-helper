@@ -1,6 +1,17 @@
 # Spring Boot interview helper
 
+> **Link-roll:** this page is a curated index of external interview resources,
+> organized by topic. In-depth theory, diagrams, and code live in the sibling
+> topic pages (e.g. `001-history.md`–`013-spring-actuator.md`, `spring-security/*`,
+> `spring-jpa/*`, `spring-transactions/*`, `spring-aop/*`). Start with a topic page
+> for concepts, then use the links below for extra practice questions.
 
+## How to use this page
+
+1. Pick your weak area below (General, Microservices, JPA, Async).
+2. Read the matching topic pages in this repo first for diagrams + code.
+3. Then work through 1–2 external question banks per sitting and write the
+   answer from memory before checking — that is what transfers to interviews.
 
 ## Medium
 

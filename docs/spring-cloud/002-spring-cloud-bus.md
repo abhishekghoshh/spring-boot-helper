@@ -296,7 +296,7 @@ spring:
 
 The management UI is typically available on port 15672 (`http://localhost:15672`), separate from the AMQP protocol port 5672 used by applications to actually publish/consume messages, and is useful for inspecting exchanges, queues, and bindings that Spring Cloud Bus creates automatically.
 
-**Real-life scenario:** A developer runs RabbitMQ locally via Docker (`docker run -p 5672:5672 -p 15672:15672 rabbitmq:3-management`) and uses the default `guest`/`guest` credentials purely for local development, while production environments always override these with secrets-managed credentials.
+**Real-life scenario:** A developer runs RabbitMQ locally via Docker (`docker run -p 5672:5672 -p 15672:15672 rabbitmq:4-management`) and uses the default `guest`/`guest` credentials purely for local development, while production environments always override these with secrets-managed credentials.
 
 **Interview Q&A:**
 
@@ -350,7 +350,7 @@ Testing Spring Cloud Bus end-to-end typically involves starting a config server,
 
 ```bash
 # 1. Start RabbitMQ
-docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:4-management
 
 # 2. Start two instances of the client service on different ports
 java -jar order-service.jar --server.port=8081

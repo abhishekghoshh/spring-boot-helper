@@ -217,7 +217,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     // SQL: SELECT ... FROM employees e WHERE e.department = ? AND e.salary > ?
 
     // 3. LIKE with named parameter
-    @Query("SELECT e FROM Employee e WHERE e.name LIKE %:keyword%")
+    @Query("SELECT e FROM Employee e WHERE e.name LIKE CONCAT('%', :keyword, '%')")
     List<Employee> searchByName(@Param("keyword") String keyword);
     // SQL: SELECT ... FROM employees e WHERE e.emp_name LIKE '%keyword%'
 
@@ -296,7 +296,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 │  Employee findSingleByDept(@Param("dept") String dept);                          │
 │                                                                                  │
 │  If dept = 'IT' returns 5 employees:                                             │
-│  → javax.persistence.NonUniqueResultException:                                   │
+│  → jakarta.persistence.NonUniqueResultException:                                   │
 │    "query did not return a unique result: 5"                                     │
 │  → RUNTIME ERROR! Application crashes.                                           │
 │                                                                                  │
@@ -511,7 +511,7 @@ public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> 
 
     // 5. Multiple conditions on both entities
     @Query("SELECT u FROM UserDetails u JOIN u.address a " +
-           "WHERE u.username LIKE %:keyword% AND a.country = :country")
+           "WHERE u.username LIKE CONCAT('%', :keyword, '%') AND a.country = :country")
     List<UserDetails> searchUsers(@Param("keyword") String keyword,
                                   @Param("country") String country);
     // SQL:  SELECT u.* FROM user_details u
@@ -824,7 +824,7 @@ public class UserController {
 
 ### @Modifying Annotation
 
-`@Modifying` tells Spring Data JPA that the `@Query` is **not** a SELECT query — it is an **INSERT**, **UPDATE**, or **DELETE** that modifies data.
+`@Modifying` tells Spring Data JPA that the `@Query` is **not** a SELECT query — it is an **UPDATE** or **DELETE** that modifies data (JPQL has no INSERT — use `persist()`/native for inserts).
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -927,9 +927,9 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
 ---
 
-### What Happens When You Use INSERT/UPDATE/DELETE Inside @Query
+### What Happens When You Use UPDATE/DELETE Inside @Query
 
-When you write a modifying JPQL query (UPDATE, DELETE) inside `@Query`, the SQL goes **directly to the database**, bypassing the normal JPA entity lifecycle.
+When you write a modifying JPQL query (UPDATE or DELETE — JPQL has no INSERT) inside `@Query`, the SQL goes **directly to the database**, bypassing the normal JPA entity lifecycle.
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -1031,7 +1031,7 @@ public class EmployeeService {
     // WITHOUT @Transactional → RUNTIME ERROR:
     // org.springframework.dao.InvalidDataAccessApiUsageException:
     //   Executing an update/delete query;
-    //   nested exception is javax.persistence.TransactionRequiredException
+    //   nested exception is jakarta.persistence.TransactionRequiredException
 }
 ```
 

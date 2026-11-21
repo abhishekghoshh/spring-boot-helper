@@ -10,9 +10,8 @@ Spring's transaction infrastructure uses AOP concepts internally, though it's im
 │                                                                                  │
 │  Equivalent @Aspect pointcut expression would be:                                │
 │                                                                                  │
-│    @Pointcut("@within(org.springframework.transaction.annotation.Transactional)  │
-│            || @annotation(org.springframework.transaction.annotation.Transactional│
-│    )")                                                                            │
+│    @Pointcut("@within(...transaction.annotation.Transactional) "                 │
+│            + "|| @annotation(...transaction.annotation.Transactional)")           │
 │                                                                                  │
 │  @within → matches ALL methods of a class annotated with @Transactional          │
 │  @annotation → matches specific methods annotated with @Transactional            │
@@ -178,9 +177,8 @@ public abstract class TransactionAspectSupport {
 │  @Component                                                                      │
 │  public class TransactionAspect {                                                │
 │                                                                                  │
-│      @Pointcut("@within(org.springframework.transaction.annotation.Transactional)│
-│              || @annotation(org.springframework.transaction.annotation.Transactio │
-│      nal)")                                                                       │
+│      @Pointcut("@within(...transaction.annotation.Transactional) "               │
+│              + "|| @annotation(...transaction.annotation.Transactional)")         │
 │      public void transactionalMethods() {}                                       │
 │                                                                                  │
 │      @Around("transactionalMethods()")                                           │

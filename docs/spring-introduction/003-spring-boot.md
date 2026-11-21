@@ -342,7 +342,8 @@ spring.datasource.hikari.connection-timeout=30000
 # ── JPA / Hibernate ──────────────────────────────────────────────────
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=false
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+# (Boot 3 / Hibernate 6 auto-detects dialect — line below only if you must pin it)
+# spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
 
 # ── Logging ──────────────────────────────────────────────────────────
 logging.level.root=INFO

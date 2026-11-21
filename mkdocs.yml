@@ -15,7 +15,7 @@ nav:
       - 007 - Spring Boot Config Management: spring-introduction/007-config.md
       - 008 - Async with Spring Boot: spring-introduction/008-async.md
       - 009 - Spring with Virtual Thread: spring-introduction/009-spring-with-virtual-thread.md
-      - 010 - Interceptor and Filter: spring-introduction/010-intercepter-and-filter.md
+      - 010 - Interceptor and Filter: spring-introduction/010-interceptor-and-filter.md
       - 011 - Spring HATEOS: spring-introduction/011-spring-hateos.md
       - 012 - Exception Handling: spring-introduction/012-exception-handling.md
       - 013 - Spring Boot Actuator: spring-introduction/013-spring-actuator.md
@@ -123,15 +123,45 @@ nav:
     - 021 - Role-Based Authorization (RBAC): spring-security/021-role-based-authorization-rbac.md
   - Spring Testing: 
     - Overview: spring-testing/index.md
+    - 001 - Testing with Spring Boot: spring-testing/001-testing-with-spring-boot.md
   - Spring Kafka: 
     - Overview: spring-kafka/index.md
     - Kafka Introduction: spring-kafka/kafka.md
   - Spring Redis: 
     - Overview: spring-redis/index.md
     - Redis Introduction: spring-redis/redis.md
+    - 001 - Spring Cache Fundamentals: spring-redis/001-spring-cache-fundamentals.md
+    - 002 - Spring Boot Redis Setup: spring-redis/002-spring-boot-redis-setup.md
+    - 003 - Cache Annotations: spring-redis/003-cache-annotations.md
+    - 004 - Redis Cache Configuration: spring-redis/004-redis-cache-configuration.md
+    - 005 - Cache Key Design: spring-redis/005-cache-key-design.md
+    - 006 - Invalidation and Consistency: spring-redis/006-invalidation-and-consistency.md
+    - 007 - Product Catalog Example: spring-redis/007-product-catalog-example.md
+    - 008 - RedisTemplate Direct Access: spring-redis/008-redistemplate-direct-access.md
+    - 009 - Advanced Production Topics: spring-redis/009-advanced-production.md
+    - 010 - Testing and Debugging: spring-redis/010-testing-debugging.md
+    - 011 - Performance and Trade-Offs: spring-redis/011-performance-tradeoffs.md
+    - 012 - Architecture and System Design: spring-redis/012-architecture-system-design.md
+    - 013 - Interview Questions: spring-redis/013-interview-questions.md
   - Spring Mongo:
       - Overview: spring-mongo/index.md
       - MongoDB Introduction: spring-mongo/mongodb.md
+      - 001 - Spring Boot MongoDB Setup: spring-mongo/001-spring-boot-mongodb-setup.md
+      - 002 - Document Mapping: spring-mongo/002-document-mapping.md
+      - 003 - Repository Query Methods: spring-mongo/003-repository-query-methods.md
+      - 004 - MongoTemplate CRUD: spring-mongo/004-mongotemplate-crud.md
+      - 005 - MongoDB Query Language: spring-mongo/005-mongodb-query-language.md
+      - 006 - Data Modeling and Schema Design: spring-mongo/006-data-modeling-schema-design.md
+      - 007 - Aggregation Framework: spring-mongo/007-aggregation-framework.md
+      - 008 - Indexing and Query Performance: spring-mongo/008-indexing-query-performance.md
+      - 009 - Transactions and Concurrency: spring-mongo/009-transactions-concurrency.md
+      - 010 - Replication, Sharding, Advanced Features: spring-mongo/010-replication-sharding-advanced.md
+      - 011 - Reactive, Testing, Debugging: spring-mongo/011-reactive-testing-debugging.md
+      - 012 - Production Readiness: spring-mongo/012-production-readiness.md
+      - 013 - Product Catalog Example: spring-mongo/013-product-catalog-example.md
+      - 014 - Technology Comparisons: spring-mongo/014-technology-comparisons.md
+      - 015 - System Design Scenarios: spring-mongo/015-system-design-scenarios.md
+      - 016 - Interview Questions: spring-mongo/016-interview-questions.md
   - Spring Cloud:
       - Overview: spring-cloud/index.md
       - Spring Cloud Config: spring-cloud/001-spring-cloud-config.md

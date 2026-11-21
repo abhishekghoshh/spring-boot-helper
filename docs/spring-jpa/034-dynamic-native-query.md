@@ -405,9 +405,11 @@ public class UserService {
         long totalElements = ((Number) countQuery.getSingleResult()).longValue();
 
         // Build and return Page object
+        // sortBy here is DB column for native ORDER BY; map to entity property for Pageable: e.g. "user_name" -> "name"
+        String propertySort = Map.of("user_name", "name", "email", "email", "id", "id").getOrDefault(sortBy, "id");
         Pageable pageable = PageRequest.of(page, size, Sort.by(
             "DESC".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC,
-            sortBy != null ? sortBy : "id"
+            propertySort
         ));
         return new PageImpl<>(content, pageable, totalElements);
     }

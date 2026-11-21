@@ -301,11 +301,12 @@ _embedded → map of rel → array         (nested resource collections)
 ### Dependency
 
 ```xml
-<!-- pom.xml -->
+<!-- pom.xml — version managed by Spring Boot BOM (pin Boot, not the starter) -->
 <dependency>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-hateoas</artifactId>
 </dependency>
+<!-- e.g. Spring Boot 3.2+ → Spring HATEOAS 2.2+ (EntityModel/PagedModel API) -->
 ```
 
 Spring Boot auto-configures:
@@ -832,3 +833,38 @@ Golden rules:
   5. Expose an API root ("/") as the single entry point
   6. Use standard IANA rel names where possible (self, next, prev, first, last)
 ```
+
+### Error Path — What to Return When the Resource Is Gone
+
+HATEOAS links must never point at states the caller cannot reach. For error
+responses (404/410), return a minimal body with no action links — or a single
+`index` link back to the API root so a lost client can re-discover:
+
+```json
+// GET /orders/999 → 404 Not Found
+{
+  "title": "Order not found",
+  "status": 404,
+  "_links": {
+    "index": { "href": "/" }
+  }
+}
+```
+
+Rule: success responses carry state-conditional action links; error responses
+carry discovery links only (`index`, `help`), never actions (`cancel`, `pay`).
+
+### Interview Q&A
+
+**Q1. Why do the links for the same Order change between PENDING, PAID and
+SHIPPED?**
+A: Links encode the current state's valid transitions. A PENDING order offers
+`cancel`/`payment`; a PAID order offers `ship`/`refund`; a SHIPPED order offers
+neither. The server is the single source of truth for what is actionable now —
+the client just follows links instead of encoding the state machine itself.
+
+**Q2. When is HATEOAS not worth it, and what do you use instead?**
+A: For internal service-to-service APIs with generated clients (OpenAPI/gRPC),
+the link-chasing overhead buys little — a versioned contract plus pagination
+metadata is simpler. Reserve HATEOAS for public/long-lived APIs where clients
+must survive server-side URL and workflow evolution.

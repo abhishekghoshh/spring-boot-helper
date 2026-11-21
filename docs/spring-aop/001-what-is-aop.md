@@ -369,3 +369,38 @@ Without AOP, cross-cutting concerns get scattered and tangled across your busine
 
 ---
 
+### Compilable Example: Logging Aspect
+
+> Note: code also shown in diagrams above — the text diagrams illustrate the concept, below is the same idea as real, compilable Java.
+
+```java
+package com.app.aspect;
+
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class LoggingAspect {
+
+    private static final Logger log = LoggerFactory.getLogger(LoggingAspect.class);
+
+    @Around("execution(* com.app.service.*.*(..))")
+    public Object logMethod(ProceedingJoinPoint joinPoint) throws Throwable {
+        log.info("Calling: {}", joinPoint.getSignature());
+        try {
+            Object result = joinPoint.proceed();
+            log.info("Returned: {}", result);
+            return result;
+        } catch (Throwable t) {
+            log.error("Failed: {} — {}", joinPoint.getSignature(), t.getMessage());
+            throw t;
+        }
+    }
+}
+```
+

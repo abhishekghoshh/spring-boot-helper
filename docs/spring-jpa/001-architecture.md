@@ -40,7 +40,7 @@ Spring Data JPA repositories work on top of JPA, and internally they use the `En
 | entity    |      | specific to the |      | the network    |      | and returns   |
 | operations|      | target database |      | using JDBC     |      | result sets   |
 | into SQL  |      |                 |      |                |      |               |
-|           |      | MySQL8Dialect,  |      | mysql-connector|      | tables, rows, |
+|           |      | MySQLDialect,   |      | mysql-connector|      | tables, rows, |
 |           |      | PostgreSQLDialect|     | postgresql     |      | indexes       |
 +-----------+      +-----------------+      +----------------+      +---------------+
 ```

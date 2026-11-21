@@ -68,3 +68,22 @@ CREATE TABLE employees (
 
 ---
 
+### GOLD: insertable/updatable cases + portability warning + Q&A
+
+When to use `insertable = false, updatable = false`:
+
+```java
+@Column(name = "created_at", updatable = false) // audit column set once
+private LocalDateTime createdAt;
+
+@Column(name = "dept_id", insertable = false, updatable = false) // read-only FK mirror of a @ManyToOne
+private Long deptId;
+```
+
+Portability warning: `columnDefinition = "TEXT"` is raw DDL — valid on Postgres/MySQL but breaks on Oracle/others. Prefer portable attributes (`length`, `precision`) and reserve `columnDefinition` for dialect-specific migrations.
+
+**Interview Q&A**
+
+1. **Q: insertable=false vs updatable=false?** A: `insertable=false` excludes the column from INSERT (DB default fills it); `updatable=false` excludes it from UPDATE (e.g. `createdAt`). Both together make a read-only mapping.
+2. **Q: Why is columnDefinition risky?** A: It embeds database-specific DDL, killing portability — a `TEXT` definition that works on Postgres may fail schema validation on Oracle.
+

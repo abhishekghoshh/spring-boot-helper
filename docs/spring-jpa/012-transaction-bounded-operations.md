@@ -60,3 +60,21 @@ public class EmployeeService {
 
 ---
 
+### GOLD: readOnly alternative + OSIV nuance + Q&A
+
+Prefer `@Transactional(readOnly = true)` over no-transaction reads — entities stay managed (lazy loading works), but Hibernate skips dirty checking:
+
+```java
+@Transactional(readOnly = true)
+public Employee getEmployee(Long id) {
+    return em.find(Employee.class, id); // MANAGED, no UPDATE generated
+}
+```
+
+OSIV nuance: with `spring.jpa.open-in-view=true` (Boot default), the persistence context stays open during view rendering so lazy loading works — but it holds the JDBC connection longer. Disable (`false`) + use fetch joins/DTOs in APIs.
+
+**Interview Q&A**
+
+1. **Q: Read without transaction vs readOnly transaction?** A: No-txn → entity immediately detached (lazy load fails); readOnly txn → managed with lazy loading but no flush overhead.
+2. **Q: Why disable OSIV?** A: OSIV masks N+1/lazy issues and holds connections through rendering — explicit fetch plans + `open-in-view=false` surface problems early.
+

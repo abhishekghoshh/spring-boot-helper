@@ -104,10 +104,18 @@ public class InventoryService {
     }
 
     // ✅ OVERRIDES class-level: SERIALIZABLE isolation for critical operation
+    // ⚠️ SELF-INVOCATION TRAP: removeStock()/addStock() are called via
+    // `this` (not through the proxy), so this SERIALIZABLE setting is
+    // IGNORED at runtime and the caller's transaction is reused.
+    // FIX: self-inject the proxy or split into a separate bean:
+    //   @Autowired private InventoryService self;
+    //   self.removeStock(fromProductId, quantity);
+    //   self.addStock(toProductId, quantity);
+    // (Isolation also cannot change mid-transaction — the outer TX wins.)
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public void transferStock(Long fromProductId, Long toProductId, int quantity) {
-        removeStock(fromProductId, quantity);
-        addStock(toProductId, quantity);
+        removeStock(fromProductId, quantity); // ← bypasses proxy! SERIALIZABLE ignored
+        addStock(toProductId, quantity);      // ← bypasses proxy! SERIALIZABLE ignored
     }
 }
 ```

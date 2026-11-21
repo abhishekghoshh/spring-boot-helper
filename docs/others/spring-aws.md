@@ -1,5 +1,103 @@
 # Integration with Spring Boot
 
+> **Primer:** Spring Cloud AWS maps AWS services onto Spring idioms: S3 via a
+> `ResourceLoader` (`s3://bucket/key`), SQS via `@SqsListener`, SNS via
+> notifications, DynamoDB via Spring Data repositories, and Secrets Manager /
+> Parameter Store as property sources. Credentials come from the default chain
+> (env → profile → IAM role), never hard-coded.
+
+## Real-life use case
+
+Order service on EKS with an IAM role: uploads invoices to S3 (presigned URLs
+for the browser), consumes `order-events` from SQS with `@SqsListener`, stores
+idempotency keys in DynamoDB, and reads DB passwords from Secrets Manager —
+no static keys anywhere.
+
+## Mental model
+
+```text
+  S3 .......... resourceLoader.getResource("s3://invoices/123.pdf")
+  SQS ......... @SqsListener("order-events") → onMessage(payload)
+  SNS ......... topic → fan-out to SQS queues / email / Lambda
+  DynamoDB .... DynamoDbRepository<IdemKey, String> (like JPA, key-value)
+  Secrets ..... spring.config.import=aws-secretsmanager:prod/db → ${db.password}
+  Auth ........ IAM role for ServiceAccount (IRSA) — no access keys
+```
+
+## Minimal example
+
+```java
+package com.example.orders;
+
+import io.awspring.cloud.sqs.annotation.SqsListener;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.stereotype.Service;
+
+@Service
+public class OrderFiles {
+    private final ResourceLoader resources;
+
+    @Value("s3://invoices/")
+    private Resource invoiceDir;
+
+    public OrderFiles(ResourceLoader resources) { this.resources = resources; }
+
+    @SqsListener("order-events")
+    public void onOrder(OrderEvent event) throws Exception {
+        Resource pdf = resources.getResource("s3://invoices/" + event.orderId() + ".pdf");
+        // ... process, store idempotency key in DynamoDB, etc.
+    }
+}
+```
+
+```yaml
+spring:
+  config:
+    import: aws-secretsmanager:prod/db   # ${db.password} available
+  cloud:
+    aws:
+      region:
+        static: ap-south-1
+      credentials:
+        profile:
+          name: default                   # local only; prod uses IAM role
+```
+
+```xml
+<dependency>
+    <groupId>io.awspring.cloud</groupId>
+    <artifactId>spring-cloud-aws-starter-s3</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.awspring.cloud</groupId>
+    <artifactId>spring-cloud-aws-starter-sqs</artifactId>
+</dependency>
+```
+
+## Pitfalls
+
+- Presigned URLs (minutes-long expiry) for browser upload/download — never proxy multi-GB files through your pods.
+- SQS visibility timeout must exceed handler time or the message is delivered twice — handlers must be idempotent regardless.
+- LocalStack for local dev (`endpoint` override); never point dev code at real AWS with prod keys.
+
+## Interview Q&A
+
+**Q1. How does Spring Cloud AWS authentication work without keys in code?**
+A: The AWS SDK default credentials chain: env vars → `~/.aws` profile (local)
+→ ECS/EKS IAM role (prod via IRSA). The app just builds default clients;
+Spring Cloud AWS wires region/credentials from properties, and prod pods
+assume a scoped IAM role.
+
+**Q2. SQS vs SNS vs EventBridge — which for what?**
+A: SQS = queue (one consumer group, at-least-once, polling). SNS = fan-out
+push to many subscribers. EventBridge = event bus with content-based routing
+rules across accounts/services. Order events → EventBridge; work queues →
+SQS; broadcast alerts → SNS.
+
+---
+
 
 ## Official Documentation
 

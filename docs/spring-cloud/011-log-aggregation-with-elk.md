@@ -50,7 +50,7 @@ docker run -d --name elasticsearch --net elastic \
   -e "discovery.type=single-node" \
   -e "xpack.security.enabled=false" \
   -e "ES_JAVA_OPTS=-Xms512m -Xmx512m" \
-  docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+  docker.elastic.co/elasticsearch/elasticsearch:8.15.0
 
 # Verify it started correctly
 curl -s http://localhost:9200
@@ -59,7 +59,7 @@ curl -s http://localhost:9200
 docker run -d --name kibana --net elastic \
   -p 5601:5601 \
   -e "ELASTICSEARCH_HOSTS=http://elasticsearch:9200" \
-  docker.elastic.co/kibana/kibana:8.13.4
+  docker.elastic.co/kibana/kibana:8.15.0
 ```
 
 Once both containers report healthy, Kibana is reachable at `http://localhost:5601` and will prompt for an Elasticsearch connection (already satisfied by the `ELASTICSEARCH_HOSTS` environment variable above). From here, index patterns can be created once Logstash starts writing documents into Elasticsearch.
@@ -85,7 +85,7 @@ Logstash pipelines are defined in a `.conf` file using its own configuration lan
 docker run -d --name logstash \
   --net elastic \
   -v $(pwd)/logstash.conf:/usr/share/logstash/pipeline/logstash.conf \
-  docker.elastic.co/logstash/logstash:8.13.4
+  docker.elastic.co/logstash/logstash:8.15.0
 ```
 
 **Real-life scenario:** A team initially points Filebeat directly at Elasticsearch for simplicity, but later introduces a Logstash tier once they need to parse multi-line stack traces and enrich events with a lookup table (mapping internal service IDs to human-readable names) — logic that's a natural fit for Logstash's filter stage but awkward to do in Filebeat alone.
@@ -104,7 +104,7 @@ The **filter** stage is where Logstash does its real work: transforming semi-str
 
 Filters run in the order they are declared and can be conditionally applied using `if`/`else` blocks based on tags or field values — for example, applying a different Grok pattern depending on which application produced the log line (distinguished by a `type` or `service` field set at the input stage).
 
-```yaml
+```conf
 filter {
   if [fields][service] == "order-service" {
     grok {
@@ -136,7 +136,7 @@ By using conditional `if`/`else` blocks in the filter stage keyed off a field se
 
 A complete Logstash pipeline configuration file has three top-level blocks. A minimal but realistic example reading application logs from a file and writing to Elasticsearch looks like this:
 
-```yaml
+```conf
 # logstash.conf
 input {
   file {
@@ -191,7 +191,7 @@ It prints every parsed event to the console in a human-readable format, letting 
 
 Grok is powerful but has a well-known weakness: complex patterns with many named captures can become slow and hard to maintain, especially with greedy patterns like `%{GREEDYDATA}` combined with backtracking-heavy constructs — a poorly written Grok pattern can become a performance bottleneck or even catastrophically slow ("Grok pattern that never returns") on certain malformed input. The [Grok Debugger](https://grokdebugger.com) tool (and Kibana's own Grok Debugger under Dev Tools) is commonly used to iteratively build and test patterns against sample log lines before deploying them.
 
-```yaml
+```conf
 filter {
   grok {
     match => {
@@ -222,7 +222,7 @@ Complex patterns with many named captures, especially greedy ones like `%{GREEDY
 
 Besides tailing files, Logstash can ingest events directly over the network using the `tcp` input plugin, which opens a TCP port and treats each incoming line (or a configured codec's framing) as one event. This is useful for applications that push logs directly over the network (e.g. via a `SocketAppender` or a custom log shipper) rather than writing to a local file, and it's also a very convenient way to manually test a Logstash filter chain during development.
 
-```yaml
+```conf
 # logstash.conf
 input {
   tcp {
@@ -323,7 +323,7 @@ A pod's filesystem is typically ephemeral — it's lost when the pod is reschedu
 
 Once application log files exist on disk (or are mounted into the Logstash container/host), Logstash's `file` input plugin needs to be pointed at them, including handling multi-line events (like Java stack traces, which span many physical lines but represent a single logical log event).
 
-```yaml
+```conf
 # logstash.conf
 input {
   file {
@@ -334,7 +334,8 @@ input {
     codec => multiline {
       # A new event starts only on a line beginning with a timestamp;
       # anything else (like a stack trace continuation) is appended to the previous event.
-      pattern => "^%{TIMESTAMP_ISO8601}"
+      # NOTE: Grok patterns are NOT expanded in the multiline codec regex — use a raw regex here.
+      pattern => "^\\d{4}-\\d{2}-\\d{2}"
       negate => true
       what => "previous"
     }
@@ -408,7 +409,8 @@ docker run -d --name elasticsearch --net elastic \
   -e "xpack.security.enabled=true" \
   -e "ELASTIC_PASSWORD=ChangeMe123!" \
   -e "ES_JAVA_OPTS=-Xms512m -Xmx512m" \
-  docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+  docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+  # NOTE: 8.13.4 also works; 8.15.x is the current 8.x line
 
 # Wait for startup, then authenticate against the secured API
 curl -s -u elastic:ChangeMe123! https://localhost:9200 --cacert http_ca.crt
@@ -435,7 +437,7 @@ Security is enabled by default, and on first startup Elasticsearch auto-generate
 
 Once Elasticsearch requires authentication, every Logstash output block writing to it must supply valid credentials, and the Elasticsearch output plugin must be configured to trust Elasticsearch's TLS certificate.
 
-```yaml
+```conf
 # logstash.conf
 output {
   elasticsearch {

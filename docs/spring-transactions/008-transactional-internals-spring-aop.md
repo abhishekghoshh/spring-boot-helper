@@ -89,3 +89,77 @@
 
 ---
 
+**Real-life use case — why this internal matters:** `OrderService.placeOrder()`
+inserts an order, deducts inventory, and records payment. Without the proxy
+(shown above) each step auto-commits independently; with the proxy all three
+share one connection with `autoCommit=false`, so a payment failure rolls back
+the order + inventory writes too.
+
+**Simplified `TransactionInterceptor` stub (labeled simplified — not real code):**
+
+```java
+// SIMPLIFIED — omits propagation/isolation/readOnly handling for clarity
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
+
+public class TransactionInterceptorStub implements MethodInterceptor {
+    @Override public Object invoke(MethodInvocation inv) throws Throwable {
+        var tx = txManager.getTransaction(txDefinition); // setAutoCommit(false)
+        try {
+            Object result = inv.proceed(); // real OrderService method
+            txManager.commit(tx);          // connection.commit()
+            return result;
+        } catch (RuntimeException | Error ex) {
+            txManager.rollback(tx);        // connection.rollback()
+            throw ex;
+        }
+    }
+}
+```
+
+**SQL log — `autocommit` / `COMMIT` / `ROLLBACK`:**
+
+```sql
+-- Proxy binds one connection, disables auto-commit (= BEGIN)
+SET autocommit = 0; -- connection.setAutoCommit(false)
+Hibernate: insert into orders (customer_id, total_amount) values (?, ?) -- [101, 2499.99]
+Hibernate: update inventory set quantity=? where id=? -- [47, 12]
+COMMIT;    -- success path: connection.commit()
+-- failure path (RuntimeException): ROLLBACK; -- connection.rollback()
+SET autocommit = 1; -- connection restored + returned to pool
+```
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  Self-invocation pitfall (why internals matter):                                 │
+│                                                                                  │
+│  orderService.placeOrder() ──proxy──> BEGIN → proceed() → COMMIT ✅              │
+│  orderService.checkout() ──this.placeOrder()──> NO proxy → NO transaction ❌     │
+│  Fix: call through the injected proxy / separate bean / exposeProxy = true.      │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Pitfalls:**
+- Self-invocation bypasses the proxy — `@Transactional` silently ignored.
+- `private`/`final` methods are never intercepted (CGLIB cannot override them).
+- Catching + swallowing the exception inside the method causes a COMMIT, not
+  a ROLLBACK — rethrow or call `TransactionAspectSupport.currentTransactionStatus().setRollbackOnly()`.
+
+**Interview Q&A:**
+- Q: How does `@Transactional` use Spring AOP internally?
+  A: `InfrastructureAdvisorAutoProxyCreator` wraps the bean in a JDK/CGLIB proxy
+  whose `TransactionInterceptor` (`@Around` advice) opens, commits, or rolls
+  back the transaction around `invocation.proceed()`.
+- Q: Why does self-invocation break `@Transactional`?
+  A: `this.foo()` never passes through the proxy, so the interceptor never runs.
+- Q: Where is the actual `COMMIT` executed?
+  A: `TransactionInterceptor → PlatformTransactionManager.commit()` →
+  `DataSourceTransactionManager.doCommit()` → `connection.commit()`.
+
+**Next:**
+- [Spring AOP 015 — How AOP Works Internally](../spring-aop/015-how-aop-works-internally.md)
+- [009 — AOP Annotations, Pointcut & `@Around`](009-aop-annotations-pointcut-around.md)
+- [010 — Rollback Internals](010-rollback-internals.md)
+
+---
+

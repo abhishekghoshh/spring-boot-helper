@@ -458,12 +458,16 @@ Because the gateway is reactive, logging must be hooked into the reactive chain 
 
 ```java
 @Component
-public class LoggingGatewayFilterFactory extends AbstractGatewayFilterFactory<Object> {
+public class LoggingGatewayFilterFactory extends AbstractGatewayFilterFactory<LoggingGatewayFilterFactory.Config> {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingGatewayFilterFactory.class);
 
+    public LoggingGatewayFilterFactory() {
+        super(Config.class);
+    }
+
     @Override
-    public GatewayFilter apply(Object config) {
+    public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             long start = System.currentTimeMillis();
             log.info("Incoming request: {} {}", exchange.getRequest().getMethod(), exchange.getRequest().getPath());
@@ -474,6 +478,10 @@ public class LoggingGatewayFilterFactory extends AbstractGatewayFilterFactory<Ob
             }));
         };
     }
+
+    public static class Config {
+        // No-arg config keeps YAML binding working; add fields here as needed.
+    }
 }
 ```
 
@@ -483,22 +491,27 @@ For production use, printing to stdout via a raw `Logger` is usually not enough 
 
 ```java
 @Component
-public class MetricsLoggingGatewayFilterFactory extends AbstractGatewayFilterFactory<Object> {
+public class MetricsLoggingGatewayFilterFactory extends AbstractGatewayFilterFactory<MetricsLoggingGatewayFilterFactory.Config> {
 
     private final MeterRegistry meterRegistry;
 
     public MetricsLoggingGatewayFilterFactory(MeterRegistry meterRegistry) {
+        super(Config.class);
         this.meterRegistry = meterRegistry;
     }
 
     @Override
-    public GatewayFilter apply(Object config) {
+    public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             Timer.Sample sample = Timer.start(meterRegistry);
             return chain.filter(exchange).then(Mono.fromRunnable(() ->
                     sample.stop(meterRegistry.timer("gateway.request.duration",
                             "route", exchange.getRequest().getPath().value()))));
         };
+    }
+
+    public static class Config {
+        // No-arg config keeps YAML binding working; add fields here as needed.
     }
 }
 ```
@@ -1538,7 +1551,8 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
-            allowedOrigins: "https://app.company.com"
+            allowedOrigins:
+              - https://app.company.com
             allowedMethods:
               - GET
               - POST
@@ -1579,7 +1593,8 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
-            allowedOriginPatterns: "https://*.company.com"
+            allowedOriginPatterns:
+              - https://*.company.com
             allowedMethods: "*"
             allowCredentials: true
 ```

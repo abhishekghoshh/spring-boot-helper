@@ -65,7 +65,7 @@ ResponseEntity.status(HttpStatus.CONFLICT).body(error);  // 409 with error body
 └──────────┴──────────────────────────────────────────────┘
 ```
 
-> **Key Rule:** Only **5xx errors** are the responsibility of the server-side development team to fix. 4xx errors are caused by incorrect client behaviour.
+> **Key Rule:** **5xx errors** mean the server failed to fulfill a valid request — always the server team's bug. **4xx errors** are triggered by the client, but the server still owns the 4xx *contract*: clear validation messages, correct auth/CORS handling, and proper 404 routing are the server team's responsibility.
 
 ---
 
@@ -874,7 +874,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
 ## 5xx — Server Error Responses
 
-The server failed to fulfil a valid request. These are **the server team's responsibility** to fix. 4xx errors are caused by clients; 5xx errors are caused by the server.
+The server failed to fulfil a valid request. These are **always the server team's responsibility** to fix. 4xx errors are triggered by clients, but the server still owns the 4xx *contract* — clear validation messages, correct auth/CORS behavior, and proper 404 routing.
 
 ### `500 Internal Server Error`
 
@@ -3496,6 +3496,73 @@ public class GlobalExceptionHandler {
 ```
 
 > **Bottom line:** `DefaultHandlerExceptionResolver` is the "safety net" for Spring MVC's own exceptions. It ensures clients get a meaningful 4xx status instead of a generic 500 for common client-side mistakes. For REST APIs that need a custom JSON error structure for these cases, override the specific exception types with `@ExceptionHandler` in your `@RestControllerAdvice`.
+
+## Boot 3 `ProblemDetail` / RFC 7807 (`application/problem+json`)
+
+Spring Boot 3 (Spring 6) standardizes error bodies on RFC 7807 via
+`org.springframework.http.ProblemDetail`, served as
+`application/problem+json`. Prefer it over hand-rolled `Map`/DTO error bodies
+for public APIs — clients can parse `type/title/status/detail/instance`
+uniformly, and `ResponseEntityExceptionHandler` now returns `ProblemDetail`
+for built-in MVC exceptions automatically.
+
+```java
+package com.example.orders;
+
+import java.net.URI;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+@RestControllerAdvice
+public class OrderExceptionHandler {
+
+    @ExceptionHandler(OutOfStockException.class)
+    public ResponseEntity<ProblemDetail> handleOutOfStock(OutOfStockException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Insufficient stock");
+        problem.setType(URI.create("https://api.example.com/problems/out-of-stock"));
+        problem.setProperty("productId", ex.getProductId());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .header("Content-Type", "application/problem+json")
+                .body(problem);
+    }
+}
+// Response: 409 Conflict, Content-Type: application/problem+json
+// {"type":"https://api.example.com/problems/out-of-stock",
+//  "title":"Insufficient stock","status":409,
+//  "detail":"Only 2 left for product 501","productId":501}
+```
+
+Notes:
+
+- Extend `ResponseEntityExceptionHandler` and override its `ProblemDetail`
+  methods (e.g. `handleMethodArgumentNotValid`) to keep validation errors in
+  the same format instead of mixing two error shapes.
+- `ErrorResponse` (implemented by `ResponseStatusException`) is the shortcut:
+  `throw new ResponseStatusException(HttpStatus.NOT_FOUND, "...")` already
+  renders as `ProblemDetail` in Boot 3 — no handler needed for simple cases.
+
+### Interview Q&A
+
+**Q1. Why prefer `ProblemDetail` over returning a custom `ErrorDto` map from
+every `@ExceptionHandler`?**
+A: `ProblemDetail` is the RFC 7807 standard shape (`type/title/status/detail`)
+that Spring itself produces for built-in MVC errors in Boot 3, so custom and
+framework errors share one contract. A bespoke `ErrorDto` means clients must
+handle two formats — yours and Spring's.
+
+**Q2. Your `@RestControllerAdvice` returns `ResponseEntity<Map>` but
+validation failures come back in a different shape. Why, and how do you fix
+it?**
+A: `MethodArgumentNotValidException` is handled by
+`ResponseEntityExceptionHandler`, which returns `ProblemDetail` in Boot 3,
+while your handler returns `Map`. Fix: extend
+`ResponseEntityExceptionHandler` and customize its `ProblemDetail` methods so
+all errors share the RFC 7807 shape.
 
 
 

@@ -79,3 +79,24 @@ public class EmployeeRepository {
 
 ---
 
+### GOLD: @Configuration DataSource note + readOnly hint + Q&A
+
+When Boot's auto-config is not enough (multiple DataSources), declare it explicitly — Boot backs off:
+
+```java
+@Configuration
+public class JpaConfig {
+    @Bean
+    public DataSource dataSource() {
+        return DataSourceBuilder.create().url("jdbc:postgresql://localhost:5432/db").build();
+    } // LocalContainerEntityManagerFactoryBean picks this DataSource up automatically
+}
+```
+
+readOnly hint: mark pure reads `@Transactional(readOnly = true)` — Hibernate sets `FlushMode.MANUAL`, skipping dirty checking.
+
+**Interview Q&A**
+
+1. **Q: How many EntityManagerFactory per app?** A: One per persistence unit / DataSource — heavyweight, created once; each transaction gets its own lightweight `EntityManager`.
+2. **Q: @PersistenceContext vs @Autowired for EntityManager?** A: `@PersistenceContext` injects the thread-bound transactional proxy; `@Autowired` injects the same proxy in Boot but is non-standard — prefer `@PersistenceContext`.
+

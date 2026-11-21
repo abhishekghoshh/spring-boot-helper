@@ -38,7 +38,8 @@ Integrating Resilience4j into a Spring Boot microservice starts with adding the 
 <dependency>
     <groupId>io.github.resilience4j</groupId>
     <artifactId>resilience4j-spring-boot3</artifactId>
-    <version>2.2.0</version>
+    <version>2.3.1</version>
+    <!-- NOTE: 2.2.0 also works; 2.3.1 is the current 2.x line -->
 </dependency>
 <dependency>
     <groupId>org.springframework.boot</groupId>
@@ -256,7 +257,9 @@ public ReportResponse generateReport(String reportId) {
 // Thread-pool bulkhead — asynchronous, runs on dedicated executor
 @Bulkhead(name = "reportService", type = Bulkhead.Type.THREADPOOL)
 public CompletableFuture<ReportResponse> generateReportAsync(String reportId) {
-    return CompletableFuture.supplyAsync(() -> reportClient.generate(reportId));
+    // NOTE: no supplyAsync here — Resilience4j already runs this body on the bulkhead pool;
+    // an extra supplyAsync would double-hop threads.
+    return CompletableFuture.completedFuture(reportClient.generate(reportId));
 }
 ```
 
@@ -321,7 +324,8 @@ public class ReportService {
     @Bulkhead(name = "reportService", type = Bulkhead.Type.THREADPOOL)
     @CircuitBreaker(name = "reportService", fallbackMethod = "fallbackReport")
     public CompletableFuture<ReportResponse> generateReport(String reportId) {
-        return CompletableFuture.supplyAsync(() -> reportClient.generate(reportId));
+        // NOTE: no supplyAsync here — Resilience4j already runs this body on the bulkhead pool.
+        return CompletableFuture.completedFuture(reportClient.generate(reportId));
     }
 
     private CompletableFuture<ReportResponse> fallbackReport(String reportId, Throwable t) {
@@ -514,7 +518,7 @@ curl -s http://localhost:8080/actuator/circuitbreakerevents/inventoryService | j
 ```mermaid
 flowchart TD
     A[Circuit Breaker emits event] --> B[Resilience4j EventPublisher]
-    B --> C["Actuator resilience4jcircuitbreakers endpoint"]
+    B --> C["Actuator /actuator/circuitbreakers endpoint"]
     B --> D[Actuator health indicator]
     C --> E["Ops dashboard or curl"]
     D --> F["actuator/health response"]
@@ -584,7 +588,8 @@ flowchart LR
 @Bulkhead(name = "backend")
 @TimeLimiter(name = "backend")
 public CompletableFuture<Response> callBackend() {
-    return CompletableFuture.supplyAsync(() -> backendClient.call());
+    // NOTE: no supplyAsync here — Resilience4j already runs this body on the bulkhead pool.
+    return CompletableFuture.completedFuture(backendClient.call());
 }
 ```
 

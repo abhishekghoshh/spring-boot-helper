@@ -522,7 +522,7 @@ public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> 
     // SQL: SELECT * FROM user_details WHERE user_name = 'Alice' AND email = 'alice@ex.com'
 
     // Native query with LIKE
-    @Query(value = "SELECT * FROM user_details WHERE user_name LIKE %:keyword%",
+    @Query(value = "SELECT * FROM user_details WHERE user_name LIKE CONCAT('%', :keyword, '%')",
            nativeQuery = true)
     List<UserDetails> searchByNameNative(@Param("keyword") String keyword);
     // SQL: SELECT * FROM user_details WHERE user_name LIKE '%ali%'
@@ -1124,8 +1124,8 @@ public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> 
     // Without it: Spring cannot derive COUNT from raw SQL → exception.
 
     // With WHERE condition and parameters
-    @Query(value = "SELECT * FROM user_details WHERE user_name LIKE %:keyword%",
-           countQuery = "SELECT COUNT(*) FROM user_details WHERE user_name LIKE %:keyword%",
+    @Query(value = "SELECT * FROM user_details WHERE user_name LIKE CONCAT('%', :keyword, '%')",
+           countQuery = "SELECT COUNT(*) FROM user_details WHERE user_name LIKE CONCAT('%', :keyword, '%')",
            nativeQuery = true)
     Page<UserDetails> searchUsersPaginated(@Param("keyword") String keyword, Pageable pageable);
 

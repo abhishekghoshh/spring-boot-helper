@@ -27,7 +27,7 @@ spring:
 - You manage schema externally via Flyway, Liquibase, or manual SQL.
 - **Use in**: Production, always. Schema changes should be version-controlled migrations, not auto-generated.
 
-```yaml
+```properties
 # Production
 spring.jpa.hibernate.ddl-auto=none
 # Combined with Flyway or Liquibase for migrations
@@ -105,4 +105,21 @@ Shutdown:  DROP all tables
 ```
 
 ---
+
+### GOLD: Flyway replacement + prod pitfall + Q&A
+
+Replace `update`/`create` in prod with a versioned migration:
+
+```properties
+spring.jpa.hibernate.ddl-auto=validate
+spring.flyway.enabled=true
+spring.flyway.locations=classpath:db/migration
+```
+
+Prod outage pitfall: shipping `ddl-auto=update` (or worse, `create`) to production — `update` silently leaves orphaned columns/constraints and can lock large tables with `ALTER`, while `create` wipes all data on restart.
+
+**Interview Q&A**
+
+1. **Q: update vs validate in staging?** A: `update` mutates schema (hides drift); `validate` fails fast on entity/DB mismatch without touching data — use `validate` + Flyway in staging/prod.
+2. **Q: Why does removing a field not drop the column with update?** A: `update` only adds missing tables/columns, never drops — removed fields leave orphaned columns requiring an explicit migration.
 

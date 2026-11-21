@@ -334,6 +334,8 @@ public interface ReactiveInventoryClient {
 }
 ```
 
+> NOTE: OpenFeign is blocking; for reactive use WebClient/`@HttpExchange` or feign-reactor. A plain `@FeignClient` returning `Mono<>` does not become non-blocking on its own.
+
 ```java
 @Bean
 @LoadBalanced
@@ -463,8 +465,6 @@ eureka:
   client:
     service-url:
       defaultZone: http://${eureka.username}:${eureka.password}@localhost:8761/eureka/
-
-eureka:
   username: eureka-admin
   password: "{cipher}AQBx...encrypted-value..."
 ```
@@ -575,7 +575,7 @@ Using distinct hostnames (all mapped to `127.0.0.1` in `/etc/hosts`) mirrors how
 **Q: In a Kubernetes deployment, what replaces manual `/etc/hosts` editing for peer resolution?**
 A headless Service providing stable per-pod DNS names, so peers can address each other by predictable DNS entries without any manual host-file management.
 
-### Staring up Eureka Discovery Server Cluster
+### Starting up Eureka Discovery Server Cluster
 
 Starting a Eureka cluster means launching each peer node with its own Spring profile (or distinct config file) so it binds to the correct port and points at the correct peers. In practice this is done either by running the same JAR multiple times with different `--spring.profiles.active` flags, or via separate containers/pods in Docker/Kubernetes, each with environment-specific configuration.
 

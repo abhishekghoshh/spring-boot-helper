@@ -536,10 +536,16 @@ private List<Order> orders = new ArrayList<>();
 ```java
 @Transactional
 public User createUserWithOrders() {
-    Order order1 = new Order("Laptop", new BigDecimal("999.99"));
-    Order order2 = new Order("Mouse", new BigDecimal("29.99"));
+    Order order1 = new Order();
+    order1.setProduct("Laptop");
+    order1.setAmount(new BigDecimal("999.99"));
 
-    User user = new User("Alice");
+    Order order2 = new Order();
+    order2.setProduct("Mouse");
+    order2.setAmount(new BigDecimal("29.99"));
+
+    User user = new User();
+    user.setName("Alice");
     user.getOrders().add(order1);
     user.getOrders().add(order2);
 
@@ -788,7 +794,9 @@ public class UserService {
         user.getOrders().clear();    // remove old orders from the collection
 
         for (OrderDTO dto : request.getOrders()) {
-            Order newOrder = new Order(dto.getProduct(), dto.getAmount());
+            Order newOrder = new Order();
+            newOrder.setProduct(dto.getProduct());
+            newOrder.setAmount(dto.getAmount());
             user.getOrders().add(newOrder);
         }
 
@@ -867,7 +875,9 @@ public UserDTO updateUserOrders(Long userId, UpdateUserOrdersRequest request) {
     user.getOrders().clear();    // remove old orders from the collection
 
     for (OrderDTO dto : request.getOrders()) {
-        Order newOrder = new Order(dto.getProduct(), dto.getAmount());
+        Order newOrder = new Order();
+        newOrder.setProduct(dto.getProduct());
+        newOrder.setAmount(dto.getAmount());
         user.getOrders().add(newOrder);
     }
 

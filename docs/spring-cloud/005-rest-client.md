@@ -164,6 +164,8 @@ Feign integrates encoders/decoders (Jackson by default), supports custom error d
 
 To use it, you add `spring-cloud-starter-openfeign`, annotate a configuration/main class with `@EnableFeignClients`, and declare an interface per remote service.
 
+> WARNING: setting `url` on `@FeignClient` disables discovery/LB — omit `url` for LB (use only `name` for load-balanced calls).
+
 ```java
 @EnableFeignClients
 @SpringBootApplication
@@ -224,7 +226,7 @@ public interface InventoryClient {
 ```properties
 # application.properties
 spring.cloud.loadbalancer.retry.enabled=true
-spring.cloud.loadbalancer.configurations=health-check
+spring.cloud.loadbalancer.health-check.enabled=true
 ```
 
 **Real-life scenario:** A shipping-cost calculator service calls `inventory-service` and `warehouse-service` via Feign clients declared with just logical names. When the ops team adds two more warehouse-service pods for a regional expansion, the Feign calls automatically start including them — zero code or config change required in the calling service.
@@ -546,7 +548,8 @@ public interface InventoryHttpClient {
 public class HttpExchangeConfig {
 
     @Bean
-    public InventoryHttpClient inventoryHttpClient(RestClient.Builder builder) {
+    public InventoryHttpClient inventoryHttpClient(@LoadBalanced RestClient.Builder builder) {
+        // NOTE: LB only applies because the builder is @LoadBalanced; a plain builder would treat http://inventory-service as a literal host.
         RestClient restClient = builder.baseUrl("http://inventory-service").build();
         HttpServiceProxyFactory factory = HttpServiceProxyFactory
             .builderFor(RestClientAdapter.create(restClient))

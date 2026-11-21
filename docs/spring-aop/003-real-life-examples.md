@@ -63,3 +63,50 @@
 
 ---
 
+### Example: Logging Aspect (with imports)
+
+```java
+package com.app.aspect;
+
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class LoggingAspect {
+
+    private static final Logger log = LoggerFactory.getLogger(LoggingAspect.class);
+
+    @Around("execution(* com.app.service.*.*(..))")
+    public Object logExecutionTime(ProceedingJoinPoint joinPoint) throws Throwable {
+        long start = System.currentTimeMillis();
+        log.info("Entering: {} with args: {}", joinPoint.getSignature(), joinPoint.getArgs());
+        try {
+            Object result = joinPoint.proceed();
+            log.info("Exiting: {} took {}ms", joinPoint.getSignature(),
+                    System.currentTimeMillis() - start);
+            return result;
+        } catch (Exception e) {
+            log.error("Exception in: {} — {}", joinPoint.getSignature(), e.getMessage());
+            throw e;
+        }
+    }
+}
+```
+
+> ⚠️ **Self-Invocation Caveat:** this aspect only runs when the call goes **through the Spring proxy**. An internal call like `this.createOrder()` inside the same bean bypasses the proxy, so **no logging, timing, or exception handling above will execute**. Fix: move the callee to another bean, or self-inject the proxy (`@Autowired OrderService self; self.createOrder();`), or use AspectJ load-time weaving if true self-interception is required.
+
+### Interview Q&A
+
+**Q1: How does `@Transactional` use AOP in real applications?**
+`@Transactional` is implemented as an AOP advice (`TransactionInterceptor`). The proxy starts a transaction before the method, commits on success, and rolls back on unchecked exceptions — so every service method gets declarative transaction boundaries without manual `begin/commit/rollback` code.
+
+**Q2: Why doesn't my logging aspect fire on internal method calls?**
+Because Spring AOP is proxy-based: only external calls routed through the proxy are intercepted. `this.helperMethod()` calls the raw target directly, skipping the proxy and its advice chain entirely.
+
+---
+

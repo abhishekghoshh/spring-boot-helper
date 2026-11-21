@@ -26,9 +26,9 @@ Servlets are part of the **Jakarta EE** (formerly Java EE) specification, define
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Servlet Lifecycle — The Four Stages:**
+**Servlet Lifecycle — Loading + Three Callback Stages:**
 
-Every servlet goes through exactly four stages managed by the servlet container:
+Every servlet goes through container loading followed by three lifecycle callbacks (`init` / `service` / `destroy`) managed by the servlet container:
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -432,6 +432,7 @@ public class HelloServlet extends HttpServlet {
 
     // Helper: prevent XSS by escaping HTML special chars
     private String escapeHtml(String s) {
+        if (s == null) return "";
         return s.replace("&", "&amp;")
                 .replace("<", "&lt;")
                 .replace(">", "&gt;")
@@ -541,7 +542,14 @@ public class UserServlet extends HttpServlet {
             return;
         }
 
-        long id = Long.parseLong(pathInfo.substring(1));
+        long id;
+        try {
+            id = Long.parseLong(pathInfo.substring(1));
+        } catch (NumberFormatException e) {
+            res.setStatus(HttpServletResponse.SC_BAD_REQUEST); // 400
+            res.getWriter().println("{\"error\":\"Invalid id\"}");
+            return;
+        }
         boolean deleted = userDao.deleteById(id);
 
         if (deleted) {
@@ -553,9 +561,16 @@ public class UserServlet extends HttpServlet {
     }
 
     // Manual JSON serialization — no Jackson available by default!
+    // ⚠️ Demo only: breaks on quotes/newlines in data — use Jackson/Gson in production.
     private String toJson(User u) {
         return String.format("{\"id\":%d,\"name\":\"%s\",\"email\":\"%s\"}",
-            u.getId(), u.getName(), u.getEmail());
+            u.getId(), escapeJson(u.getName()), escapeJson(u.getEmail()));
+    }
+
+    private String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", "\\n").replace("\r", "\\r");
     }
 
     private String toJsonArray(List<User> users) {

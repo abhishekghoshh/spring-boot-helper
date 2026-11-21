@@ -62,3 +62,29 @@ Application startup
 
 ---
 
+### GOLD: Imports fix + unwrap + SQL + interview Q&A
+
+The `unwrap` snippet above needs this import (common compile error):
+
+```java
+import org.hibernate.Session; // NOT jakarta.persistence.* — Session is Hibernate-specific
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.EntityManager;
+
+Session session = entityManager.unwrap(Session.class); // access Hibernate-native API
+```
+
+SQL generated on flush (example):
+
+```sql
+INSERT INTO employees (name, email) VALUES ('Alice', 'alice@x.com');
+UPDATE employees SET name = 'Alicia' WHERE id = 1;
+DELETE FROM employees WHERE id = 2;
+```
+
+**Interview Q&A**
+
+1. **Q: EntityManager vs Session?** A: `EntityManager` is the JPA interface; `Session` is Hibernate's implementation. `unwrap(Session.class)` exposes native features (filters, custom cascades).
+2. **Q: Why is SessionFactory heavyweight but Session lightweight?** A: Factory parses metadata + builds connection pool once; Session is one persistence context + borrowed connection per transaction.
+3. **Q: When does Hibernate hit the DB?** A: Only on `flush()` (commit/query-flush) — `persist()` just enqueues an action in the `ActionQueue`.
+

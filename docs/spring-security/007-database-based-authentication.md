@@ -808,7 +808,7 @@ spring.datasource.password=rootpass
 
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
-spring.jpa.database-platform=org.hibernate.dialect.MySQL8Dialect
+# (Boot 3 / Hibernate 6 auto-detects the dialect — no database-platform needed)
 ```
 
 ##### 7.3.7 `pom.xml` Dependencies

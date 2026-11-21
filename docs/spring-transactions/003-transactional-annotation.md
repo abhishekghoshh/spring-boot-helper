@@ -97,6 +97,10 @@ public class OrderService {
         inventoryRepository.save(inventory);
 
         // Step 3: Process payment
+        // ⚠️ ANTI-PATTERN: external HTTP call inside @Transactional holds the
+        // DB connection for the whole HTTP round-trip. Prefer: charge BEFORE
+        // the TX, or use REQUIRES_NEW / transactional outbox. Kept here only
+        // to show rollback on PaymentFailedException.
         PaymentResult result = paymentGateway.charge(request.getPaymentDetails());
         if (!result.isSuccess()) {
             throw new PaymentFailedException("Payment declined"); // triggers ROLLBACK

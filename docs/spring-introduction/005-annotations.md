@@ -2668,7 +2668,7 @@ public @interface Repository {
 │                                                                                  │
 │  Without @Repository:                                                            │
 │  UserDao.findById(42)                                                            │
-│      → JPA throws: javax.persistence.PersistenceException                       │
+│      → JPA throws: jakarta.persistence.PersistenceException                       │
 │      → Hibernate throws: org.hibernate.exception.ConstraintViolationException   │
 │      → JDBC throws: java.sql.SQLException                                       │
 │  → These are different exceptions for different persistence technologies!       │
@@ -6284,7 +6284,7 @@ Spring Boot provides a rich set of `@Conditional` annotations beyond `@Condition
 
 ---
 
-#### 30.1 `@ConditionalOnBean`
+#### 31. `@ConditionalOnBean`
 
 Creates a bean **only if a specific bean already exists** in the application context. Used to build on top of existing beans — "if this foundation exists, add this extension."
 
@@ -6375,7 +6375,7 @@ public class TransactionLoggingAspect {
 
 ---
 
-#### 30.2 `@ConditionalOnMissingBean`
+#### 32. `@ConditionalOnMissingBean`
 
 Creates a bean **only if NO bean of the specified type already exists**. This is the key annotation behind Spring Boot's **"opinionated defaults"** — auto-configuration provides a default bean, but if you define your own, the auto-configured one backs off.
 
@@ -6501,7 +6501,7 @@ public class ErrorHandlerAutoConfig {
 
 ---
 
-#### 30.3 `@ConditionalOnClass` and `@ConditionalOnMissingClass`
+#### 33. `@ConditionalOnClass` and `@ConditionalOnMissingClass`
 
 `@ConditionalOnClass` creates a bean **only if a specific class is on the classpath**. `@ConditionalOnMissingClass` is the inverse. These are used heavily to detect which libraries/drivers are available.
 
@@ -6626,7 +6626,7 @@ public class FlywayAutoConfiguration {
 
 ---
 
-#### 30.4 `@ConditionalOnExpression`
+#### 34. `@ConditionalOnExpression`
 
 Creates a bean **only if a SpEL (Spring Expression Language) expression evaluates to `true`**. Used for complex, multi-property conditions that can't be expressed with `@ConditionalOnProperty` alone.
 
@@ -6719,7 +6719,7 @@ public LinuxSpecificService linuxService() {
 
 ---
 
-#### 30.5 `@ConditionalOnWebApplication` and `@ConditionalOnNotWebApplication`
+#### 35. `@ConditionalOnWebApplication` and `@ConditionalOnNotWebApplication`
 
 Creates a bean **only if the application is (or is not) a web application**. Spring Boot detects the application type based on the classpath and context.
 
@@ -6824,7 +6824,7 @@ public class BatchOnlyConfig {
 
 ---
 
-#### 30.6 `@ConditionalOnJava`
+#### 36. `@ConditionalOnJava`
 
 Creates a bean **only if the application is running on a specific Java version**. Useful for features that require newer Java APIs.
 
@@ -6902,7 +6902,7 @@ public HttpClient modernHttpClient() {
 
 ---
 
-#### 30.7 `@Conditional` — The Base Annotation (Custom Conditions)
+#### 37. `@Conditional` — The Base Annotation (Custom Conditions)
 
 All `@ConditionalOn*` annotations are built on top of `@Conditional`, which takes a `Condition` class. You can write your own custom conditions.
 
@@ -6990,7 +6990,7 @@ public DatabaseMigrationRunner migrationRunner(DataSource ds) {
 
 ---
 
-#### 30.8 Conditional Annotations — Complete Summary
+#### 38. Conditional Annotations — Complete Summary
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -7049,7 +7049,7 @@ public DatabaseMigrationRunner migrationRunner(DataSource ds) {
 
 ---
 
-#### 31. `@Scheduled` and `@EnableScheduling`
+#### 39. `@Scheduled` and `@EnableScheduling`
 
 Marks a method to run on a **fixed schedule** — cron expressions, fixed delay, or fixed rate.
 
@@ -7105,7 +7105,7 @@ public class HealthChecker {
 
 ---
 
-#### 32. `@EventListener` and Application Events
+#### 40. `@EventListener` and Application Events
 
 Marks a method as a **listener** for Spring application events — both built-in events (startup, shutdown) and custom events.
 
@@ -7206,7 +7206,7 @@ public class PostCommitListener {
 
 ---
 
-#### 33. `@ResponseStatus`
+#### 41. `@ResponseStatus`
 
 Marks a method or exception class with the **HTTP status code** and reason that should be returned.
 
@@ -7258,7 +7258,7 @@ public void delete(@PathVariable Long id) {
 
 ---
 
-#### 34. `@CrossOrigin`
+#### 42. `@CrossOrigin`
 
 Enables **Cross-Origin Resource Sharing (CORS)** on specific controllers or methods — allows web browsers to make requests from a different domain than the server.
 
@@ -7308,7 +7308,7 @@ public class CorsConfig implements WebMvcConfigurer {
 
 ---
 
-#### 35. `@Valid` and `@Validated`
+#### 43. `@Valid` and `@Validated`
 
 Triggers **Bean Validation** (JSR 380 / Hibernate Validator) on method parameters — checks `@NotNull`, `@NotBlank`, `@Size`, `@Email`, `@Min`, `@Max`, `@Pattern`, etc.
 

@@ -717,7 +717,7 @@ Reason 1: Multiple SQL statements must be atomic
 Reason 2: EntityManager.remove() requires an active transaction
   ─────────────────────────────────────────────
   The Persistence Context must be in "transaction" mode to call remove().
-  Without @Transactional → javax.persistence.TransactionRequiredException:
+  Without @Transactional → jakarta.persistence.TransactionRequiredException:
       "No EntityManager with actual transaction available for current thread"
 
 Reason 3: Flush + Commit

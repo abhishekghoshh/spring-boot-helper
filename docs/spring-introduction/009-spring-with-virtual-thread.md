@@ -2268,8 +2268,9 @@ public class PinningDemo {
 │                                                                                  │
 │  Summary:                                                                        │
 │  → Java 21-23: Virtual threads are great BUT synchronized = pinning hazard     │
-│  → Java 24+: Virtual threads are great AND synchronized is fine too            │
-│  → For Spring Boot on Java 24+: virtual threads "just work" everywhere         │
+│  → Java 24+: pinning largely mitigated via JEP 491 (edge cases remain:        │
+│     native frames, some synchronized paths — keep detecting with              │
+│     -Djdk.tracePinnedThreads)                                                 │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 

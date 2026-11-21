@@ -289,13 +289,12 @@ ROLLBACK;    -- ← INSERT is rolled back correctly ✅
 │           → Release connection back to pool                                      │
 │                                                                                  │
 │  ┌─────────────────────────────────────────────────────────────────────────────┐  │
-│  │ BEST PRACTICE:                                                             │  │
+│  │ BEST PRACTICE (per-use-case, not blanket):                                     │  │
 │  │                                                                            │  │
-│  │ Always use: @Transactional(rollbackFor = Exception.class)                  │  │
-│  │                                                                            │  │
-│  │ This ensures ALL exceptions (checked + unchecked) trigger rollback.        │  │
-│  │ The default behavior of committing on checked exceptions is a common       │  │
-│  │ source of bugs in production systems.                                      │  │
+│  │ Use @Transactional(rollbackFor = Exception.class) selectively — e.g. when  │  │
+│  │ a checked exception must undo DB writes. Do NOT apply blindly: rolling    │  │
+│  │ back benign/expected checked exceptions (e.g. validation that the caller  │  │
+│  │ handles) can discard work that should commit. Decide per exception.       │  │
 │  └─────────────────────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```

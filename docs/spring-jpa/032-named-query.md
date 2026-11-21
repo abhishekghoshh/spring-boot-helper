@@ -2,6 +2,8 @@
 
 `@NamedQuery` is a JPA annotation placed on the **entity class** (not the repository) that defines a **pre-compiled, named JPQL query**. The query is validated at application startup, giving you early error detection instead of runtime failures.
 
+> Note: `@NamedQuery` is repeatable since JPA 2.1 (Java 8). For pre-JPA 2.1, wrap multiple queries in `@NamedQueries({ @NamedQuery(...), @NamedQuery(...) })`.
+
 ```java
 @Entity
 @Table(name = "user_details")
@@ -11,7 +13,7 @@
 )
 @NamedQuery(
     name = "UserDetails.findByEmailAndActive",
-    query = "SELECT ud FROM UserDetails ud WHERE ud.email = :email AND ud.active = true"
+    query = "SELECT ud FROM UserDetails ud WHERE ud.email = :email AND ud.active = :active"
 )
 @NamedQuery(
     name = "UserDetails.countByCountry",
@@ -48,9 +50,10 @@ public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> 
     // SQL: SELECT ud.* FROM user_details ud WHERE ud.name = ?
 
     // Spring finds @NamedQuery(name = "UserDetails.findByEmailAndActive")
-    List<UserDetails> findByEmailAndActive(@Param("email") String email);
+    List<UserDetails> findByEmailAndActive(@Param("email") String email,
+                                           @Param("active") Boolean active);
     // JPQL (from @NamedQuery): SELECT ud FROM UserDetails ud
-    //                          WHERE ud.email = :email AND ud.active = true
+    //                          WHERE ud.email = :email AND ud.active = :active
 
     // Spring finds @NamedQuery(name = "UserDetails.countByCountry")
     long countByCountry(@Param("country") String country);
@@ -137,4 +140,29 @@ public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> 
 ```
 
 ---
+
+### GOLD: @NamedNativeQuery + @SqlResultSetMapping + pagination + traps
+
+Native variant for SQL (not JPQL) + explicit result mapping:
+
+```java
+@NamedNativeQuery(
+    name = "UserDetails.findActiveNative",
+    query = "SELECT id, name, email FROM user_details WHERE active = :active",
+    resultSetMapping = "UserDetails.names"
+)
+@SqlResultSetMapping(
+    name = "UserDetails.names",
+    classes = @ConstructorResult(targetClass = UserDetails.class,
+        columns = {@ColumnResult(name = "id"), @ColumnResult(name = "name"), @ColumnResult(name = "email")})
+)
+```
+
+Pagination note: `Page<UserDetails> findByName(String name, Pageable p)` works with `@NamedQuery`, but for native queries you must also supply `countQuery`/`countName`, else page totals fail.
+
+**Interview traps**
+
+1. **Trap: name mismatch silently falls back.** `UserDetails.findByName` must equal `EntityName.methodName` exactly — a typo means Spring ignores the `@NamedQuery` and derives a query from the method name instead.
+2. **Trap: @Query always wins.** If both `@Query` and a matching `@NamedQuery` exist, `@Query` is used and the named query is dead code — delete one.
+3. **Trap: native pagination without count query.** Native `@NamedQuery` + `Pageable` throws at runtime unless a matching count query is defined; JPQL named queries get the count derived automatically.
 

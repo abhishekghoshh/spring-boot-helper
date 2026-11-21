@@ -80,3 +80,46 @@
 
 ---
 
+### Small Example: Advantage in Action
+
+One aspect replaces logging boilerplate in every service — the DRY / separation-of-concerns win:
+
+```java
+package com.app.aspect;
+
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class SecurityAspect {
+
+    // Single point of change: update the rule here, it applies everywhere.
+    @Before("@annotation(com.app.annotation.RequiresAdmin)")
+    public void checkAdmin() {
+        if (!SecurityContext.isAdmin()) {
+            throw new SecurityException("Admin role required");
+        }
+    }
+}
+```
+
+### Spring AOP vs AspectJ — Key Takeaway
+
+| Capability | Spring AOP | AspectJ |
+|---|---|---|
+| Field access, constructor calls, static methods/members interception | ❌ Not supported (method-execution only via proxies) | ✅ Supported — **field, constructor, and static join points are only available in AspectJ** (compile-time / load-time weaving) |
+
+So if you only need method-level concerns (logging, `@Transactional`, `@Cacheable`), Spring AOP is enough; reach for AspectJ only when you must intercept fields, constructors, or static members.
+
+### Interview Q&A
+
+**Q1: When should you choose AspectJ over Spring AOP?**
+When you need join points Spring AOP can't see: field reads/writes, constructor execution, static methods, or interception of non-Spring-managed objects and self-invocation. Otherwise Spring AOP's simpler runtime-proxy model is preferred.
+
+**Q2: What is the hidden cost of AOP's "magic", and how do you mitigate it?**
+Hidden behavior (code runs that isn't visible in the method) plus proxy-based debugging complexity. Mitigate with explicit `@annotation`-based pointcuts, one concern per aspect, narrow package scopes, and documenting which aspects apply to service layers.
+
+---
+

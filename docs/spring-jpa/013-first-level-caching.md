@@ -295,9 +295,11 @@ em.getTransaction().begin()
 
 em.persist(user)
                                           user enters PC #1 as MANAGED.                     No (queued)
-                                          If user.id is generated (e.g. @GeneratedValue),
-                                          Hibernate MAY execute INSERT now to get the id.   
-                                                                                            INSERT*
+                                          If user.id uses IDENTITY generation,
+                                          Hibernate MUST execute INSERT immediately
+                                          to obtain the ID (IDENTITY disables
+                                          batching/write-behind).
+                                                                                             INSERT*
 
 em.find(User.class, 1L)
                                           Case A: user was just persisted with id=1

@@ -13,7 +13,7 @@
 - [007 - Spring Boot Config Management](./007-config.md)
 - [008 - Async with Spring Boot](./008-async.md)
 - [009 - Spring with Virtual Thread](./009-spring-with-virtual-thread.md)
-- [010 - Interceptor and Filter](./010-intercepter-and-filter.md)
+- [010 - Interceptor and Filter](./010-interceptor-and-filter.md)
 - [011 - Spring HATEOS](./011-spring-hateos.md)
 - [012 - Exception Handling](./012-exception-handling.md)
 - [013 - Spring Boot Actuator](./013-spring-actuator.md)

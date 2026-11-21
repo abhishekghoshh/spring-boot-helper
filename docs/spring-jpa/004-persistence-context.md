@@ -57,8 +57,8 @@ In plain JPA (without Spring Boot auto-config), `persistence.xml` is the configu
             <property name="jakarta.persistence.jdbc.password" value="root"/>
             <property name="jakarta.persistence.jdbc.driver"   value="com.mysql.cj.jdbc.Driver"/>
 
-            <!-- Hibernate dialect: tells Hibernate how to generate SQL for MySQL -->
-            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL8Dialect"/>
+            <!-- Hibernate dialect: auto-detected in Spring Boot 3 / Hibernate 6 — set explicitly only for plain JPA -->
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
 
             <!-- Schema generation: create / create-drop / update / validate / none -->
             <property name="hibernate.hbm2ddl.auto" value="update"/>
@@ -97,10 +97,10 @@ spring.datasource.username=root
 spring.datasource.password=root
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 
-spring.jpa.database-platform=org.hibernate.dialect.MySQL8Dialect
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
+# (Boot 3 / Hibernate 6 auto-detects the dialect — no spring.jpa.database-platform needed)
 ```
 
 ---

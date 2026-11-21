@@ -166,10 +166,9 @@ This achieves genuine decoupling: new consumers can be added later by simply sub
 
 ```java
 @Bean
-public Function<OrderCreatedEvent, Void> handleOrderCreated() {
+public Consumer<OrderCreatedEvent> handleOrderCreated() {
     return event -> {
         inventoryService.reserveStock(event.getOrderId(), event.getItems());
-        return null;
     };
 }
 ```
@@ -219,21 +218,23 @@ Using RabbitMQ as the binder, Spring Cloud Stream maps its abstractions onto AMQ
 This makes RabbitMQ a natural fit for event-driven microservices that need lower-latency delivery, flexible routing (via topic/direct/fanout exchanges and routing keys), or per-message acknowledgment semantics with fine-grained retry/redelivery control — at the cost of not natively supporting Kafka-style replay of historical messages once they've been consumed and acknowledged. Spring Cloud Stream's RabbitMQ binder also supports request/reply patterns and exposes AMQP-specific producer/consumer properties (routing key expressions, exchange type, queue TTL, prefetch count) via `spring.cloud.stream.rabbit.bindings.*`.
 
 ```yaml
+# NOTE: spring.cloud.stream.bindings and spring.cloud.stream.rabbit.bindings
+# are SIBLING keys under spring.cloud.stream (not nested).
 spring:
   cloud:
     stream:
-      rabbit:
-        bindings:
-          handleOrderCreated-in-0:
-            consumer:
-              exchange-type: topic
-              binding-routing-key: order.created
       bindings:
         handleOrderCreated-in-0:
           destination: orders-exchange
           group: inventory-service
         handleOrderCreated-out-0:
           destination: shipping-exchange
+      rabbit:
+        bindings:
+          handleOrderCreated-in-0:
+            consumer:
+              exchange-type: topic
+              binding-routing-key: order.created
 ```
 
 ```mermaid
@@ -327,16 +328,11 @@ On RabbitMQ, enabling `republish-to-dlq: true` (alongside `auto-bind-dlq: true`)
 Choosing between relying on automatic DLQ republishing versus writing custom error-channel handling logic is an important design decision: automatic DLQ is simple, requires no code, and is sufficient when failed messages just need to be parked for manual/automated reprocessing later; custom error handling is needed when a failure should trigger an immediate compensating action (e.g., alerting, partial rollback, or routing to a different recovery flow) rather than just being stored for later.
 
 ```yaml
+# NOTE: spring.cloud.stream.bindings and spring.cloud.stream.rabbit.bindings
+# are SIBLING keys under spring.cloud.stream (not nested).
 spring:
   cloud:
     stream:
-      rabbit:
-        bindings:
-          processOrder-in-0:
-            consumer:
-              auto-bind-dlq: true
-              republish-to-dlq: true
-              republish-deliver-mode: PERSISTENT
       bindings:
         processOrder-in-0:
           destination: orders
@@ -345,6 +341,13 @@ spring:
             max-attempts: 3
             back-off-initial-interval: 1000
             back-off-multiplier: 2.0
+      rabbit:
+        bindings:
+          processOrder-in-0:
+            consumer:
+              auto-bind-dlq: true
+              republish-to-dlq: true
+              republish-deliver-mode: PERSISTENT
 ```
 
 ```yaml

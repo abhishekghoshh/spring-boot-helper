@@ -183,18 +183,22 @@ sequenceDiagram
     participant Zipkin
 
     Client->>OrderService: POST /orders (no trace headers)
-    Note over OrderService: traceId=abc123<br/>spanId=span-1 (root)
+    Note over OrderService: traceId=abc123
+    Note over OrderService: spanId=span-1 (root)
     OrderService->>InventoryService: GET /stock (traceId=abc123, parentSpanId=span-1)
-    Note over InventoryService: traceId=abc123<br/>spanId=span-2
+    Note over InventoryService: traceId=abc123
+    Note over InventoryService: spanId=span-2
     InventoryService-->>OrderService: 200 OK
     InventoryService->>Zipkin: report span-2
     OrderService->>PaymentService: POST /charge (traceId=abc123, parentSpanId=span-1)
-    Note over PaymentService: traceId=abc123<br/>spanId=span-3
+    Note over PaymentService: traceId=abc123
+    Note over PaymentService: spanId=span-3
     PaymentService-->>OrderService: 200 OK
     PaymentService->>Zipkin: report span-3
     OrderService-->>Client: 201 Created
     OrderService->>Zipkin: report span-1
-    Note over Zipkin: Reassembles span-1, span-2, span-3<br/>into one trace (traceId=abc123)
+    Note over Zipkin: Reassembles span-1, span-2, span-3
+    Note over Zipkin: into one trace (traceId=abc123)
 ```
 
 **Real-life scenario:** An engineer debugging a checkout failure searches Zipkin for `traceId=abc123` (copied from an error log line) and sees the full three-span tree above in one screen, immediately identifying that `payment-service`'s span carries an error tag while the others succeeded.

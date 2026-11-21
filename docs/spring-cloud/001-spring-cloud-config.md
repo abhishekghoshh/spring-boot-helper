@@ -144,6 +144,7 @@ sequenceDiagram
     participant Dev as Developer
     participant CS as Config Server
     participant Git as Git Repo
+    participant Client as Config Client
 
     Dev->>CS: Start ConfigServerApplication (@EnableConfigServer)
     CS->>CS: Register EnvironmentRepository, REST endpoints
@@ -460,6 +461,8 @@ public class GreetingController {
 curl -X POST http://localhost:8081/actuator/refresh
 curl -X POST http://localhost:8888/actuator/busrefresh
 ```
+
+> NOTE: `/actuator/busrefresh` requires `spring-cloud-starter-bus-amqp` (or `spring-cloud-starter-bus-kafka`) on the config server (and clients).
 
 ```mermaid
 sequenceDiagram
@@ -949,8 +952,10 @@ Symmetrically, the reverse concern also applies: an `ADMIN` user capable of trig
 
 ```java
 .authorizeHttpRequests(auth -> auth
+    // NOTE: "/{application}/{profile}/**" won't match as intended (placeholders + exact segment counts),
+    // so use "/**" for config-fetch endpoints here.
     .requestMatchers("/actuator/busrefresh").hasRole("ADMIN")
-    .requestMatchers("/{application}/{profile}/**").hasAnyRole("CLIENT", "ADMIN")
+    .requestMatchers("/**").hasAnyRole("CLIENT", "ADMIN")
     .requestMatchers("/encrypt/**", "/decrypt/**").hasRole("ADMIN")
     .anyRequest().authenticated()
 )
@@ -1163,9 +1168,11 @@ Because `/encrypt` and `/decrypt` can reveal or manipulate sensitive cryptograph
 
 ```java
 .authorizeHttpRequests(auth -> auth
+    // NOTE: "/{application}/{profile}/**" won't match as intended (placeholders + exact segment counts),
+    // so use "/**" for config-fetch endpoints here.
     .requestMatchers("/encrypt/**", "/decrypt/**").hasRole("ADMIN")
     .requestMatchers("/actuator/busrefresh").hasRole("ADMIN")
-    .requestMatchers("/{application}/{profile}/**").hasAnyRole("CLIENT", "ADMIN")
+    .requestMatchers("/**").hasAnyRole("CLIENT", "ADMIN")
     .anyRequest().authenticated()
 )
 ```

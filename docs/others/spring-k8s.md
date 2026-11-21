@@ -1,5 +1,86 @@
 # Spring boot with Kubernetes
 
+> **Primer:** Kubernetes runs your Spring Boot jar as a container in a Pod,
+> keeps N replicas alive, and routes traffic via a Service. Config comes from
+> ConfigMaps/Secrets (mounted as env vars or files), health from Actuator
+> probes (`/actuator/health/liveness`, `/readiness`), and manifests can be
+> generated from code with Dekorate instead of hand-written YAML.
+
+## Real-life use case
+
+Checkout service at 10x Diwali traffic: HPA scales 3 → 30 pods on CPU/RPS;
+a bad deploy fails the readiness probe so the rollout auto-rolls back —
+zero-downtime without anyone SSHing into a box.
+
+## Mental model
+
+```text
+  Image (Jib/Buildpacks) → Deployment (replicas: 3, rollingUpdate)
+        ├─ env: ConfigMap (app.yml) + Secret (db password)
+        ├─ livenessProbe: GET /actuator/health/liveness   → restart if dead
+        ├─ readinessProbe: GET /actuator/health/readiness → remove from Service if not ready
+        └─ Service (ClusterIP) → Ingress → internet
+  HPA watches CPU/custom RPS → scales replicas 3..30
+```
+
+## Minimal example
+
+```yaml
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: checkout }
+spec:
+  replicas: 3
+  selector: { matchLabels: { app: checkout } }
+  template:
+    metadata: { labels: { app: checkout } }
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/org/checkout:abc1234
+          ports: [{ containerPort: 8080 }]
+          envFrom:
+            - configMapRef: { name: checkout-config }
+            - secretRef: { name: checkout-secrets }
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: 8080 }
+            initialDelaySeconds: 60
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8080 }
+```
+
+```yaml
+# application-k8s.yaml (values come from the ConfigMap/Secret above)
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+```
+
+## Pitfalls
+
+- Default Actuator health is too shallow for readiness — add `readinessState` contributors (DB, Kafka reachable) or the pod serves traffic before it can.
+- `latest` image tags + `imagePullPolicy: IfNotPresent` = nodes running stale code; pin SHAs.
+- JVM must respect container limits (`-XX:MaxRAMPercentage=75.0`) or it OOMs against the cgroup.
+
+## Interview Q&A
+
+**Q1. Liveness vs readiness — why do you need both?**
+A: Liveness ("am I deadlocked?") triggers a container restart. Readiness ("can
+I serve traffic yet?") only removes the pod from the Service endpoints. A slow-
+starting app with only liveness gets killed in a restart loop; with readiness
+it warms up safely.
+
+**Q2. Dekorate vs Skaffold vs hand-written YAML — what is each for?**
+A: Dekorate generates K8s manifests from Java annotations at compile time
+(no YAML drift). Skaffold is a dev loop (code change → rebuild → redeploy
+automatically). Hand-written YAML (or Helm/Kustomize) is the production source
+of truth for GitOps.
+
+---
+
 
 
 

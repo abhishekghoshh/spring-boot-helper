@@ -4,7 +4,7 @@
 
 #### What is the Spring Framework?
 
-The **Spring Framework** is an open-source Java application framework created by **Rod Johnson** in 2003. It was introduced as a response to the complexity of the J2EE (Java 2 Enterprise Edition) platform, which required heavy XML configuration, EJBs, and verbose boilerplate code for even the simplest enterprise applications.
+The **Spring Framework** is an open-source Java application framework created by **Rod Johnson** (first release Mar 2004, developed from his 2002 book). It was introduced as a response to the complexity of the J2EE (Java 2 Enterprise Edition) platform, which required heavy XML configuration, EJBs, and verbose boilerplate code for even the simplest enterprise applications.
 
 Spring's core philosophy is captured in two ideas:
 - **Inversion of Control (IoC)** — the framework creates and manages objects, not your code
@@ -17,12 +17,13 @@ Spring's core philosophy is captured in two ideas:
 │  2002  Rod Johnson writes "Expert One-on-One J2EE Design and Development"        │
 │        → Book includes a framework that later becomes Spring                     │
 │                                                                                  │
-│  2003  Spring Framework 1.0 released (open-source on SourceForge)                │
+│  2004  Spring Framework 1.0 released Mar 2004 (open-source on SourceForge)       │
 │        Core features: IoC container, AOP, JDBC abstraction                       │
 │                                                                                  │
-│  2006  Spring 2.0 — annotation-based config (@Component, @Autowired)             │
+│  2006  Spring 2.0 — XML namespaces, AspectJ support                              │
 │                                                                                  │
-│  2007  Spring 2.5 — @Controller, @RequestMapping, @Service, @Repository         │
+│  2007  Spring 2.5 — annotation DI (@Component, @Autowired), @Controller,         │
+│        @RequestMapping, @Service (@Repository is 2.0)                            │
 │                                                                                  │
 │  2009  Spring 3.0 — REST support, @Configuration, Java-based config              │
 │                                                                                  │
@@ -991,7 +992,7 @@ public class AppConfig {
         emf.setPackagesToScan("com.example.model");
         emf.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
         Properties props = new Properties();
-        props.put("hibernate.dialect", "org.hibernate.dialect.MySQL8Dialect");
+        props.put("hibernate.dialect", "org.hibernate.dialect.MySQLDialect"); // Boot 3 auto-detects; explicit only for plain Spring
         props.put("hibernate.hbm2ddl.auto", "update");
         emf.setJpaProperties(props);
         return emf;

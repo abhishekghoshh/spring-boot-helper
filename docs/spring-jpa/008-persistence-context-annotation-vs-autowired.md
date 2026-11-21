@@ -29,5 +29,7 @@ Thread A  ──>  @Autowired  ──>  same EntityManager instance  <──  Th
 
 `@PersistenceContext` creates a **shared proxy** that internally uses a `ThreadLocal` to route each call to the transaction-bound `EntityManager`. This is why it is thread-safe.
 
+> Note: In modern Spring Boot, `@Autowired EntityManager` is also proxied via `SharedEntityManagerCreator` and safe in practice; `@PersistenceContext` remains the JPA-standard and preferred.
+
 ---
 

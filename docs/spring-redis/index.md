@@ -1,9 +1,24 @@
 # Spring Boot Redis
 
-
-## table of Contents
+## Table of Contents
 
 - [Redis Basics](./redis.md)
+
+## Spring Cache with Redis (Boot 4.1 + Java 25)
+
+- [001 - Spring Cache Fundamentals](./001-spring-cache-fundamentals.md)
+- [002 - Spring Boot Redis Setup](./002-spring-boot-redis-setup.md)
+- [003 - Cache Annotations](./003-cache-annotations.md)
+- [004 - Redis Cache Configuration](./004-redis-cache-configuration.md)
+- [005 - Cache Key Design](./005-cache-key-design.md)
+- [006 - Invalidation and Consistency](./006-invalidation-and-consistency.md)
+- [007 - Product Catalog Example](./007-product-catalog-example.md)
+- [008 - RedisTemplate Direct Access](./008-redistemplate-direct-access.md)
+- [009 - Advanced Production Topics](./009-advanced-production.md)
+- [010 - Testing and Debugging](./010-testing-debugging.md)
+- [011 - Performance and Trade-Offs](./011-performance-tradeoffs.md)
+- [012 - Architecture and System Design](./012-architecture-system-design.md)
+- [013 - Interview Questions](./013-interview-questions.md)
 
 
 ## Blogs

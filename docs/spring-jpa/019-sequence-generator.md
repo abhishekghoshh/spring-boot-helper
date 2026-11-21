@@ -110,8 +110,13 @@ public class SequenceController {
 
     @GetMapping("/next")
     public Long getNextId(@RequestParam String sequenceName) {
+        // WARNING: sequence names are identifiers and cannot be bound as JDBC parameters.
+        // Validate against a whitelist, then interpolate the (trusted) name into the SQL.
+        if (!List.of("order_seq", "user_seq").contains(sequenceName)) {
+            throw new IllegalArgumentException("Unknown sequence: " + sequenceName);
+        }
         return jdbcTemplate.queryForObject(
-            "SELECT nextval(?)", Long.class, sequenceName
+            "SELECT nextval('" + sequenceName + "')", Long.class
         );
     }
 }

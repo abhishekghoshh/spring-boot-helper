@@ -12,7 +12,8 @@ Spring's transaction management is built on a well-designed **interface hierarch
 │  └── PlatformTransactionManager (3 methods: getTransaction, commit, rollback)    │
 │      └── AbstractPlatformTransactionManager (template method implementations)    │
 │          ├── DataSourceTransactionManager (plain JDBC / MyBatis)                 │
-│          │   └── JdbcTransactionManager (Spring 5.3+ — same as parent + logging)│
+│          │   └── JdbcTransactionManager (5.3+, preferred for plain JDBC:       │
+│          │       DataAccessException translation, no ORM needed)               │
 │          ├── JpaTransactionManager (JPA / Hibernate via EntityManager)           │
 │          ├── HibernateTransactionManager (native Hibernate SessionFactory)       │
 │          └── JtaTransactionManager (distributed / XA transactions)              │

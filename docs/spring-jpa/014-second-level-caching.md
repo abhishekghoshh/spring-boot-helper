@@ -153,11 +153,10 @@ spring:
           use_query_cache: true          # optional: also cache JPQL/HQL query results
           region:
             factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
-        # Point to EhCache config file
-        javax:
-          cache:
-            provider: org.ehcache.jsr107.EhcacheCachingProvider
-            uri: classpath:ehcache.xml
+        # Point to EhCache config file (Hibernate 6: hibernate.jcache.*, not hibernate.javax.cache.*)
+        jcache:
+          provider: org.ehcache.jsr107.EhcacheCachingProvider
+          uri: classpath:ehcache.xml
 ```
 
 **ehcache.xml** (in `src/main/resources/`)
@@ -200,9 +199,9 @@ spring:
           use_second_level_cache: true
           region:
             factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
-        javax:
-          cache:
-            provider: com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider
+        # Hibernate 6 key: hibernate.jcache.provider (not hibernate.javax.cache.provider)
+        jcache:
+          provider: com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider
 ```
 
 ---

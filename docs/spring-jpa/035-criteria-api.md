@@ -1,6 +1,6 @@
 ### What Is the Criteria API?
 
-The **Criteria API** is a programmatic, type-safe way to build JPA queries using Java objects instead of writing query strings (JPQL or raw SQL). It is part of the **JPA specification** (javax.persistence.criteria / jakarta.persistence.criteria) and is implemented by Hibernate.
+The **Criteria API** is a programmatic, type-safe way to build JPA queries using Java objects instead of writing query strings (JPQL or raw SQL). It is part of the **JPA specification** (`jakarta.persistence.criteria` in Spring Boot 3) and is implemented by Hibernate.
 
 Instead of writing `"SELECT u FROM UserDetails u WHERE u.active = true"` as a string, you build the same query using method calls on `CriteriaBuilder`, `CriteriaQuery`, `Root`, `Predicate`, etc. The result is:
 - **Type-safe**: compile-time checks catch errors (no typos in field names if using metamodel)
@@ -308,7 +308,7 @@ The Criteria API operates entirely at the **JPA entity level**, not the database
 │       │                                                                          │
 │       v                                                                          │
 │  Step 3: SQL Generator (uses configured Dialect)                                 │
-│    Dialect = MySQL8Dialect                                                        │
+│    Dialect = auto-detected (e.g. MySQLDialect, PostgreSQLDialect)                 │
 │    → SELECT u1_0.id, u1_0.user_name, u1_0.email, u1_0.active                    │
 │      FROM user_details u1_0                                                      │
 │      WHERE u1_0.user_name = 'Alice'                                              │
